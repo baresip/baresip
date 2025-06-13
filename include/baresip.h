@@ -404,6 +404,9 @@ struct config_audio {
 	bool adaptive;          /**< Enable adaptive audio buffer   */
 	double silence;         /**< Silence volume in [dB]         */
 	uint32_t telev_pt;      /**< Payload type for tel.-event    */
+
+	// NOTE for reviewer: should the config param actually go inside "config_call"?
+	bool play_after_estab;  /**< Ignore early media scenario and start audio playback only after call estabilishment */
 };
 
 /** Video */

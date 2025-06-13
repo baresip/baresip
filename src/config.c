@@ -53,7 +53,8 @@ static struct config core_config = {
 		.buffer = {20, 160},
 		.adaptive = false,
 		.silence = -35.0,
-		.telev_pt = 101
+		.telev_pt = 101,
+		.play_after_estab = false
 	},
 
 	/** Video */
@@ -468,6 +469,7 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 
 	(void)conf_get_float(conf, "audio_silence", &cfg->audio.silence);
 	(void)conf_get_u32(conf, "audio_telev_pt", &cfg->audio.telev_pt);
+	(void)conf_get_bool(conf, "audio_play_after_estab", &cfg->audio.play_after_estab);
 
 	/* Video */
 	(void)conf_get_csv(conf, "video_source",
