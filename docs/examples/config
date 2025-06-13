@@ -248,6 +248,7 @@ video_selfview		window # {window,pip}
 #ring_aufile		ring.wav
 #callwaiting_aufile	callwaiting.wav
 #ringback_aufile	ringback.wav
+#hangup_aufile		none
 #notfound_aufile	notfound.wav
 #busy_aufile		busy.wav
 #error_aufile		error.wav
