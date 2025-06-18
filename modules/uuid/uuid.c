@@ -3,12 +3,27 @@
  *
  * Copyright (C) 2010 Alfred E. Heggestad
  */
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#ifdef HAVE_IO_H
+#include <io.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <re.h>
 #include <baresip.h>
 
+
+#ifdef WIN32
+#define open _open
+#define read _read
+#define close _close
+#endif
 
 /**
  * @defgroup uuid uuid
@@ -18,6 +33,50 @@
 
 
 enum { UUID_LEN = 36 };
+
+
+static int is_valid_uuid(const char* uuid)
+{
+	size_t len = str_len(uuid);
+
+	if (len != UUID_LEN)
+		return -1;
+
+	return re_regex(uuid, len, "[0-9a-f]8-[0-9a-f]4-[0-9a-f]4-"
+			"[0-9a-f]4-[0-9a-f]6[0-9a-f]6", NULL, NULL, NULL, NULL,
+			NULL, NULL);
+}
+
+
+/*
+ * Returns zero if provided file is present and contains a valid UUID.
+ * Returns non-zero in all other cases.
+ */
+static int check_uuid_file(const char *file)
+{
+	int fd = open(file, O_RDONLY);
+	if (fd < 0)
+		return errno;
+
+	struct stat st;
+	if (fstat(fd, &st) || (st.st_mode & S_IFMT) != S_IFREG
+	    || st.st_size != UUID_LEN) {
+		close(fd);
+		return EINVAL;
+	}
+
+	int err = 0;
+	uint8_t buf[UUID_LEN+1] = {0};
+
+	const ssize_t n = read(fd, (void *)buf, UUID_LEN);
+	if (n <= 0)
+		err = EINVAL;
+
+	if (close(fd) && !err)
+		err = errno;
+
+	return err ? err : is_valid_uuid((char *)buf);
+}
 
 
 static int generate_random_uuid(FILE *f)
@@ -36,11 +95,9 @@ static int uuid_init(const char *file)
 	FILE *f = NULL;
 	int err = 0;
 
-	f = fopen(file, "r");
-	if (f) {
-		err = 0;
+	err = check_uuid_file(file);
+	if (!err)
 		goto out;
-	}
 
 	f = fopen(file, "w");
 	if (!f) {
