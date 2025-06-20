@@ -15,6 +15,7 @@ add_executable(${PROJECT_NAME}
   contact.c
   bevent.c
   jbuf.c
+  jbuf_gnack.c
   menu.c
   message.c
   net.c
