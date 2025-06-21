@@ -1306,6 +1306,7 @@ int config_write_template(const char *file, const struct config *cfg)
 			"#sip_autoanswer_method\trfc5373 "
 			"# {rfc5373,call-info,alert-info}\n"
 			"#ring_aufile\t\tring.wav\n"
+			"#hangup_aufile\t\tnone\n"
 			"#callwaiting_aufile\tcallwaiting.wav\n"
 			"#ringback_aufile\tringback.wav\n"
 			"#notfound_aufile\tnotfound.wav\n"
