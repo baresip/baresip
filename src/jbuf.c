@@ -82,13 +82,6 @@ struct jbuf {
 };
 
 
-/** Is x less than y? */
-static inline bool seq_less(uint16_t x, uint16_t y)
-{
-	return ((int16_t)(x - y)) < 0;
-}
-
-
 #ifdef RE_JBUF_TRACE
 static void plot_jbuf(struct jbuf *jb, uint64_t tr)
 {
@@ -226,7 +219,8 @@ int jbuf_alloc(struct jbuf **jbp, uint32_t min, uint32_t max)
 		return EINVAL;
 
 	/* self-test: x < y (also handle wrap around) */
-	if (!seq_less(10, 20) || seq_less(20, 10) || !seq_less(65535, 0)) {
+	if (!rtp_seq_less(10, 20) || rtp_seq_less(20, 10) ||
+	    !rtp_seq_less(65535, 0)) {
 		DEBUG_WARNING("seq_less() is broken\n");
 		return ENOSYS;
 	}
@@ -442,7 +436,7 @@ int jbuf_put(struct jbuf *jb, const struct rtp_header *hdr, void *mem)
 			calc_rdiff(jb, seq);
 
 		/* Packet arrived too late to be put into buffer */
-		if (jb->seq_get && seq_less(seq, jb->seq_get + 1)) {
+		if (jb->seq_get && rtp_seq_less(seq, jb->seq_get + 1)) {
 			STAT_INC(n_late);
 			plot_jbuf_event(jb, 'L');
 			DEBUG_INFO("packet too late: seq=%u "
@@ -469,7 +463,7 @@ int jbuf_put(struct jbuf *jb, const struct rtp_header *hdr, void *mem)
 	uint16_t last_seq = ((struct packet *)tail->data)->hdr.seq;
 
 	/* Frame is later than tail -> append to tail */
-	if (seq_less(last_seq, seq)) {
+	if (rtp_seq_less(last_seq, seq)) {
 		const int16_t seq_diff = seq - last_seq;
 
 		if (jb->gnack_rtp && seq_diff > 1)
@@ -483,7 +477,7 @@ int jbuf_put(struct jbuf *jb, const struct rtp_header *hdr, void *mem)
 	for (le = tail; le; le = le->prev) {
 		const uint16_t seq_le = ((struct packet *)le->data)->hdr.seq;
 
-		if (seq_less(seq_le, seq)) { /* most likely */
+		if (rtp_seq_less(seq_le, seq)) { /* most likely */
 			DEBUG_PRINTF("put: out-of-sequence"
 				   " - inserting after seq=%u (seq=%u)\n",
 				   seq_le, seq);
@@ -586,7 +580,7 @@ int jbuf_get(struct jbuf *jb, struct rtp_header *hdr, void **mem)
 	/* Check sequence of previously played packet */
 	if (jb->seq_get) {
 		const int16_t seq_diff = f->hdr.seq - jb->seq_get;
-		if (seq_less(f->hdr.seq, jb->seq_get)) {
+		if (rtp_seq_less(f->hdr.seq, jb->seq_get)) {
 			DEBUG_WARNING("get: seq=%u too late\n", f->hdr.seq);
 		}
 		else if (seq_diff > 1) {
