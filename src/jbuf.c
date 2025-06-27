@@ -708,7 +708,7 @@ int jbuf_get(struct jbuf *jb, struct rtp_header *hdr, void **mem)
 	/* Check sequence of previously played packet */
 	if (jb->seq_get) {
 		const int16_t seq_diff = f->hdr.seq - jb->seq_get;
-		if (seq_less(f->hdr.seq, jb->seq_get)) {
+		if (rtp_seq_less(f->hdr.seq, jb->seq_get)) {
 			DEBUG_WARNING("get: seq=%u too late\n", f->hdr.seq);
 		}
 		else if (seq_diff > 1) {
