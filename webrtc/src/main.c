@@ -156,6 +156,12 @@ int main(int argc, char *argv[])
 		goto out;
 	}
 
+#ifdef RE_TRACE_ENABLED
+	err = re_trace_init("re_trace.json");
+	if (err)
+		goto out;
+#endif
+
 	re_thread_async_init(ASYNC_WORKERS);
 
 	sys_coredump_set(true);
@@ -241,6 +247,10 @@ int main(int argc, char *argv[])
 	mod_close();
 
 	re_thread_async_close();
+
+#ifdef RE_TRACE_ENABLED
+	re_trace_close();
+#endif
 
 	tmr_debug();
 
