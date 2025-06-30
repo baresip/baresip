@@ -110,6 +110,9 @@ static int agent_init(struct agent *ag)
 			 rtp_recv_handler, rtcp_recv_handler, ag);
 	TEST_ERR(err);
 
+	rtcp_set_srate_tx(ag->rtp_sock, 90000);
+	rtcp_set_srate_rx(ag->rtp_sock, 90000);
+
 	rtcp_enable_mux(ag->rtp_sock, true);
 
 	udp_local_get(rtp_sock(ag->rtp_sock), &ag->laddr_rtp);
@@ -138,8 +141,13 @@ int test_jbuf_gnack(void)
 	rtcp_start(a.rtp_sock, "cname", &b.laddr_rtcp);
 	rtcp_start(b.rtp_sock, "cname", &a.laddr_rtcp);
 
-	err = jbuf_alloc(&b.jb, 10, 10);
+	err = jbuf_alloc(&b.jb, 100, 100, 50);
 	TEST_ERR(err);
+
+	err = jbuf_set_type(b.jb, JBUF_FIXED);
+	TEST_ERR(err);
+
+	jbuf_set_srate(b.jb, 90000);
 
 	jbuf_set_gnack(b.jb, b.rtp_sock);
 
