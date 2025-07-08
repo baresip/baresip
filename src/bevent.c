@@ -776,8 +776,29 @@ out:
 }
 
 
+static bool bevent_is_valid(const struct bevent *event, struct ua *ua)
+{
+	if (!event)
+		return false;
+
+	if (event->ec != BEVENT_CLASS_CALL)
+		return true;
+
+	struct list *calls = ua_calls(ua);
+	struct le *le;
+
+	LIST_FOREACH(calls, le) {
+		if (le->data == event->u.call)
+			return true;
+	}
+
+	return false;
+}
+
+
 static void bevent_emit_base(struct bevent *event)
 {
+	struct ua *ua = bevent_get_ua(event);
 	struct le *le;
 	le = ehel.head;
 	while (le) {
@@ -785,6 +806,8 @@ static void bevent_emit_base(struct bevent *event)
 		le = le->next;
 
 		ehe->h(event->ev, event, ehe->arg);
+		if (ua && !bevent_is_valid(event, ua))
+			return;
 
 		if (event->stop)
 			return;
