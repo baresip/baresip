@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## v3.24.0 - 2025-07-09
+
+## What's Changed
+* test/ccheck: add LIST_FOREACH_SAFE check by @sreimers in https://github.com/baresip/baresip/pull/3412
+* config: removed "rtp_rxmode thread is currently experimental" warning by @juha-h in https://github.com/baresip/baresip/pull/3413
+* gzrtp: increase mbuf size if about to run out by @juha-h in https://github.com/baresip/baresip/pull/3414
+* ci: update mingw.yml by @alfredh in https://github.com/baresip/baresip/pull/3410
+* ci/clang: use clang-20 by @sreimers in https://github.com/baresip/baresip/pull/3416
+* call: Get cancel reason from close message by @KillingSpark in https://github.com/baresip/baresip/pull/3409
+* uuid: check that uuid file contains valid uuid by @maximilianfridrich in https://github.com/baresip/baresip/pull/3426
+* test/jbuf_gnack: add Generic NACK jitterbuffer test by @sreimers in https://github.com/baresip/baresip/pull/3427
+* menu: Add hangup sound on closed calls by @dddaniel in https://github.com/baresip/baresip/pull/3425
+* rtp: use rtp_seq_less by @sreimers in https://github.com/baresip/baresip/pull/3429
+* cmake: sort SRCS in alphabetical order by @sreimers in https://github.com/baresip/baresip/pull/3430
+* aac: fix debug printf (confSize) by @sreimers in https://github.com/baresip/baresip/pull/3432
+* webrtc: init re_trace.json if enabled by @sreimers in https://github.com/baresip/baresip/pull/3434
+* prepare for release -- bump version to 3.24.0 by @alfredh in https://github.com/baresip/baresip/pull/3435
+
+## New Contributors
+* @KillingSpark made their first contribution in https://github.com/baresip/baresip/pull/3409
+* @dddaniel made their first contribution in https://github.com/baresip/baresip/pull/3425
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v3.23.0...v3.24.0
+
+
 ## v3.23.0 - 2025-06-04
 
 ### What's Changed
