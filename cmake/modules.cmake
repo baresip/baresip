@@ -27,7 +27,6 @@ set(MODULES
   directfb
   dshow
   dtls_srtp
-  ebuacip
   echo
   evdev
   fakevideo
