@@ -15,11 +15,6 @@
 #include "av1.h"
 
 
-#ifndef AOM_USAGE_REALTIME
-#define AOM_USAGE_REALTIME (1)
-#endif
-
-
 struct videnc_state {
 	aom_codec_ctx_t ctx;
 	struct vidsz size;
