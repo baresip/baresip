@@ -221,7 +221,7 @@ static bool send_handler(int *err, struct sa *dst, struct mbuf *mb, void *arg)
 
 	if (!st->srtp_tx) {
 		lerr = EBUSY;
-		warning("srtp: srtp_tx not ready (%m)\n", err);
+		warning("srtp: srtp_tx not ready (%m)\n", lerr);
 		goto unlock_out;
 	}
 
