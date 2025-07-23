@@ -54,10 +54,8 @@ int avcodec_resolve_codecid(const char *s)
 {
 	if (0 == str_casecmp(s, "H264"))
 		return AV_CODEC_ID_H264;
-#ifdef AV_CODEC_ID_H265
 	else if (0 == str_casecmp(s, "H265"))
 		return AV_CODEC_ID_H265;
-#endif
 	else
 		return AV_CODEC_ID_NONE;
 }
