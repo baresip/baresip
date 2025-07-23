@@ -33,7 +33,7 @@ static int about_box(struct re_printf *pf, void *unused)
 {
 	(void)unused;
 
-	return re_hprintf(pf, about_fmt, BARESIP_VERSION);
+	return re_hprintf(pf, about_fmt, baresip_version());
 }
 
 

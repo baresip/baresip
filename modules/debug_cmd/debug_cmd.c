@@ -47,7 +47,7 @@ static int print_system_info(struct re_printf *pf, void *arg)
 	err |= re_hprintf(pf, " Machine:  %s/%s\n", sys_arch_get(),
 			  sys_os_get());
 	err |= re_hprintf(pf, " Version:  %s (libre v%s)\n",
-			  BARESIP_VERSION, sys_libre_version_get());
+			  baresip_version(), sys_libre_version_get());
 	err |= re_hprintf(pf, " Build:    %H\n", sys_build_get, NULL);
 	err |= re_hprintf(pf, " Kernel:   %H\n", sys_kernel_get, NULL);
 	err |= re_hprintf(pf, " Uptime:   %H\n", fmt_human_time, &uptime);
