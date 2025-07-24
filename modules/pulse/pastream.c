@@ -260,8 +260,8 @@ int pastream_alloc(struct pastream_st **bptr, const char *dev,
 
 	st->direction = dir;
 
-	strcpy(st->pname, pname);
-	strcpy(st->sname, sname);
+	str_ncpy(st->pname, pname, sizeof(st->pname));
+	str_ncpy(st->sname, sname, sizeof(st->sname));
 	str_ncpy(st->device, dev, sizeof(st->device));
 
 	*bptr = st;
