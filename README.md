@@ -83,7 +83,7 @@ Distributed under BSD license
 * Audio-drivers:
   - Advanced Linux Sound Architecture (ALSA) audio-driver
   - PulseAudio POSIX OSes audio-driver
-  - Android OpenSLES audio-driver
+  - Android AAudio and OpenSLES audio-driver
   - Gstreamer playbin input audio-driver
   - JACK Audio Connection Kit audio-driver
   - MacOSX/iOS coreaudio/audiounit audio-driver
@@ -246,6 +246,7 @@ Patches can be sent via Github
 ## Modular Plugin Architecture:
 ```
 aac           Advanced Audio Coding (AAC) audio codec
+aaudio        Android AAudio driver
 account       Account loader
 alsa          ALSA audio driver
 amr           Adaptive Multi-Rate (AMR) audio codec
@@ -254,6 +255,7 @@ aubridge      Audio bridge module
 auconv        Audio sample format converter
 audiounit     AudioUnit audio driver for MacOSX/iOS
 aufile        Audio module for using a WAV-file as audio input
+augain        Module to adjust gain of audio source
 auresamp      Audio resampler
 ausine        Audio sine wave input module
 av1           AV1 video codec
@@ -271,7 +273,6 @@ debug_cmd     Debug commands
 directfb      DirectFB video display module
 dshow         Windows DirectShow video source
 dtls_srtp     DTLS-SRTP end-to-end encryption
-ebuacip       EBU ACIP (Audio Contribution over IP) Profile
 echo          Echo server module
 evdev         Linux input driver
 fakevideo     Fake video input/output driver
@@ -285,6 +286,7 @@ gzrtp         ZRTP module using GNU ZRTP C++ library
 httpd         HTTP webserver UI-module
 httpreq       HTTP request module
 ice           ICE protocol for NAT Traversal
+in_band_dtmf  In-band DTMF decoder
 jack          JACK Audio Connection Kit audio-driver
 l16           L16 audio codec
 menu          Interactive menu
@@ -323,10 +325,10 @@ vidinfo       Video info overlay module
 vp8           VP8 video codec
 vp9           VP9 video codec
 vumeter       Display audio levels in console
+wasapi        Windows Audio Session API (WASAPI) driver
 webrtc_aec    Acoustic Echo Cancellation (AEC) using WebRTC SDK
 webrtc_aecm   Acoustic Echo Cancellation (AEC) mobile using WebRTC SDK
 wincons       Console input driver for Windows
-winwave       Audio driver for Windows
 x11           X11 video output driver
 ```
 
@@ -383,6 +385,7 @@ x11           X11 video output driver
 * RFC 8843  Negotiating Media Multiplexing Using SDP
 
 * draft-ietf-payload-vp9-16
+* RTP Payload Format For AV1
 
 
 ## Supported platforms:
@@ -407,7 +410,7 @@ x11           X11 video output driver
 ### Supported compilers:
 
 * clang 10.x or later
-* gcc 9.x or later
+* gcc 10.x or later
 * MSVC 2019, 2022
 
 
