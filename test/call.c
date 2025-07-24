@@ -45,7 +45,7 @@ enum action {
 struct cancel_rule {
 	struct le le;
 
-	enum ua_event ev;
+	enum bevent_id ev;
 	const char *prm;
 	struct ua *ua;
 	bool checkack;
@@ -221,7 +221,7 @@ static void cancel_rule_destructor(void *arg)
 }
 
 
-static struct cancel_rule *cancel_rule_alloc(enum ua_event ev,
+static struct cancel_rule *cancel_rule_alloc(enum bevent_id ev,
 					     struct ua *ua,
 					     unsigned n_incoming,
 					     unsigned n_progress,
@@ -252,7 +252,7 @@ static struct cancel_rule *cancel_rule_alloc(enum ua_event ev,
 
 
 static struct cancel_rule *fixture_add_cancel_rule(struct fixture *f,
-						   enum ua_event ev,
+						   enum bevent_id ev,
 						   struct ua *ua,
 						   unsigned n_incoming,
 						   unsigned n_progress,
@@ -269,7 +269,7 @@ static struct cancel_rule *fixture_add_cancel_rule(struct fixture *f,
 
 
 static struct cancel_rule *cancel_rule_and_alloc(struct cancel_rule *cr,
-						 enum ua_event ev,
+						 enum bevent_id ev,
 						 struct ua *ua,
 						 unsigned n_incoming,
 						 unsigned n_progress,
@@ -447,7 +447,7 @@ static void check_ack(void *arg)
 	ag->gotack = !call_ack_pending(ua_call(ag->ua));
 
 	if (ag->gotack)
-		bevent_ua_emit(UA_EVENT_CUSTOM, ag->ua, "gotack");
+		bevent_ua_emit(BEVENT_CUSTOM, ag->ua, "gotack");
 
 	else
 		tmr_start(&ag->tmr_ack, 1, check_ack, ag);
@@ -464,7 +464,7 @@ static int agent_wait_for_ack(struct agent *ag, unsigned n_incoming,
 	if (!call_ack_pending(ua_call(ag->ua)))
 		return 0;
 
-	cancel_rule_new(UA_EVENT_CUSTOM, ag->ua, n_incoming, n_progress,
+	cancel_rule_new(BEVENT_CUSTOM, ag->ua, n_incoming, n_progress,
 			n_established);
 	cr->prm = "gotack";
 	cr->checkack = true;
@@ -484,7 +484,7 @@ out:
 
 
 static bool check_rule(struct cancel_rule *rule, int met_prev,
-		       struct agent *ag, enum ua_event ev, const char *prm)
+		       struct agent *ag, enum bevent_id ev, const char *prm)
 {
 	bool met_next = true;
 	if (rule->cr_and) {
@@ -614,7 +614,7 @@ out:
 }
 
 
-static void process_rules(struct agent *ag, enum ua_event ev, const char *prm)
+static void process_rules(struct agent *ag, enum bevent_id ev, const char *prm)
 {
 	struct fixture *f = ag->fix;
 	struct le *le;
@@ -625,7 +625,7 @@ static void process_rules(struct agent *ag, enum ua_event ev, const char *prm)
 }
 
 
-static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
+static void event_handler(enum bevent_id ev, struct bevent *event, void *arg)
 {
 	struct fixture *f = arg;
 	struct call *call2 = NULL;
@@ -646,13 +646,13 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 	ASSERT_TRUE(f != NULL);
 	ASSERT_EQ(MAGIC, f->magic);
 
-	if (ev == UA_EVENT_CREATE)
+	if (ev == BEVENT_CREATE)
 		return;
 
 	if (!ua)
 		ua = uag_find_msg(msg);
 
-	if (ua && ev == UA_EVENT_SIPSESS_CONN) {
+	if (ua && ev == BEVENT_SIPSESS_CONN) {
 		err = ua_accept(ua, msg);
 		if (err) {
 			warning("test: could not accept incoming call (%m)\n",
@@ -676,11 +676,11 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 
 	switch (ev) {
 
-	case UA_EVENT_CALL_REDIRECT:
+	case BEVENT_CALL_REDIRECT:
 		ASSERT_STREQ("302,sip:c@127.0.0.1", prm);
 		break;
 
-	case UA_EVENT_CALL_INCOMING:
+	case BEVENT_CALL_INCOMING:
 		++ag->n_incoming;
 
 		switch (f->behaviour) {
@@ -730,12 +730,12 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 		}
 		break;
 
-	case UA_EVENT_CALL_PROGRESS:
+	case BEVENT_CALL_PROGRESS:
 		++ag->n_progress;
 
 		break;
 
-	case UA_EVENT_CALL_ESTABLISHED:
+	case BEVENT_CALL_ESTABLISHED:
 		++ag->n_established;
 
 		ASSERT_TRUE(str_isset(call_id(call)));
@@ -817,7 +817,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 		}
 		break;
 
-	case UA_EVENT_CALL_CLOSED:
+	case BEVENT_CALL_CLOSED:
 		++ag->n_closed;
 
 		ag->close_scode = call_scode(call);
@@ -834,7 +834,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 		}
 		break;
 
-	case UA_EVENT_CALL_TRANSFER:
+	case BEVENT_CALL_TRANSFER:
 		++ag->n_transfer;
 
 		err = ua_call_alloc(&call2, ua, VIDMODE_ON, NULL, call,
@@ -858,7 +858,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 		}
 		break;
 
-	case UA_EVENT_CALL_TRANSFER_FAILED:
+	case BEVENT_CALL_TRANSFER_FAILED:
 		++ag->n_transfer_fail;
 
 		call_hold(call, false);
@@ -867,7 +867,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 
 		break;
 
-	case UA_EVENT_CALL_REMOTE_SDP:
+	case BEVENT_CALL_REMOTE_SDP:
 		if (!str_cmp(prm, "offer"))
 			++ag->n_offer_cnt;
 		else if (!str_cmp(prm, "answer"))
@@ -875,15 +875,15 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 
 		break;
 
-	case UA_EVENT_CALL_HOLD:
+	case BEVENT_CALL_HOLD:
 		++ag->n_hold_cnt;
 		break;
 
-	case UA_EVENT_CALL_RESUME:
+	case BEVENT_CALL_RESUME:
 		++ag->n_resume_cnt;
 		break;
 
-	case UA_EVENT_CALL_MENC:
+	case BEVENT_CALL_MENC:
 		++ag->n_mediaenc;
 
 		if (strstr(prm, "audio"))
@@ -896,7 +896,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 		}
 		break;
 
-	case UA_EVENT_CALL_DTMF_START:
+	case BEVENT_CALL_DTMF_START:
 		ASSERT_EQ(1, str_len(prm));
 		ASSERT_EQ(dtmf_digits[ag->n_dtmf_recv], prm[0]);
 		++ag->n_dtmf_recv;
@@ -906,7 +906,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 		}
 		break;
 
-	case UA_EVENT_CALL_RTPESTAB:
+	case BEVENT_CALL_RTPESTAB:
 		++ag->n_rtpestab;
 
 		if (strstr(prm, "audio"))
@@ -916,7 +916,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 
 		break;
 
-	case UA_EVENT_CALL_RTCP:
+	case BEVENT_CALL_RTCP:
 		++ag->n_rtcp;
 
 		break;
@@ -1054,7 +1054,7 @@ static int test_call_immediate_cancel(void)
 
 	f->behaviour = BEHAVIOUR_REJECT;
 
-	cancel_rule_new(UA_EVENT_CALL_CLOSED, f->a.ua, 0, 0, 0);
+	cancel_rule_new(BEVENT_CALL_CLOSED, f->a.ua, 0, 0, 0);
 	cr->n_closed = 1;
 
 	/* Make a call from A to B */
@@ -1097,7 +1097,7 @@ static int test_call_progress_cancel(void)
 
 	f->behaviour = BEHAVIOUR_PROGRESS;
 
-	cancel_rule_new(UA_EVENT_CALL_PROGRESS, f->a.ua, 0, 0, 0);
+	cancel_rule_new(BEVENT_CALL_PROGRESS, f->a.ua, 0, 0, 0);
 	cr->n_progress = 1;
 
 	/* Make a call from A to B */
@@ -1145,7 +1145,7 @@ static int test_call_answer_cancel(void)
 
 	f->behaviour = BEHAVIOUR_PROGRESS;
 
-	cancel_rule_new(UA_EVENT_CALL_PROGRESS, f->a.ua, 0, 0, 0);
+	cancel_rule_new(BEVENT_CALL_PROGRESS, f->a.ua, 0, 0, 0);
 	cr->n_progress = 1;
 
 	/* Make a call from A to B */
@@ -1543,7 +1543,7 @@ static void mock_vidisp_handler(const struct vidframe *frame,
 
 	++ag->n_vidframe;
 	ua = ag->ua;
-	bevent_ua_emit(UA_EVENT_CUSTOM, ua, "vidframe %u", ag->n_vidframe);
+	bevent_ua_emit(BEVENT_CUSTOM, ua, "vidframe %u", ag->n_vidframe);
 
  out:
 	if (err)
@@ -1562,10 +1562,10 @@ int test_call_video(void)
 	conf_config()->video.enc_fmt = VID_FMT_YUV420P;
 
 	fixture_init(f);
-	cancel_rule_new(UA_EVENT_CUSTOM, f->b.ua, 1, 0, 1);
+	cancel_rule_new(BEVENT_CUSTOM, f->b.ua, 1, 0, 1);
 	cr->prm = "vidframe";
 	cr->n_vidframe = 3;
-	cancel_rule_and(UA_EVENT_CUSTOM, f->a.ua, 0, 0, 1);
+	cancel_rule_and(BEVENT_CUSTOM, f->a.ua, 0, 0, 1);
 	cr->prm = "vidframe";
 	cr->n_vidframe = 3;
 
@@ -1619,12 +1619,12 @@ int test_call_change_videodir(void)
 	conf_config()->video.enc_fmt = VID_FMT_YUV420P;
 
 	fixture_init_prm(f, ";answermode=early");
-	cr_prog = cancel_rule_new(UA_EVENT_CALL_PROGRESS, f->a.ua, 0, 1, 0);
+	cr_prog = cancel_rule_new(BEVENT_CALL_PROGRESS, f->a.ua, 0, 1, 0);
 
-	cr_vidb = cancel_rule_new(UA_EVENT_CUSTOM, f->b.ua, 1, 0, 1);
+	cr_vidb = cancel_rule_new(BEVENT_CUSTOM, f->b.ua, 1, 0, 1);
 	cr_vidb->prm = "vidframe";
 	cr_vidb->n_vidframe = 3;
-	cr_vida = cancel_rule_and(UA_EVENT_CUSTOM, f->a.ua, 0, 1, 1);
+	cr_vida = cancel_rule_and(BEVENT_CUSTOM, f->a.ua, 0, 1, 1);
 	cr_vida->prm = "vidframe";
 	cr_vida->n_vidframe = 3;
 
@@ -1676,14 +1676,14 @@ int test_call_change_videodir(void)
 	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(vm));
 	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(vm));
 
-	cancel_rule_new(UA_EVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 1);
+	cancel_rule_new(BEVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 1);
 	cr->prm = "offer";
-	cancel_rule_and(UA_EVENT_CALL_REMOTE_SDP, f->a.ua, 0, 1, 1);
+	cancel_rule_and(BEVENT_CALL_REMOTE_SDP, f->a.ua, 0, 1, 1);
 	cr->prm = "answer";
 
 	/* Set video inactive */
-	cr_vida->ev = UA_EVENT_MAX;
-	cr_vidb->ev = UA_EVENT_MAX;
+	cr_vida->ev = BEVENT_MAX;
+	cr_vidb->ev = BEVENT_MAX;
 	err = call_set_video_dir(ua_call(f->a.ua), SDP_INACTIVE);
 	TEST_ERR(err);
 	err = re_main_timeout(10000);
@@ -1704,8 +1704,8 @@ int test_call_change_videodir(void)
 	/* Set video sendrecv */
 	f->a.n_vidframe = 0;
 	f->b.n_vidframe = 0;
-	cr_vida->ev = UA_EVENT_CUSTOM;
-	cr_vidb->ev = UA_EVENT_CUSTOM;
+	cr_vida->ev = BEVENT_CUSTOM;
+	cr_vidb->ev = BEVENT_CUSTOM;
 	err = call_set_video_dir(ua_call(f->a.ua), SDP_SENDRECV);
 	TEST_ERR(err);
 	err = re_main_timeout(10000);
@@ -1747,10 +1747,10 @@ int test_call_100rel_video(void)
 
 	fixture_init_prm(f, ";100rel=yes;answermode=early");
 
-	cancel_rule_new(UA_EVENT_CUSTOM, f->b.ua, 1, 0, 0);
+	cancel_rule_new(BEVENT_CUSTOM, f->b.ua, 1, 0, 0);
 	cr->prm = "vidframe";
 	cr->n_vidframe = 3;
-	cancel_rule_and(UA_EVENT_CUSTOM, f->a.ua, 0, 1, 0);
+	cancel_rule_and(BEVENT_CUSTOM, f->a.ua, 0, 1, 0);
 	cr->prm = "vidframe";
 	cr->n_vidframe = 3;
 	/* to enable video, we need one vidsrc and vidcodec */
@@ -1775,9 +1775,9 @@ int test_call_100rel_video(void)
 	TEST_ERR(fix.err);
 
 	/* switch off early video */
-	cancel_rule_new(UA_EVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 0);
+	cancel_rule_new(BEVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 0);
 	cr->prm = "offer";
-	cancel_rule_and(UA_EVENT_CALL_REMOTE_SDP, f->a.ua, 0, 1, 0);
+	cancel_rule_and(BEVENT_CALL_REMOTE_SDP, f->a.ua, 0, 1, 0);
 	cr->prm = "answer";
 
 	err = call_set_video_dir(ua_call(f->a.ua), SDP_INACTIVE);
@@ -1855,7 +1855,7 @@ static void auframe_handler(struct auframe *af, const char *dev, void *arg)
 	++ag->n_auframe;
 	(void)audio_level_get(call_audio(ua_call(ua)), &ag->aulvl);
 
-	bevent_ua_emit(UA_EVENT_CUSTOM, ua, "auframe %u", ag->n_auframe);
+	bevent_ua_emit(BEVENT_CUSTOM, ua, "auframe %u", ag->n_auframe);
 
  out:
 	if (err)
@@ -1877,10 +1877,10 @@ int test_call_aulevel(void)
 		       ";regint=0;ptime=1;audio_player=mock-auplay,b");
 	TEST_ERR(err);
 
-	cancel_rule_new(UA_EVENT_CUSTOM, f->a.ua, 0, 0, 1);
+	cancel_rule_new(BEVENT_CUSTOM, f->a.ua, 0, 0, 1);
 	cr->prm = "auframe";
 	cr->aulvl = -96.0f;
-	cancel_rule_and(UA_EVENT_CUSTOM, f->b.ua, 1, 0, 1);
+	cancel_rule_and(BEVENT_CUSTOM, f->b.ua, 1, 0, 1);
 	cr->prm = "auframe";
 	cr->aulvl = -96.0f;
 
@@ -1931,10 +1931,10 @@ static int test_100rel_audio_base(enum audio_mode txmode)
 	TEST_ERR(err);
 	conf_config()->audio.txmode = txmode;
 
-	cancel_rule_new(UA_EVENT_CUSTOM, f->b.ua, 1, -1, 0);
+	cancel_rule_new(BEVENT_CUSTOM, f->b.ua, 1, -1, 0);
 	cr->prm = "auframe";
 	cr->n_auframe = 3;
-	cancel_rule_and(UA_EVENT_CUSTOM, f->a.ua, 0, 1, 0);
+	cancel_rule_and(BEVENT_CUSTOM, f->a.ua, 0, 1, 0);
 	cr->prm = "auframe";
 	cr->n_auframe = 3;
 
@@ -1957,9 +1957,9 @@ static int test_100rel_audio_base(enum audio_mode txmode)
 	TEST_ERR(fix.err);
 
 	/* switch off early audio */
-	cancel_rule_new(UA_EVENT_CALL_REMOTE_SDP, f->b.ua, 1, -1, 0);
+	cancel_rule_new(BEVENT_CALL_REMOTE_SDP, f->b.ua, 1, -1, 0);
 	cr->prm = "offer";
-	cancel_rule_and(UA_EVENT_CALL_REMOTE_SDP, f->a.ua, 0, 1, 0);
+	cancel_rule_and(BEVENT_CALL_REMOTE_SDP, f->a.ua, 0, 1, 0);
 	cr->prm = "answer";
 
 	call_set_media_direction(ua_call(f->a.ua), SDP_INACTIVE, SDP_INACTIVE);
@@ -2034,7 +2034,7 @@ int test_call_progress(void)
 	int err = 0;
 
 	fixture_init_prm(f, ";answermode=early");
-	cancel_rule_new(UA_EVENT_CALL_PROGRESS, f->a.ua, 0, 1, 0);
+	cancel_rule_new(BEVENT_CALL_PROGRESS, f->a.ua, 0, 1, 0);
 
 	f->behaviour = BEHAVIOUR_NOTHING;
 
@@ -2090,10 +2090,10 @@ static int test_media_base(enum audio_mode txmode,
 	conf_config()->audio.dec_fmt = acfmt;
 	conf_config()->avt.rtp_stats = true;
 
-	cancel_rule_new(UA_EVENT_CUSTOM, f->a.ua, 0, 0, 1);
+	cancel_rule_new(BEVENT_CUSTOM, f->a.ua, 0, 0, 1);
 	cr->prm = "auframe";
 	cr->n_auframe = 3;
-	cancel_rule_and(UA_EVENT_CUSTOM, f->b.ua, 1, 0, 1);
+	cancel_rule_and(BEVENT_CUSTOM, f->b.ua, 1, 0, 1);
 	cr->prm = "auframe";
 	cr->n_auframe = 3;
 
@@ -2206,8 +2206,8 @@ int test_call_mediaenc(void)
 
 	/* Enable a dummy media encryption protocol */
 	fixture_init_prm(f, ";mediaenc=srtp;ptime=1");
-	cancel_rule_new(UA_EVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
-	cancel_rule_and(UA_EVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
+	cancel_rule_new(BEVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
+	cancel_rule_and(BEVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
 
 	ASSERT_STREQ("srtp", account_mediaenc(ua_account(f->a.ua)));
 
@@ -2266,8 +2266,8 @@ int test_call_medianat(void)
 
 	/* Enable a dummy media NAT-traversal protocol */
 	fixture_init_prm(f, ";medianat=XNAT;ptime=1");
-	cancel_rule_new(UA_EVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
-	cancel_rule_and(UA_EVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
+	cancel_rule_new(BEVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
+	cancel_rule_and(BEVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
 
 	ASSERT_STREQ("XNAT", account_medianat(ua_account(f->a.ua)));
 
@@ -2643,7 +2643,7 @@ static void delayed_audio_debug(void *arg)
 
 	++ag->n_audebug;
 
-	bevent_ua_emit(UA_EVENT_CUSTOM, ag->ua,  "audebug %u", ag->n_audebug);
+	bevent_ua_emit(BEVENT_CUSTOM, ag->ua,  "audebug %u", ag->n_audebug);
 
 	tmr_start(&ag->tmr, 2, delayed_audio_debug, ag);
 out:
@@ -2670,16 +2670,16 @@ static int test_call_rtcp_base(bool rtcp_mux)
 	}
 
 	conf_config()->avt.rtp_stats = true;
-	cancel_rule_new(UA_EVENT_CALL_ESTABLISHED, f->b.ua, 1, 0, 1);
+	cancel_rule_new(BEVENT_CALL_ESTABLISHED, f->b.ua, 1, 0, 1);
 
-	cancel_rule_new(UA_EVENT_CALL_RTCP, f->b.ua, 1, 0, 1);
+	cancel_rule_new(BEVENT_CALL_RTCP, f->b.ua, 1, 0, 1);
 	cr->n_rtcp = 5;
-	cancel_rule_and(UA_EVENT_CALL_RTCP, f->a.ua, 0, 0, -1);
+	cancel_rule_and(BEVENT_CALL_RTCP, f->a.ua, 0, 0, -1);
 	cr->n_rtcp = 5;
-	cancel_rule_and(UA_EVENT_CUSTOM,    f->b.ua, 1, 0, 1);
+	cancel_rule_and(BEVENT_CUSTOM,    f->b.ua, 1, 0, 1);
 	cr->prm = "audebug";
 	cr->n_audebug = 5;
-	cancel_rule_and(UA_EVENT_CUSTOM,    f->a.ua, 0, 0, -1);
+	cancel_rule_and(BEVENT_CUSTOM,    f->a.ua, 0, 0, -1);
 	cr->prm = "audebug";
 	cr->n_audebug = 5;
 
@@ -2759,9 +2759,9 @@ int test_call_webrtc(void)
 	TEST_ERR(err);
 
 	fixture_init_prm(f, ";medianat=XNAT;mediaenc=dtls_srtp;rtcp_mux=yes");
-	cancel_rule_new(UA_EVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
+	cancel_rule_new(BEVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
 	cr->n_audio_estab = cr->n_video_estab = 1;
-	cancel_rule_and(UA_EVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
+	cancel_rule_and(BEVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
 	cr->n_audio_estab = cr->n_video_estab = 1;
 
 	f->estab_action = ACTION_NOTHING;
@@ -2872,10 +2872,10 @@ static int test_call_bundle_base(bool use_mnat, bool use_menc)
 		fixture_init_prm(f, "");
 	}
 
-	cancel_rule_new(UA_EVENT_CALL_RTPESTAB, f->b.ua, 1, 0, -1);
-	cancel_rule_and(UA_EVENT_CALL_RTPESTAB, f->a.ua, 0, 0, -1);
-	cancel_rule_and(UA_EVENT_CALL_ESTABLISHED, f->b.ua, 1, 0, 1);
-	cancel_rule_and(UA_EVENT_CALL_ESTABLISHED, f->a.ua, 0, 0, 1);
+	cancel_rule_new(BEVENT_CALL_RTPESTAB, f->b.ua, 1, 0, -1);
+	cancel_rule_and(BEVENT_CALL_RTPESTAB, f->a.ua, 0, 0, -1);
+	cancel_rule_and(BEVENT_CALL_ESTABLISHED, f->b.ua, 1, 0, 1);
+	cancel_rule_and(BEVENT_CALL_ESTABLISHED, f->a.ua, 0, 0, 1);
 
 	f->estab_action = ACTION_NOTHING;
 	f->behaviour = BEHAVIOUR_ANSWER;
@@ -3066,8 +3066,8 @@ int test_call_ipv6ll(void)
 	err  = ua_alloc(&f->a.ua, "A <sip:a@kitchen>;regint=0");
 	err |= ua_alloc(&f->b.ua, "B <sip:b@office>;regint=0");
 
-	cancel_rule_new(UA_EVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
-	cancel_rule_and(UA_EVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
+	cancel_rule_new(BEVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
+	cancel_rule_and(BEVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
 
 	err |= ua_connect(f->a.ua, 0, NULL, uri, VIDMODE_OFF);
 	TEST_ERR(err);
@@ -3112,9 +3112,9 @@ static int test_call_hold_resume_base(bool tcp)
 
 
 	fixture_init(f);
-	cancel_rule_new(UA_EVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
+	cancel_rule_new(BEVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
 	cr->n_audio_estab = 1;
-	cancel_rule_and(UA_EVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
+	cancel_rule_and(BEVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
 	cr->n_audio_estab = 1;
 
 	err = module_load(".", "ausine");
@@ -3148,9 +3148,9 @@ static int test_call_hold_resume_base(bool tcp)
 	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
 	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(m));
 
-	cancel_rule_new(UA_EVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 1);
+	cancel_rule_new(BEVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 1);
 	cr->prm = "offer";
-	cancel_rule_and(UA_EVENT_CALL_REMOTE_SDP, f->a.ua, 0, 0, 1);
+	cancel_rule_and(BEVENT_CALL_REMOTE_SDP, f->a.ua, 0, 0, 1);
 	cr->prm = "answer";
 
 	/* set call on-hold */
@@ -3198,7 +3198,7 @@ static int test_call_hold_resume_base(bool tcp)
 	ASSERT_TRUE(!call_ack_pending(ua_call(f->b.ua)));
 
 	/* Hang up */
-	cancel_rule_new(UA_EVENT_CALL_CLOSED, f->b.ua, 1, 0, 1);
+	cancel_rule_new(BEVENT_CALL_CLOSED, f->b.ua, 1, 0, 1);
 	call_hangup(ua_call(f->a.ua), 0, NULL);
 	tmr_start(&f->b.tmr_ack, 1, check_ack, &f->b);
 	err = re_main_timeout(10000);
@@ -3207,7 +3207,7 @@ static int test_call_hold_resume_base(bool tcp)
 
 	/* New call from A -> B with sendonly offered */
 	list_flush(&f->rules);
-	cancel_rule_new(UA_EVENT_CALL_RTPESTAB, f->b.ua, 2, 0, 2);
+	cancel_rule_new(BEVENT_CALL_RTPESTAB, f->b.ua, 2, 0, 2);
 	cr->n_audio_estab = 2;
 
 	/* Make a call from A to B  */
@@ -3232,9 +3232,9 @@ static int test_call_hold_resume_base(bool tcp)
 	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
 	ASSERT_EQ(SDP_RECVONLY, sdp_media_rdir(m));
 
-	cancel_rule_new(UA_EVENT_CALL_REMOTE_SDP, f->b.ua, 2, 0, 2);
+	cancel_rule_new(BEVENT_CALL_REMOTE_SDP, f->b.ua, 2, 0, 2);
 	cr->prm = "offer";
-	cancel_rule_and(UA_EVENT_CALL_REMOTE_SDP, f->a.ua, 0, 0, 2);
+	cancel_rule_and(BEVENT_CALL_REMOTE_SDP, f->a.ua, 0, 0, 2);
 	cr->prm = "answer";
 
 	/* set call on-hold from A */
@@ -3285,9 +3285,9 @@ static int test_call_hold_resume_base(bool tcp)
 
 	/* New cancel rules for hold from B */
 	list_flush(&f->rules);
-	cancel_rule_new(UA_EVENT_CALL_REMOTE_SDP, f->a.ua, 0, 0, 2);
+	cancel_rule_new(BEVENT_CALL_REMOTE_SDP, f->a.ua, 0, 0, 2);
 	cr->prm = "offer";
-	cancel_rule_and(UA_EVENT_CALL_REMOTE_SDP, f->b.ua, 2, 0, 2);
+	cancel_rule_and(BEVENT_CALL_REMOTE_SDP, f->b.ua, 2, 0, 2);
 	cr->prm = "answer";
 
 	/* set call on-hold from B */
@@ -3433,8 +3433,8 @@ int test_call_srtp_tx_rekey(void)
 	f->estab_action = ACTION_NOTHING;
 
 	/* call established cancel rule */
-	cancel_rule_new(UA_EVENT_CALL_ESTABLISHED, f->a.ua, 0, 0, 1);
-	cancel_rule_and(UA_EVENT_CALL_ESTABLISHED, f->b.ua, 1, 0, 1);
+	cancel_rule_new(BEVENT_CALL_ESTABLISHED, f->a.ua, 0, 0, 1);
+	cancel_rule_and(BEVENT_CALL_ESTABLISHED, f->b.ua, 1, 0, 1);
 
 	/* Call A to B */
 	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_ON);
@@ -3474,10 +3474,10 @@ int test_call_srtp_tx_rekey(void)
 	err |= call_modify(ua_call(f->a.ua));
 	TEST_ERR(err);
 
-	cancel_rule_new(UA_EVENT_CUSTOM, f->a.ua, 0, 0, 1);
+	cancel_rule_new(BEVENT_CUSTOM, f->a.ua, 0, 0, 1);
 	cr->prm = "auframe";
 	cr->n_auframe = 10;
-	cancel_rule_and(UA_EVENT_CUSTOM, f->b.ua, 1, 0, 1);
+	cancel_rule_and(BEVENT_CUSTOM, f->b.ua, 1, 0, 1);
 	cr->prm = "auframe";
 	cr->n_auframe = 10;
 

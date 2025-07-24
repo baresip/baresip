@@ -526,7 +526,7 @@ static int menu_autoanwser_call(struct call *call)
 	outgoing = menu_find_call(outgoing_call_test, call);
 	if (outgoing) {
 		call_hangup(outgoing, 0, NULL);
-		bevent_call_emit(UA_EVENT_CALL_CLOSED, outgoing,
+		bevent_call_emit(BEVENT_CALL_CLOSED, outgoing,
 				 "Outgoing call cancelled due to auto answer");
 		mem_deref(outgoing);
 	}
@@ -689,7 +689,7 @@ static void apply_contact_mediadir(struct call *call)
 }
 
 
-static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
+static void event_handler(enum bevent_id ev, struct bevent *event, void *arg)
 {
 	struct call *call2 = NULL;
 	int32_t adelay = -1;
@@ -718,7 +718,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 
 	switch (ev) {
 
-	case UA_EVENT_SIPSESS_CONN:
+	case BEVENT_SIPSESS_CONN:
 
 		if (menu.dnd) {
 			const uint16_t scode = 480;
@@ -729,7 +729,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 			info("menu: incoming call from %r <%r> rejected: "
 			     "%u %s\n",
 			     &msg->from.dname, &msg->from.auri, scode, reason);
-			bevent_sip_msg_emit(UA_EVENT_MODULE, msg,
+			bevent_sip_msg_emit(BEVENT_MODULE, msg,
 				"menu,rejected,%u %s", scode, reason);
 			bevent_stop(event);
 			break;
@@ -746,7 +746,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 		bevent_stop(event);
 		return;
 
-	case UA_EVENT_CALL_INCOMING:
+	case BEVENT_CALL_INCOMING:
 
 		apply_contact_mediadir(call);
 		if (call_state(call) != CALL_STATE_INCOMING)
@@ -788,34 +788,34 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 
 		break;
 
-	case UA_EVENT_CALL_OUTGOING:
+	case BEVENT_CALL_OUTGOING:
 		apply_contact_mediadir(call);
 		++menu.outcnt;
 		break;
 
-	case UA_EVENT_CALL_LOCAL_SDP:
+	case BEVENT_CALL_LOCAL_SDP:
 		if (call_state(call) == CALL_STATE_OUTGOING)
 			menu_selcall(call);
 		break;
 
-	case UA_EVENT_CALL_RINGING:
+	case BEVENT_CALL_RINGING:
 		menu_selcall(call);
 		if (!menu.ringback && !menu_find_call(active_call_test, call))
 			play_ringback(call);
 		break;
 
-	case UA_EVENT_CALL_PROGRESS:
+	case BEVENT_CALL_PROGRESS:
 		menu_selcall(call);
 		uag_filter_calls(limit_earlymedia, NULL, NULL);
 
 		tmr_start(&menu.tmr_play, TONE_DELAY, delayed_play, NULL);
 		break;
 
-	case UA_EVENT_CALL_ANSWERED:
+	case BEVENT_CALL_ANSWERED:
 		menu_stop_play();
 		break;
 
-	case UA_EVENT_CALL_ESTABLISHED:
+	case BEVENT_CALL_ESTABLISHED:
 		menu_selcall(call);
 		/* stop any ringtones */
 		menu_stop_play();
@@ -826,7 +826,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 		uag_hold_others(call);
 		break;
 
-	case UA_EVENT_CALL_CLOSED:
+	case BEVENT_CALL_CLOSED:
 		/* Activate the re-dialing if:
 		 *
 		 * - redial_attempts must be enabled in config
@@ -886,7 +886,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 
 		break;
 
-	case UA_EVENT_CALL_REMOTE_SDP:
+	case BEVENT_CALL_REMOTE_SDP:
 		if (!str_cmp(prm, "answer") &&
 				call_state(call) == CALL_STATE_ESTABLISHED)
 			menu_selcall(call);
@@ -897,7 +897,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 
 		break;
 
-	case UA_EVENT_CALL_TRANSFER:
+	case BEVENT_CALL_TRANSFER:
 		/*
 		 * Create a new call to transfer target.
 		 *
@@ -933,14 +933,14 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 		}
 		break;
 
-	case UA_EVENT_CALL_TRANSFER_FAILED:
+	case BEVENT_CALL_TRANSFER_FAILED:
 		info("menu: transfer failure: %s\n", prm);
 		menu_stop_play();
 		call_hold(call, false);
 		menu_selcall(call);
 		break;
 
-	case UA_EVENT_CALL_REDIRECT:
+	case BEVENT_CALL_REDIRECT:
 		uri = strchr(prm, ',');
 		if (!uri)
 			break;
@@ -955,7 +955,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 		}
 		break;
 
-	case UA_EVENT_REFER:
+	case BEVENT_REFER:
 		val = pl_null;
 		if (!re_regex(prm, strlen(prm), "sip:"))
 			pl_set_str(&val, "invite");
@@ -968,23 +968,23 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 
 		break;
 
-	case UA_EVENT_REGISTER_OK:
+	case BEVENT_REGISTER_OK:
 		check_registrations();
 		break;
 
-	case UA_EVENT_UNREGISTERING:
+	case BEVENT_UNREGISTERING:
 		return;
 
-	case UA_EVENT_MWI_NOTIFY:
+	case BEVENT_MWI_NOTIFY:
 		info("----- MWI for %s -----\n", account_aor(acc));
 		info("%s\n", prm);
 		break;
 
-	case UA_EVENT_AUDIO_ERROR:
+	case BEVENT_AUDIO_ERROR:
 		info("menu: audio error (%s)\n", prm);
 		break;
 
-	case UA_EVENT_MODULE:
+	case BEVENT_MODULE:
 		process_module_event(call, prm);
 		break;
 
@@ -992,7 +992,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 		break;
 	}
 
-	incall = ev == UA_EVENT_CALL_CLOSED ? count > 1 : count;
+	incall = ev == BEVENT_CALL_CLOSED ? count > 1 : count;
 	menu_set_incall(incall);
 	menu_update_callstatus(incall);
 }

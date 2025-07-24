@@ -56,11 +56,11 @@ static const struct cmd cmdv[] = {
 };
 
 
-static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
+static void event_handler(enum bevent_id ev, struct bevent *event, void *arg)
 {
 	(void)arg;
 
-	if (ev == UA_EVENT_SHUTDOWN) {
+	if (ev == BEVENT_SHUTDOWN) {
 		struct ua *ua = bevent_get_ua(event);
 		debug("presence: ua=%p got event %d (%s)\n", ua, ev,
 		      uag_event_str(ev));

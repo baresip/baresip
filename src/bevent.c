@@ -436,7 +436,7 @@ int event_add_au_jb_stat(struct odict *od_parent, const struct call *call)
  *
  * @return 0 if success, otherwise errorcode
  */
-int  bevent_register_new(bevent_h *eh, void *arg)
+int  bevent_register(bevent_h *eh, void *arg)
 {
 	struct ehe *ehe;
 
@@ -458,23 +458,12 @@ int  bevent_register_new(bevent_h *eh, void *arg)
 }
 
 
-int  bevent_register_old(old_bevent_h *eh, void *arg)
-{
-	bevent_h *h = (bevent_h *)eh;
-
-	if (!h)
-		return EINVAL;
-
-	return bevent_register_new(h, arg);
-}
-
-
 /**
  * Unregister an Event handler
  *
  * @param eh  Event handler
  */
-void bevent_unregister_new(bevent_h *eh)
+void bevent_unregister(bevent_h *eh)
 {
 	struct le *le;
 
@@ -489,16 +478,6 @@ void bevent_unregister_new(bevent_h *eh)
 	}
 }
 
-
-void bevent_unregister_old(old_bevent_h *eh)
-{
-	bevent_h *h = (bevent_h *)eh;
-
-	if (!h)
-		return;
-
-	bevent_unregister_new(h);
-}
 
 /**
  * Send a BEVENT_MODULE event with a general format for modules

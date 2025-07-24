@@ -59,7 +59,7 @@ static void print_rtcp_summary_line(const struct call *call,
 }
 
 
-static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
+static void event_handler(enum bevent_id ev, struct bevent *event, void *arg)
 {
 	const struct stream *s;
 	struct le *le;
@@ -68,7 +68,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 
 	switch (ev) {
 
-	case UA_EVENT_CALL_CLOSED:
+	case BEVENT_CALL_CLOSED:
 		for (le = call_streaml(call)->head;
 		     le;
 		     le = le->next) {
