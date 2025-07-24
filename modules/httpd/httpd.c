@@ -52,8 +52,9 @@ static int html_print_head(struct re_printf *pf, void *unused)
 	return re_hprintf(pf,
 			  "<html>\n"
 			  "<head>\n"
-			  "<title>Baresip v" BARESIP_VERSION "</title>\n"
-			  "</head>\n");
+			  "<title>Baresip v%s</title>\n"
+			  "</head>\n",
+			  baresip_version());
 }
 
 

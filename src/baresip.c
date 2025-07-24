@@ -334,3 +334,9 @@ struct ui_sub *baresip_uis(void)
 {
 	return &baresip.uis;
 }
+
+
+const char *baresip_version(void)
+{
+	return BARESIP_VERSION;
+}

@@ -1747,6 +1747,7 @@ struct list   *baresip_vidsrcl(void);
 struct list   *baresip_vidispl(void);
 struct list   *baresip_vidfiltl(void);
 struct ui_sub *baresip_uis(void);
+const char *baresip_version(void);
 
 
 /*

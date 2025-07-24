@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
 	(void)re_fprintf(stdout, "baresip v%s"
 			 " Copyright (C) 2010 - 2025"
 			 " Alfred E. Heggestad et al.\n",
-			 BARESIP_VERSION);
+			 baresip_version());
 
 	(void)sys_coredump_set(true);
 

@@ -119,7 +119,7 @@ static void menu_on_about(GtkMenuItem *menuItem, gpointer arg)
 
 	gtk_show_about_dialog(NULL,
 			"program-name", "baresip",
-			"version", BARESIP_VERSION,
+			      "version", baresip_version(),
 			"logo-icon-name", "call-start",
 			"copyright", COPYRIGHT,
 			"comments", COMMENTS,

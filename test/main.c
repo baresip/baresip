@@ -335,7 +335,7 @@ int main(int argc, char *argv[])
 #endif
 
 	re_printf("running baresip selftest version %s with %zu tests\n",
-		  BARESIP_VERSION, ntests);
+		  baresip_version(), ntests);
 
 	err = conf_configure_buf((uint8_t *)modconfig, str_len(modconfig));
 	if (err) {
