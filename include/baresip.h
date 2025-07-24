@@ -281,8 +281,6 @@ void call_start_answtmr(struct call *call, uint32_t ms);
 bool          call_supported(struct call *call, uint16_t tags);
 const char   *call_user_data(const struct call *call);
 int call_set_user_data(struct call *call, const char *user_data);
-void call_set_evstop(struct call *call, bool stop);
-bool call_is_evstop(struct call *call);
 int call_msg_src(const struct call *call, struct sa *sa);
 enum sip_transp call_transp(const struct call *call);
 enum sdp_neg_state call_sdp_neg_state(const struct call *call);
@@ -1696,16 +1694,10 @@ void module_app_unload(void);
  * Generic event
  */
 
-int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
-		      struct call *call, const char *prm);
 int odict_encode_bevent(struct odict *od, struct bevent *event);
 int event_add_au_jb_stat(struct odict *od_parent, const struct call *call);
-int  uag_event_register(ua_event_h *eh, void *arg);
-void uag_event_unregister(ua_event_h *eh);
 int  bevent_register(bevent_h *eh, void *arg);
 void bevent_unregister(bevent_h *eh);
-void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
-	      const char *fmt, ...);
 int bevent_app_emit(enum ua_event ev, void *arg, const char *fmt, ...);
 int bevent_ua_emit(enum ua_event ev, struct ua *ua, const char *fmt, ...);
 int bevent_call_emit(enum ua_event ev, struct call *call,

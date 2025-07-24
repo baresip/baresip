@@ -235,7 +235,6 @@ int test_call_cert_select(void);
 int test_cmd(void);
 int test_cmd_long(void);
 int test_contact(void);
-int test_bevent_encode(void);
 int test_bevent_register(void);
 int test_jbuf(void);
 int test_jbuf_adaptive(void);
