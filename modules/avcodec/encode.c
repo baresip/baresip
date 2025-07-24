@@ -506,13 +506,11 @@ int avcodec_encode(struct videnc_state *st, bool update,
 			(h264_packet_h *)st->pkth, (void *)st->vid);
 		break;
 
-#ifdef AV_CODEC_ID_H265
 	case AV_CODEC_ID_H265:
 		err = h265_packetize(
 			ts, pkt->data, pkt->size, st->encprm.pktsize,
 			(h265_packet_h *)st->pkth, (void *)st->vid);
 		break;
-#endif
 
 	default:
 		err = EPROTO;
@@ -548,13 +546,11 @@ int avcodec_packetize(struct videnc_state *st, const struct vidpacket *packet)
 			(h264_packet_h *)st->pkth, (void *)st->vid);
 		break;
 
-#ifdef AV_CODEC_ID_H265
 	case AV_CODEC_ID_H265:
 		err = h265_packetize(
 			ts, packet->buf, packet->size, st->encprm.pktsize,
 			(h265_packet_h *)st->pkth, (void *)st->vid);
 		break;
-#endif
 
 	default:
 		err = EPROTO;
