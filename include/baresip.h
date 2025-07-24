@@ -858,49 +858,96 @@ void play_set_path(struct player *player, const char *path);
 
 struct ua;
 
-/** Events from User-Agent */
-enum ua_event {
-	UA_EVENT_REGISTERING = 0,
-	UA_EVENT_REGISTER_OK,
-	UA_EVENT_REGISTER_FAIL,
-	UA_EVENT_UNREGISTERING,
-	UA_EVENT_FALLBACK_OK,
-	UA_EVENT_FALLBACK_FAIL,
-	UA_EVENT_MWI_NOTIFY,
-	UA_EVENT_CREATE,
-	UA_EVENT_SHUTDOWN,
-	UA_EVENT_EXIT,
+/** Baresip event identifiers */
+enum bevent_id {
+	BEVENT_REGISTERING = 0,
+	BEVENT_REGISTER_OK,
+	BEVENT_REGISTER_FAIL,
+	BEVENT_UNREGISTERING,
+	BEVENT_FALLBACK_OK,
+	BEVENT_FALLBACK_FAIL,
+	BEVENT_MWI_NOTIFY,
+	BEVENT_CREATE,
+	BEVENT_SHUTDOWN,
+	BEVENT_EXIT,
 
-	UA_EVENT_CALL_INCOMING,
-	UA_EVENT_CALL_OUTGOING,
-	UA_EVENT_CALL_RINGING,
-	UA_EVENT_CALL_PROGRESS,
-	UA_EVENT_CALL_ANSWERED,
-	UA_EVENT_CALL_ESTABLISHED,
-	UA_EVENT_CALL_CLOSED,
-	UA_EVENT_CALL_TRANSFER,
-	UA_EVENT_CALL_REDIRECT,
-	UA_EVENT_CALL_TRANSFER_FAILED,
-	UA_EVENT_CALL_DTMF_START,
-	UA_EVENT_CALL_DTMF_END,
-	UA_EVENT_CALL_RTPESTAB,
-	UA_EVENT_CALL_RTCP,
-	UA_EVENT_CALL_MENC,
-	UA_EVENT_VU_TX,
-	UA_EVENT_VU_RX,
-	UA_EVENT_AUDIO_ERROR,
-	UA_EVENT_CALL_LOCAL_SDP,      /**< param: offer or answer */
-	UA_EVENT_CALL_REMOTE_SDP,     /**< param: offer or answer */
-	UA_EVENT_CALL_HOLD,           /**< Call put on-hold by peer          */
-	UA_EVENT_CALL_RESUME,         /**< Call resumed by peer              */
-	UA_EVENT_REFER,
-	UA_EVENT_MODULE,
-	UA_EVENT_END_OF_FILE,
-	UA_EVENT_CUSTOM,
-	UA_EVENT_SIPSESS_CONN,
+	BEVENT_CALL_INCOMING,
+	BEVENT_CALL_OUTGOING,
+	BEVENT_CALL_RINGING,
+	BEVENT_CALL_PROGRESS,
+	BEVENT_CALL_ANSWERED,
+	BEVENT_CALL_ESTABLISHED,
+	BEVENT_CALL_CLOSED,
+	BEVENT_CALL_TRANSFER,
+	BEVENT_CALL_REDIRECT,
+	BEVENT_CALL_TRANSFER_FAILED,
+	BEVENT_CALL_DTMF_START,
+	BEVENT_CALL_DTMF_END,
+	BEVENT_CALL_RTPESTAB,
+	BEVENT_CALL_RTCP,
+	BEVENT_CALL_MENC,
+	BEVENT_VU_TX,
+	BEVENT_VU_RX,
+	BEVENT_AUDIO_ERROR,
+	BEVENT_CALL_LOCAL_SDP,      /**< param: offer or answer */
+	BEVENT_CALL_REMOTE_SDP,     /**< param: offer or answer */
+	BEVENT_CALL_HOLD,           /**< Call put on-hold by peer          */
+	BEVENT_CALL_RESUME,         /**< Call resumed by peer              */
+	BEVENT_REFER,
+	BEVENT_MODULE,
+	BEVENT_END_OF_FILE,
+	BEVENT_CUSTOM,
+	BEVENT_SIPSESS_CONN,
 
-	UA_EVENT_MAX,
+	BEVENT_MAX,
 };
+
+/** Backward compatibility to UA events */
+enum ua_event {
+	UA_EVENT_OLD1 = 0,
+};
+
+
+#define UA_EVENT_REGISTERING     BEVENT_REGISTERING
+#define UA_EVENT_REGISTER_OK     BEVENT_REGISTER_OK
+#define UA_EVENT_REGISTER_FAIL   BEVENT_REGISTER_FAIL
+#define UA_EVENT_UNREGISTERING   BEVENT_UNREGISTERING
+#define UA_EVENT_FALLBACK_OK     BEVENT_FALLBACK_OK
+#define UA_EVENT_FALLBACK_FAIL   BEVENT_FALLBACK_FAIL
+#define UA_EVENT_MWI_NOTIFY      BEVENT_MWI_NOTIFY
+#define UA_EVENT_CREATE          BEVENT_CREATE
+#define UA_EVENT_SHUTDOWN        BEVENT_SHUTDOWN
+#define UA_EVENT_EXIT            BEVENT_EXIT
+
+#define UA_EVENT_CALL_INCOMING   BEVENT_CALL_INCOMING
+#define UA_EVENT_CALL_OUTGOING   BEVENT_CALL_OUTGOING
+#define UA_EVENT_CALL_RINGING    BEVENT_CALL_RINGING
+#define UA_EVENT_CALL_PROGRESS   BEVENT_CALL_PROGRESS
+#define UA_EVENT_CALL_ANSWERED   BEVENT_CALL_ANSWERED
+#define UA_EVENT_CALL_ESTABLISHED BEVENT_CALL_ESTABLISHED
+#define UA_EVENT_CALL_CLOSED     BEVENT_CALL_CLOSED
+#define UA_EVENT_CALL_TRANSFER   BEVENT_CALL_TRANSFER
+#define UA_EVENT_CALL_REDIRECT   BEVENT_CALL_REDIRECT
+#define UA_EVENT_CALL_TRANSFER_FAILED BEVENT_CALL_TRANSFER_FAILED
+#define UA_EVENT_CALL_DTMF_START BEVENT_CALL_DTMF_START
+#define UA_EVENT_CALL_DTMF_END   BEVENT_CALL_DTMF_END
+#define UA_EVENT_CALL_RTPESTAB   BEVENT_CALL_RTPESTAB
+#define UA_EVENT_CALL_RTCP       BEVENT_CALL_RTCP
+#define UA_EVENT_CALL_MENC       BEVENT_CALL_MENC
+#define UA_EVENT_VU_TX           BEVENT_VU_TX
+#define UA_EVENT_VU_RX           BEVENT_VU_RX
+#define UA_EVENT_AUDIO_ERROR     BEVENT_AUDIO_ERROR
+#define UA_EVENT_CALL_LOCAL_SDP  BEVENT_CALL_LOCAL_SDP
+#define UA_EVENT_CALL_REMOTE_SDP BEVENT_CALL_REMOTE_SDP
+#define UA_EVENT_CALL_HOLD       BEVENT_CALL_HOLD
+#define UA_EVENT_CALL_RESUME     BEVENT_CALL_RESUME
+#define UA_EVENT_REFER           BEVENT_REFER
+#define UA_EVENT_MODULE          BEVENT_MODULE
+#define UA_EVENT_END_OF_FILE     BEVENT_END_OF_FILE
+#define UA_EVENT_CUSTOM          BEVENT_CUSTOM
+#define UA_EVENT_SIPSESS_CONN    BEVENT_SIPSESS_CONN
+
+#define UA_EVENT_MAX             BEVENT_MAX
 
 
 struct bevent;
@@ -914,10 +961,9 @@ enum answer_method {
 	ANSM_ALERTINFO,
 };
 
-/** Defines the User-Agent event handler */
-typedef void (ua_event_h)(struct ua *ua, enum ua_event ev,
-			  struct call *call, const char *prm, void *arg);
-typedef void (bevent_h)(enum ua_event ev, struct bevent *event, void *arg);
+/** Defines the Baresip event handler */
+typedef void (bevent_h)(enum bevent_id ev, struct bevent *event, void *arg);
+typedef void (old_bevent_h)(enum ua_event ev, struct bevent *event, void *arg);
 typedef void (options_resp_h)(int err, const struct sip_msg *msg, void *arg);
 typedef void (refer_resp_h)(int err, const struct sip_msg *msg, void *arg);
 
@@ -1696,27 +1742,49 @@ void module_app_unload(void);
 
 int odict_encode_bevent(struct odict *od, struct bevent *event);
 int event_add_au_jb_stat(struct odict *od_parent, const struct call *call);
-int  bevent_register(bevent_h *eh, void *arg);
-void bevent_unregister(bevent_h *eh);
-int bevent_app_emit(enum ua_event ev, void *arg, const char *fmt, ...);
-int bevent_ua_emit(enum ua_event ev, struct ua *ua, const char *fmt, ...);
-int bevent_call_emit(enum ua_event ev, struct call *call,
+int  bevent_register_new(bevent_h *eh, void *arg);
+int  bevent_register_old(old_bevent_h *eh, void *arg)
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((deprecated("Use enum bevent_id instead of enum ua_event")));
+#else
+;
+#endif
+void bevent_unregister_new(bevent_h *eh);
+void bevent_unregister_old(old_bevent_h *eh);
+int bevent_app_emit(enum bevent_id ev, void *arg, const char *fmt, ...);
+int bevent_ua_emit(enum bevent_id ev, struct ua *ua, const char *fmt, ...);
+int bevent_call_emit(enum bevent_id ev, struct call *call,
 		     const char *fmt, ...);
-int bevent_sip_msg_emit(enum ua_event ev, const struct sip_msg *msg,
+int bevent_sip_msg_emit(enum bevent_id ev, const struct sip_msg *msg,
 			const char *fmt, ...);
 void module_event(const char *module, const char *event, struct ua *ua,
 		struct call *call, const char *fmt, ...);
-const char  *uag_event_str(enum ua_event ev);
+const char  *uag_event_str(enum bevent_id ev);
 struct call    *bevent_get_call(const struct bevent *event);
 struct ua      *bevent_get_ua(const struct bevent *event);
 const struct sip_msg *bevent_get_msg(const struct bevent *event);
 void *bevent_get_apparg(const struct bevent *event);
-enum ua_event bevent_get_type(const struct bevent *event);
+enum bevent_id bevent_get_type(const struct bevent *event);
 const char *bevent_get_text(const struct bevent *event);
 void bevent_set_error(struct bevent *event, int err);
 void bevent_stop(struct bevent *event);
 
+#if __STDC_VERSION__ >= 201112L
+#define bevent_register(handler, arg) \
+	_Generic((handler), \
+		 bevent_h *: bevent_register_new, \
+		 old_bevent_h *: bevent_register_old \
+		 )(handler, arg)
 
+#define bevent_unregister(handler) \
+	_Generic((handler), \
+		 bevent_h *: bevent_unregister_new, \
+		 old_bevent_h *: bevent_unregister_old \
+		 )(handler)
+#else
+#error "C11 or later is required for _Generic support."
+// Pre-C11: must cast manually in old code
+#endif
 /*
  * Baresip instance
  */
