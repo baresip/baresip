@@ -363,7 +363,11 @@ static int ctrl_alloc(struct ctrl_st **stp)
 	if (!st)
 		return ENOMEM;
 
-	mtx_init(&st->wait.mtx, mtx_plain);
+	err = mtx_init(&st->wait.mtx, mtx_plain) != thrd_success;
+	if (err) {
+		err = ENOMEM;
+		goto out;
+	}
 	cnd_init(&st->wait.cnd);
 
 	st->loop = g_main_loop_new(NULL, false);
