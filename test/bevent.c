@@ -51,7 +51,7 @@ static void event_handler(enum bevent_id ev, struct bevent *event, void *arg)
 		bevent_set_error(event, EINVAL);
 
 
-	if (f->expected_event != bevent_get_type(event))
+	if (f->expected_event != bevent_get_id(event))
 		bevent_set_error(event, EINVAL);
 	else
 		++f->cnt;

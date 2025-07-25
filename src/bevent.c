@@ -179,7 +179,7 @@ void *bevent_get_apparg(const struct bevent *event)
  *
  * @return the event type
  */
-enum bevent_id bevent_get_type(const struct bevent *event)
+enum bevent_id bevent_get_id(const struct bevent *event)
 {
 	return event ? event->ev : BEVENT_MAX;
 }
@@ -382,7 +382,7 @@ int odict_encode_bevent(struct odict *od, struct bevent *event)
 		mem_deref(buf);
 	}
 
-	enum bevent_id ev = bevent_get_type(event);
+	enum bevent_id ev = bevent_get_id(event);
 	err |= odict_entry_add(od, "type", ODICT_STRING, bevent_id_str(ev));
 	if (ua) {
 		err |= odict_entry_add(od, "accountaor",
