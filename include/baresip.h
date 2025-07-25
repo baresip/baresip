@@ -1704,7 +1704,7 @@ int bevent_sip_msg_emit(enum bevent_id ev, const struct sip_msg *msg,
 			const char *fmt, ...);
 void module_event(const char *module, const char *event, struct ua *ua,
 		struct call *call, const char *fmt, ...);
-const char  *uag_event_str(enum bevent_id ev);
+const char  *bevent_id_str(enum bevent_id ev);
 struct call    *bevent_get_call(const struct bevent *event);
 struct ua      *bevent_get_ua(const struct bevent *event);
 const struct sip_msg *bevent_get_msg(const struct bevent *event);

@@ -383,7 +383,7 @@ int odict_encode_bevent(struct odict *od, struct bevent *event)
 	}
 
 	enum bevent_id ev = bevent_get_type(event);
-	err |= odict_entry_add(od, "type", ODICT_STRING, uag_event_str(ev));
+	err |= odict_entry_add(od, "type", ODICT_STRING, bevent_id_str(ev));
 	if (ua) {
 		err |= odict_entry_add(od, "accountaor",
 				       ODICT_STRING,
@@ -720,7 +720,7 @@ int bevent_sip_msg_emit(enum bevent_id ev, const struct sip_msg *msg,
  *
  * @return Name of the event
  */
-const char *uag_event_str(enum bevent_id ev)
+const char *bevent_id_str(enum bevent_id ev)
 {
 	switch (ev) {
 

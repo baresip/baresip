@@ -299,7 +299,7 @@ static int cancel_rule_debug(struct re_printf *pf,
 	if (!cr)
 		return 0;
 
-	err  = re_hprintf(pf, "  --- %s ---\n", uag_event_str(cr->ev));
+	err  = re_hprintf(pf, "  --- %s ---\n", bevent_id_str(cr->ev));
 	err |= re_hprintf(pf, "    prm:  %s\n", cr->prm);
 	err |= re_hprintf(pf, "    ua:   %s\n",
 			  account_aor(ua_account(cr->ua)));
@@ -503,28 +503,28 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 	if (str_isset(rule->prm) &&
 	    !str_str(prm, rule->prm)) {
 		info("test: event %s prm=[%s] (expected [%s])\n",
-		     uag_event_str(ev), prm, rule->prm);
+		     bevent_id_str(ev), prm, rule->prm);
 		return false;
 	}
 
 	if (rule->ua &&
 	    ag->ua != rule->ua) {
 		info("test: event %s ua=[%s] (expected [%s]\n",
-		     uag_event_str(ev),
+		     bevent_id_str(ev),
 		     account_aor(ua_account(ag->ua)),
 		     account_aor(ua_account(rule->ua)));
 		return false;
 	}
 
 	if (rule->checkack && !ag->gotack) {
-		info("test: event %s waiting for ACK\n", uag_event_str(ev));
+		info("test: event %s waiting for ACK\n", bevent_id_str(ev));
 		return false;
 	}
 
 	if (UINTSET(rule->n_incoming) &&
 	    ag->n_incoming != rule->n_incoming) {
 		info("test: event %s n_incoming=%u (expected %u)\n",
-		     uag_event_str(ev),
+		     bevent_id_str(ev),
 		     ag->n_incoming, rule->n_incoming);
 		return false;
 	}
@@ -532,7 +532,7 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 	if (UINTSET(rule->n_progress) &&
 	    ag->n_progress < rule->n_progress) {
 		info("test: event %s n_progress=%u (expected %u)\n",
-		     uag_event_str(ev),
+		     bevent_id_str(ev),
 		     ag->n_progress, rule->n_progress);
 		return false;
 	}
@@ -540,7 +540,7 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 	if (UINTSET(rule->n_established) &&
 	    ag->n_established != rule->n_established) {
 		info("test: event %s n_established=%u (expected %u)\n",
-		     uag_event_str(ev),
+		     bevent_id_str(ev),
 		     ag->n_established, rule->n_established);
 		return false;
 	}
@@ -548,7 +548,7 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 	if (UINTSET(rule->n_audio_estab) &&
 	    ag->n_audio_estab != rule->n_audio_estab) {
 		info("test: event %s n_audio_estab=%u (expected %u)\n",
-		     uag_event_str(ev),
+		     bevent_id_str(ev),
 		     ag->n_audio_estab, rule->n_audio_estab);
 		return false;
 	}
@@ -556,7 +556,7 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 	if (UINTSET(rule->n_video_estab) &&
 	    ag->n_video_estab != rule->n_video_estab) {
 		info("test: event %s n_video_estab=%u (expected %u)\n",
-		     uag_event_str(ev),
+		     bevent_id_str(ev),
 		     ag->n_video_estab, rule->n_video_estab);
 		return false;
 	}
@@ -564,7 +564,7 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 	if (UINTSET(rule->n_offer_cnt) &&
 	    ag->n_offer_cnt != rule->n_offer_cnt) {
 		info("test: event %s n_offer_cnt=%u (expected %u)\n",
-		     uag_event_str(ev),
+		     bevent_id_str(ev),
 		     ag->n_offer_cnt, rule->n_offer_cnt);
 		return false;
 	}
@@ -572,7 +572,7 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 	if (UINTSET(rule->n_answer_cnt) &&
 	    ag->n_answer_cnt != rule->n_answer_cnt) {
 		info("test: event %s n_answer_cnt=%u (expected %u)\n",
-		     uag_event_str(ev),
+		     bevent_id_str(ev),
 		     ag->n_answer_cnt, rule->n_answer_cnt);
 		return false;
 	}
@@ -640,7 +640,7 @@ static void event_handler(enum bevent_id ev, struct bevent *event, void *arg)
 
 #if 1
 	info("test: [ %s ] event: %s (%s)\n",
-	     account_aor(ua_account(ua)), uag_event_str(ev), prm);
+	     account_aor(ua_account(ua)), bevent_id_str(ev), prm);
 #endif
 
 	ASSERT_TRUE(f != NULL);

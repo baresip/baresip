@@ -708,7 +708,7 @@ static void event_handler(enum bevent_id ev, struct bevent *event, void *arg)
 
 #if 0
 	debug("menu: [ ua=%s call=%s ] event: %s (%s)\n",
-	      account_aor(acc), call_id(call), uag_event_str(ev), prm);
+	      account_aor(acc), call_id(call), bevent_id_str(ev), prm);
 #endif
 
 

@@ -72,7 +72,7 @@ static void event_handler(enum bevent_id ev, struct bevent *event, void *arg)
 	const struct odict_entry *entry = odict_lookup(od, "type");
 	ASSERT_TRUE(entry != NULL);
 	ASSERT_EQ(ODICT_STRING, odict_entry_type(entry));
-	ASSERT_STREQ(uag_event_str(ev), odict_entry_str(entry));
+	ASSERT_STREQ(bevent_id_str(ev), odict_entry_str(entry));
 
 out:
 	od = mem_deref(od);

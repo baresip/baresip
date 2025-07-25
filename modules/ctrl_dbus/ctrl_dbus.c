@@ -239,7 +239,7 @@ static void event_handler(enum bevent_id ev, struct bevent *event, void *arg)
 	struct odict *od = NULL;
 	int err = 0;
 	const char *class;
-	const char *etype = uag_event_str(ev);
+	const char *etype = bevent_id_str(ev);
 
 	if (!st->interface)
 		return;
