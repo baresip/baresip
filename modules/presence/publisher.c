@@ -233,7 +233,7 @@ static int publisher_alloc(struct ua *ua)
 }
 
 
-static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
+static void event_handler(enum bevent_id ev, struct bevent *event, void *arg)
 {
 	struct ua *ua = bevent_get_ua(event);
 	(void)arg;
@@ -241,7 +241,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 	if (account_pubint(ua_account(ua)) == 0)
 		return;
 
-	if (ev == UA_EVENT_REGISTER_OK) {
+	if (ev == BEVENT_REGISTER_OK) {
 		if (ua_presence_status(ua) == PRESENCE_UNKNOWN) {
 			ua_presence_status_set(ua, PRESENCE_OPEN);
 			publisher_update_status(ua);

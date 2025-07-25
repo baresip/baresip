@@ -107,10 +107,10 @@ static void register_handler(int err, const struct sip_msg *msg, void *arg)
 	const struct account *acc = ua_account(reg->ua);
 	const struct sip_hdr *hdr;
 	uint32_t prio = account_prio(acc);
-	enum ua_event evok =  reg->regint ?
-		UA_EVENT_REGISTER_OK : UA_EVENT_FALLBACK_OK;
-	enum ua_event evfail = reg->regint ?
-		UA_EVENT_REGISTER_FAIL : UA_EVENT_FALLBACK_FAIL;
+	enum bevent_id evok =  reg->regint ?
+		BEVENT_REGISTER_OK : BEVENT_FALLBACK_OK;
+	enum bevent_id evfail = reg->regint ?
+		BEVENT_REGISTER_FAIL : BEVENT_FALLBACK_FAIL;
 
 	if (err) {
 		if (reg->regint)

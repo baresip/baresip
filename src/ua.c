@@ -46,11 +46,11 @@ static void ua_destructor(void *arg)
 	list_unlink(&ua->le);
 
 	if (!list_isempty(&ua->regl))
-		bevent_ua_emit(UA_EVENT_UNREGISTERING, ua, NULL);
+		bevent_ua_emit(BEVENT_UNREGISTERING, ua, NULL);
 
 	LIST_FOREACH(&ua->calls, le) {
 		struct call *call = le->data;
-		bevent_call_emit(UA_EVENT_CALL_CLOSED, call,
+		bevent_call_emit(BEVENT_CALL_CLOSED, call,
 				 "User-Agent deleted");
 	}
 
@@ -220,7 +220,7 @@ static int start_register(struct ua *ua, bool fallback)
 		create_register_clients(ua);
 
 	if (!fallback && !list_isempty(&ua->regl))
-		bevent_ua_emit(UA_EVENT_REGISTERING, ua, NULL);
+		bevent_ua_emit(BEVENT_REGISTERING, ua, NULL);
 
 	for (le = ua->regl.head, i=0; le; le = le->next, i++) {
 		struct reg *reg = le->data;
@@ -236,8 +236,8 @@ static int start_register(struct ua *ua, bool fallback)
 					fallback ? " fallback" : "", err);
 
 			bevent_ua_emit(fallback ?
-				       UA_EVENT_FALLBACK_FAIL :
-				       UA_EVENT_REGISTER_FAIL,
+				       BEVENT_FALLBACK_FAIL :
+				       BEVENT_REGISTER_FAIL,
 				       ua, "%m", err);
 			goto out;
 		}
@@ -303,7 +303,7 @@ void ua_stop_register(struct ua *ua)
 		return;
 
 	if (!list_isempty(&ua->regl))
-		bevent_ua_emit(UA_EVENT_UNREGISTERING, ua, NULL);
+		bevent_ua_emit(BEVENT_UNREGISTERING, ua, NULL);
 
 	for (le = ua->regl.head; le; le = le->next) {
 		struct reg *reg = le->data;
@@ -326,7 +326,7 @@ void ua_unregister(struct ua *ua)
 		return;
 
 	if (!list_isempty(&ua->regl))
-		bevent_ua_emit(UA_EVENT_UNREGISTERING, ua, NULL);
+		bevent_ua_emit(BEVENT_UNREGISTERING, ua, NULL);
 
 	for (le = ua->regl.head; le; le = le->next) {
 		struct reg *reg = le->data;
@@ -426,7 +426,7 @@ unsigned ua_destroy(struct ua *ua)
 	list_unlink(&ua->le);
 
 	/* send the shutdown event */
-	bevent_ua_emit(UA_EVENT_SHUTDOWN, ua, NULL);
+	bevent_ua_emit(BEVENT_SHUTDOWN, ua, NULL);
 
 	/* terminate all calls now */
 	list_flush(&ua->calls);
@@ -541,13 +541,13 @@ static void call_event_handler(struct call *call, enum call_event ev,
 
 			info("ua: blocked access: \"%s\"\n", peeruri);
 
-			bevent_call_emit(UA_EVENT_CALL_CLOSED, call,
+			bevent_call_emit(BEVENT_CALL_CLOSED, call,
 					 "%s", str);
 			mem_deref(call);
 			break;
 		}
 
-		bevent_call_emit(UA_EVENT_CALL_INCOMING, call, "%s", peeruri);
+		bevent_call_emit(BEVENT_CALL_INCOMING, call, "%s", peeruri);
 		switch (ua->acc->answermode) {
 
 		case ANSWERMODE_EARLY:
@@ -571,45 +571,45 @@ static void call_event_handler(struct call *call, enum call_event ev,
 		break;
 
 	case CALL_EVENT_RINGING:
-		bevent_call_emit(UA_EVENT_CALL_RINGING, call, "%s", peeruri);
+		bevent_call_emit(BEVENT_CALL_RINGING, call, "%s", peeruri);
 		break;
 
 	case CALL_EVENT_OUTGOING:
-		bevent_call_emit(UA_EVENT_CALL_OUTGOING, call, "%s", peeruri);
+		bevent_call_emit(BEVENT_CALL_OUTGOING, call, "%s", peeruri);
 		break;
 
 	case CALL_EVENT_PROGRESS:
 		ua_printf(ua, "Call in-progress: %s\n", peeruri);
-		bevent_call_emit(UA_EVENT_CALL_PROGRESS, call, "%s", peeruri);
+		bevent_call_emit(BEVENT_CALL_PROGRESS, call, "%s", peeruri);
 		break;
 
 	case CALL_EVENT_ANSWERED:
 		ua_printf(ua, "Call answered: %s\n", peeruri);
-		bevent_call_emit(UA_EVENT_CALL_ANSWERED, call, "%s", peeruri);
+		bevent_call_emit(BEVENT_CALL_ANSWERED, call, "%s", peeruri);
 		break;
 
 	case CALL_EVENT_ESTABLISHED:
 		ua_printf(ua, "Call established: %s\n", peeruri);
-		bevent_call_emit(UA_EVENT_CALL_ESTABLISHED, call,
+		bevent_call_emit(BEVENT_CALL_ESTABLISHED, call,
 				"%s", peeruri);
 		break;
 
 	case CALL_EVENT_CLOSED:
-		bevent_call_emit(UA_EVENT_CALL_CLOSED, call, "%s", str);
+		bevent_call_emit(BEVENT_CALL_CLOSED, call, "%s", str);
 		mem_deref(call);
 		break;
 
 	case CALL_EVENT_TRANSFER:
-		bevent_call_emit(UA_EVENT_CALL_TRANSFER, call, "%s", str);
+		bevent_call_emit(BEVENT_CALL_TRANSFER, call, "%s", str);
 		break;
 
 	case CALL_EVENT_TRANSFER_FAILED:
-		bevent_call_emit(UA_EVENT_CALL_TRANSFER_FAILED, call,
+		bevent_call_emit(BEVENT_CALL_TRANSFER_FAILED, call,
 				"%s", str);
 		break;
 
 	case CALL_EVENT_MENC:
-		bevent_call_emit(UA_EVENT_CALL_MENC, call, "%s", str);
+		bevent_call_emit(BEVENT_CALL_MENC, call, "%s", str);
 		break;
 	}
 }
@@ -627,11 +627,11 @@ static void call_dtmf_handler(struct call *call, char key, void *arg)
 		key_str[0] = key;
 		key_str[1] = '\0';
 
-		bevent_call_emit(UA_EVENT_CALL_DTMF_START, call,
+		bevent_call_emit(BEVENT_CALL_DTMF_START, call,
 				 "%s", key_str);
 	}
 	else {
-		bevent_call_emit(UA_EVENT_CALL_DTMF_END, call, NULL);
+		bevent_call_emit(BEVENT_CALL_DTMF_END, call, NULL);
 	}
 }
 
@@ -780,7 +780,7 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 	if (config->call.accept)
 		(void)ua_accept(ua, msg);
 	else
-		bevent_sip_msg_emit(UA_EVENT_SIPSESS_CONN, msg,
+		bevent_sip_msg_emit(BEVENT_SIPSESS_CONN, msg,
 				    "incoming call");
 }
 
@@ -1146,7 +1146,7 @@ bool ua_handle_refer(struct ua *ua, const struct sip_msg *msg)
 	}
 
 	debug("ua: REFER to %r\n", &hdr->val);
-	bevent_ua_emit(UA_EVENT_REFER, ua, "%r", &hdr->val);
+	bevent_ua_emit(BEVENT_REFER, ua, "%r", &hdr->val);
 
 out:
 
@@ -1260,7 +1260,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 		goto out;
 
 	list_append(uag_list(), &ua->le, ua);
-	bevent_ua_emit(UA_EVENT_CREATE, ua, "%s", account_aor(ua->acc));
+	bevent_ua_emit(BEVENT_CREATE, ua, "%s", account_aor(ua->acc));
 
  out:
 	mem_deref(host);
@@ -1480,7 +1480,7 @@ void ua_hangupf(struct ua *ua, struct call *call,
 	call_hangupf(call, scode, reason, fmt ? "%v" : NULL, fmt, &ap);
 	va_end(ap);
 
-	bevent_call_emit(UA_EVENT_CALL_CLOSED, call,
+	bevent_call_emit(BEVENT_CALL_CLOSED, call,
 			 reason ? reason : "Rejected by user");
 
 	mem_deref(call);

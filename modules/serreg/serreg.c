@@ -311,29 +311,29 @@ static uint32_t min_regint(void)
 }
 
 
-static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
+static void event_handler(enum bevent_id ev, struct bevent *event, void *arg)
 {
 	struct ua *ua = bevent_get_ua(event);
 	(void)arg;
 
 	switch (ev) {
 
-	case UA_EVENT_FALLBACK_FAIL:
+	case BEVENT_FALLBACK_FAIL:
 		debug("serreg: fallback fail %s.\n",
 		      account_aor(ua_account(ua)));
 		break;
 
-	case UA_EVENT_FALLBACK_OK:
+	case BEVENT_FALLBACK_OK:
 		fallback_ok(ua);
 		break;
 
-	case UA_EVENT_REGISTER_OK:
+	case BEVENT_REGISTER_OK:
 		sreg.prio = account_prio(ua_account(ua));
 		check_registrations();
 		sreg.sprio = sreg.prio;
 		break;
 
-	case UA_EVENT_REGISTER_FAIL:
+	case BEVENT_REGISTER_FAIL:
 		next_account(ua);
 		if (account_fbregint(ua_account(ua)))
 			(void)ua_fallback(ua);
