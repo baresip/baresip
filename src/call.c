@@ -1344,11 +1344,17 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 				"Allow: %H\r\n", ua_print_allowed, call->ua);
 	}
 
+	if (err)
+		goto out;
+
 	call->answered = true;
 	call->ans_queued = false;
 
-	mem_deref(desc);
+	if (call->got_offer && stream_is_ready(video_strm(call->video)))
+		(void)video_update(call->video, call->peer_uri);
 
+out:
+	mem_deref(desc);
 	return err;
 }
 
