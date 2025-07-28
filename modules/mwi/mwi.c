@@ -141,7 +141,7 @@ static struct mwi *mwi_find(const struct ua *ua)
 }
 
 
-static void event_handler(enum bevent_id ev, struct bevent *event, void *arg)
+static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 {
 	struct ua *ua = bevent_get_ua(event);
 	const struct account *acc = ua_account(ua);

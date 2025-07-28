@@ -41,7 +41,7 @@ struct vumeter_dec {
 static bool vumeter_stderr;
 
 
-static void send_event(const struct audio *au, enum bevent_id ev, double value)
+static void send_event(const struct audio *au, enum bevent_ev ev, double value)
 {
 	audio_level_put(au, ev == BEVENT_VU_TX, value);
 }

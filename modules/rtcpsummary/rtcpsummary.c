@@ -59,7 +59,7 @@ static void print_rtcp_summary_line(const struct call *call,
 }
 
 
-static void event_handler(enum bevent_id ev, struct bevent *event, void *arg)
+static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 {
 	const struct stream *s;
 	struct le *le;

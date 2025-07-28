@@ -390,7 +390,7 @@ static void update_ua_presence(struct gtk_mod *mod)
 }
 
 
-static const char *ua_event_reg_str(enum bevent_id ev)
+static const char *ua_event_reg_str(enum bevent_ev ev)
 {
 	switch (ev) {
 
@@ -404,7 +404,7 @@ static const char *ua_event_reg_str(enum bevent_id ev)
 
 
 static void accounts_menu_set_status(struct gtk_mod *mod,
-					struct ua *ua, enum bevent_id ev)
+					struct ua *ua, enum bevent_ev ev)
 {
 	GtkMenuItem *item = accounts_menu_get_item(mod, ua);
 	char buf[256];
@@ -614,7 +614,7 @@ void gtk_mod_call_window_closed(struct gtk_mod *mod, struct call_window *win)
 }
 
 
-static void event_handler(enum bevent_id ev, struct bevent *event, void *arg)
+static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 {
 	struct gtk_mod *mod = arg;
 	struct call_window *win;

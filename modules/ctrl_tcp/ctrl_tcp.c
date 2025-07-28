@@ -252,7 +252,7 @@ static void tcp_conn_handler(const struct sa *peer, void *arg)
 /*
  * Relay UA events
  */
-static void event_handler(enum bevent_id ev, struct bevent *event, void *arg)
+static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 {
 	struct ctrl_st *st = arg;
 	struct mbuf *buf = mbuf_alloc(1024);

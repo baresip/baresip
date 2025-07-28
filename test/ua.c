@@ -55,7 +55,7 @@ static void test_abort(struct test *t, int err)
 }
 
 
-static void event_handler(enum bevent_id ev, struct bevent *event, void *arg)
+static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 {
 	struct test *t = arg;
 	size_t i;

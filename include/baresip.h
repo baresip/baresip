@@ -858,8 +858,8 @@ void play_set_path(struct player *player, const char *path);
 
 struct ua;
 
-/** Baresip event identifiers */
-enum bevent_id {
+/** Baresip event value */
+enum bevent_ev {
 	BEVENT_REGISTERING = 0,
 	BEVENT_REGISTER_OK,
 	BEVENT_REGISTER_FAIL,
@@ -915,7 +915,7 @@ enum answer_method {
 };
 
 /** Defines the Baresip event handler */
-typedef void (bevent_h)(enum bevent_id ev, struct bevent *event, void *arg);
+typedef void (bevent_h)(enum bevent_ev ev, struct bevent *event, void *arg);
 typedef void (options_resp_h)(int err, const struct sip_msg *msg, void *arg);
 typedef void (refer_resp_h)(int err, const struct sip_msg *msg, void *arg);
 
@@ -1696,20 +1696,20 @@ int odict_encode_bevent(struct odict *od, struct bevent *event);
 int event_add_au_jb_stat(struct odict *od_parent, const struct call *call);
 int  bevent_register(bevent_h *eh, void *arg);
 void bevent_unregister(bevent_h *eh);
-int bevent_app_emit(enum bevent_id ev, void *arg, const char *fmt, ...);
-int bevent_ua_emit(enum bevent_id ev, struct ua *ua, const char *fmt, ...);
-int bevent_call_emit(enum bevent_id ev, struct call *call,
+int bevent_app_emit(enum bevent_ev ev, void *arg, const char *fmt, ...);
+int bevent_ua_emit(enum bevent_ev ev, struct ua *ua, const char *fmt, ...);
+int bevent_call_emit(enum bevent_ev ev, struct call *call,
 		     const char *fmt, ...);
-int bevent_sip_msg_emit(enum bevent_id ev, const struct sip_msg *msg,
+int bevent_sip_msg_emit(enum bevent_ev ev, const struct sip_msg *msg,
 			const char *fmt, ...);
 void module_event(const char *module, const char *event, struct ua *ua,
 		struct call *call, const char *fmt, ...);
-const char  *bevent_id_str(enum bevent_id ev);
+const char  *bevent_str(enum bevent_ev ev);
 struct call    *bevent_get_call(const struct bevent *event);
 struct ua      *bevent_get_ua(const struct bevent *event);
 const struct sip_msg *bevent_get_msg(const struct bevent *event);
 void *bevent_get_apparg(const struct bevent *event);
-enum bevent_id bevent_get_id(const struct bevent *event);
+enum bevent_ev bevent_get_value(const struct bevent *event);
 const char *bevent_get_text(const struct bevent *event);
 void bevent_set_error(struct bevent *event, int err);
 void bevent_stop(struct bevent *event);

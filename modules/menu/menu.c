@@ -689,7 +689,7 @@ static void apply_contact_mediadir(struct call *call)
 }
 
 
-static void event_handler(enum bevent_id ev, struct bevent *event, void *arg)
+static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 {
 	struct call *call2 = NULL;
 	int32_t adelay = -1;
@@ -708,7 +708,7 @@ static void event_handler(enum bevent_id ev, struct bevent *event, void *arg)
 
 #if 0
 	debug("menu: [ ua=%s call=%s ] event: %s (%s)\n",
-	      account_aor(acc), call_id(call), bevent_id_str(ev), prm);
+	      account_aor(acc), call_id(call), bevent_str(ev), prm);
 #endif
 
 

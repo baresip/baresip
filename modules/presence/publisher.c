@@ -233,7 +233,7 @@ static int publisher_alloc(struct ua *ua)
 }
 
 
-static void event_handler(enum bevent_id ev, struct bevent *event, void *arg)
+static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 {
 	struct ua *ua = bevent_get_ua(event);
 	(void)arg;

@@ -14,7 +14,7 @@ struct fixture {
 	struct call *call;
 	int cnt;
 
-	enum bevent_id expected_event;
+	enum bevent_ev expected_event;
 };
 
 
@@ -25,7 +25,7 @@ static struct dummy {
 static struct sip_msg *dummy_msg;
 
 
-static void event_handler(enum bevent_id ev, struct bevent *event, void *arg)
+static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 {
 	struct fixture *f = arg;
 	void *apparg = bevent_get_apparg(event);
@@ -51,7 +51,7 @@ static void event_handler(enum bevent_id ev, struct bevent *event, void *arg)
 		bevent_set_error(event, EINVAL);
 
 
-	if (f->expected_event != bevent_get_id(event))
+	if (f->expected_event != bevent_get_value(event))
 		bevent_set_error(event, EINVAL);
 	else
 		++f->cnt;
@@ -72,7 +72,7 @@ static void event_handler(enum bevent_id ev, struct bevent *event, void *arg)
 	const struct odict_entry *entry = odict_lookup(od, "type");
 	ASSERT_TRUE(entry != NULL);
 	ASSERT_EQ(ODICT_STRING, odict_entry_type(entry));
-	ASSERT_STREQ(bevent_id_str(ev), odict_entry_str(entry));
+	ASSERT_STREQ(bevent_str(ev), odict_entry_str(entry));
 
 out:
 	od = mem_deref(od);

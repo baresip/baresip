@@ -25,7 +25,7 @@ enum bevent_class {
 
 
 struct bevent {
-	enum bevent_id ev;
+	enum bevent_ev ev;
 	const char *txt;
 	int err;
 	bool stop;
@@ -173,13 +173,13 @@ void *bevent_get_apparg(const struct bevent *event)
 
 
 /**
- * Returns the event type
+ * Returns the Baresip event value
  *
  * @param event Baresip event
  *
- * @return the event type
+ * @return the event value
  */
-enum bevent_id bevent_get_id(const struct bevent *event)
+enum bevent_ev bevent_get_value(const struct bevent *event)
 {
 	return event ? event->ev : BEVENT_MAX;
 }
@@ -352,6 +352,9 @@ static int odict_encode_call(struct odict *od, struct call *call)
 
 int odict_encode_bevent(struct odict *od, struct bevent *event)
 {
+	if (!event)
+		return EINVAL;
+
 	struct ua *ua     = bevent_get_ua(event);
 	struct call *call = bevent_get_call(event);
 	const char *prm = bevent_get_text(event);
@@ -382,8 +385,8 @@ int odict_encode_bevent(struct odict *od, struct bevent *event)
 		mem_deref(buf);
 	}
 
-	enum bevent_id ev = bevent_get_id(event);
-	err |= odict_entry_add(od, "type", ODICT_STRING, bevent_id_str(ev));
+	enum bevent_ev ev = event->ev;
+	err |= odict_entry_add(od, "type", ODICT_STRING, bevent_str(ev));
 	if (ua) {
 		err |= odict_entry_add(od, "accountaor",
 				       ODICT_STRING,
@@ -608,7 +611,7 @@ out:
  *
  * @return 0 if success, otherwise errorcode
  */
-int bevent_app_emit(enum bevent_id ev, void *arg, const char *fmt, ...)
+int bevent_app_emit(enum bevent_ev ev, void *arg, const char *fmt, ...)
 {
 	va_list ap;
 	struct bevent event = {.ev = ev, .ec = BEVENT_CLASS_APP};
@@ -625,16 +628,16 @@ int bevent_app_emit(enum bevent_id ev, void *arg, const char *fmt, ...)
 
 
 /**
- * Emit a Baresip event identifier
+ * Emit a Baresip event value
  *
- * @param ev   Baresip event identifier
+ * @param ev   Baresip event value
  * @param ua   User-Agent
  * @param fmt  Formatted arguments
  * @param ...  Variable arguments
  *
  * @return 0 if success, otherwise errorcode
  */
-int bevent_ua_emit(enum bevent_id ev, struct ua *ua, const char *fmt, ...)
+int bevent_ua_emit(enum bevent_ev ev, struct ua *ua, const char *fmt, ...)
 {
 	struct bevent event = {.ev = ev, .ec = BEVENT_CLASS_UA};
 	va_list ap;
@@ -656,14 +659,14 @@ int bevent_ua_emit(enum bevent_id ev, struct ua *ua, const char *fmt, ...)
 /**
  * Emit a Call event
  *
- * @param ev    Baresip event identifier
+ * @param ev    Baresip event value
  * @param call  Call object
  * @param fmt   Formatted arguments
  * @param ...   Variable arguments
  *
  * @return 0 if success, otherwise errorcode
  */
-int bevent_call_emit(enum bevent_id ev, struct call *call,
+int bevent_call_emit(enum bevent_ev ev, struct call *call,
 		     const char *fmt, ...)
 {
 	struct bevent event = {.ev = ev, .ec = BEVENT_CLASS_CALL};
@@ -686,14 +689,14 @@ int bevent_call_emit(enum bevent_id ev, struct call *call,
 /**
  * Emit a SIP message event
  *
- * @param ev    Baresip event identifier
+ * @param ev    Baresip event value
  * @param msg   SIP message
  * @param fmt   Formatted arguments
  * @param ...   Variable arguments
  *
  * @return 0 if success, otherwise errorcode
  */
-int bevent_sip_msg_emit(enum bevent_id ev, const struct sip_msg *msg,
+int bevent_sip_msg_emit(enum bevent_ev ev, const struct sip_msg *msg,
 		       const char *fmt, ...)
 {
 	struct bevent event = {.ev = ev, .ec = BEVENT_CLASS_SIP};
@@ -714,13 +717,13 @@ int bevent_sip_msg_emit(enum bevent_id ev, const struct sip_msg *msg,
 
 
 /**
- * Get the name of the Baresip event identifier
+ * Get the name of the Baresip event value
  *
- * @param ev Baresip event identifier
+ * @param ev Baresip event value
  *
  * @return Name of the event
  */
-const char *bevent_id_str(enum bevent_id ev)
+const char *bevent_str(enum bevent_ev ev)
 {
 	switch (ev) {
 

@@ -19,7 +19,7 @@
 /*
  * Relay UA events as publish messages to the Broker
  */
-static void event_handler(enum bevent_id ev, struct bevent *event, void *arg)
+static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 {
 	struct mqtt *mqtt = arg;
 	struct odict *od = NULL;

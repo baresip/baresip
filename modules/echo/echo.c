@@ -92,7 +92,7 @@ static int new_session(struct ua *ua, struct call *call)
 }
 
 
-static void event_handler(enum bevent_id ev, struct bevent *event, void *arg)
+static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 {
 	int err;
 	struct ua   *ua   = bevent_get_ua(event);
