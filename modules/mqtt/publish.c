@@ -19,7 +19,7 @@
 /*
  * Relay UA events as publish messages to the Broker
  */
-static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
+static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 {
 	struct mqtt *mqtt = arg;
 	struct odict *od = NULL;
@@ -35,7 +35,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 		goto out;
 
 	/* send audio jitter buffer values together with VU rx values. */
-	if (ev == UA_EVENT_VU_RX) {
+	if (ev == BEVENT_VU_RX) {
 		err = event_add_au_jb_stat(od,call);
 		if (err) {
 			info("Could not add audio jb value.\n");

@@ -41,9 +41,9 @@ struct vumeter_dec {
 static bool vumeter_stderr;
 
 
-static void send_event(const struct audio *au, enum ua_event ev, double value)
+static void send_event(const struct audio *au, enum bevent_ev ev, double value)
 {
-	audio_level_put(au, ev == UA_EVENT_VU_TX, value);
+	audio_level_put(au, ev == BEVENT_VU_TX, value);
 }
 
 
@@ -104,7 +104,7 @@ static void enc_tmr_handler(void *arg)
 		if (vumeter_stderr)
 			print_vumeter(60, 31, st->avg_rec);
 
-		send_event(st->au, UA_EVENT_VU_TX, st->avg_rec);
+		send_event(st->au, BEVENT_VU_TX, st->avg_rec);
 	}
 }
 
@@ -119,7 +119,7 @@ static void dec_tmr_handler(void *arg)
 		if (vumeter_stderr)
 			print_vumeter(80, 32, st->avg_play);
 
-		send_event(st->au, UA_EVENT_VU_RX, st->avg_play);
+		send_event(st->au, BEVENT_VU_RX, st->avg_play);
 	}
 }
 

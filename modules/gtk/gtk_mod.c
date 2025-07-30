@@ -390,21 +390,21 @@ static void update_ua_presence(struct gtk_mod *mod)
 }
 
 
-static const char *ua_event_reg_str(enum ua_event ev)
+static const char *ua_event_reg_str(enum bevent_ev ev)
 {
 	switch (ev) {
 
-	case UA_EVENT_REGISTERING:      return "registering";
-	case UA_EVENT_REGISTER_OK:      return "OK";
-	case UA_EVENT_REGISTER_FAIL:    return "ERR";
-	case UA_EVENT_UNREGISTERING:    return "unregistering";
+	case BEVENT_REGISTERING:      return "registering";
+	case BEVENT_REGISTER_OK:      return "OK";
+	case BEVENT_REGISTER_FAIL:    return "ERR";
+	case BEVENT_UNREGISTERING:    return "unregistering";
 	default: return "?";
 	}
 }
 
 
 static void accounts_menu_set_status(struct gtk_mod *mod,
-					struct ua *ua, enum ua_event ev)
+					struct ua *ua, enum bevent_ev ev)
 {
 	GtkMenuItem *item = accounts_menu_get_item(mod, ua);
 	char buf[256];
@@ -614,7 +614,7 @@ void gtk_mod_call_window_closed(struct gtk_mod *mod, struct call_window *win)
 }
 
 
-static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
+static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 {
 	struct gtk_mod *mod = arg;
 	struct call_window *win;
@@ -626,20 +626,20 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 
 	switch (ev) {
 
-	case UA_EVENT_REGISTERING:
-	case UA_EVENT_UNREGISTERING:
-	case UA_EVENT_REGISTER_OK:
-	case UA_EVENT_REGISTER_FAIL:
+	case BEVENT_REGISTERING:
+	case BEVENT_UNREGISTERING:
+	case BEVENT_REGISTER_OK:
+	case BEVENT_REGISTER_FAIL:
 		accounts_menu_set_status(mod, ua, ev);
 		break;
 
 #ifdef USE_NOTIFICATIONS
-	case UA_EVENT_CALL_INCOMING:
+	case BEVENT_CALL_INCOMING:
 		notify_incoming_call(mod, call);
 		break;
 #endif
 
-	case UA_EVENT_CALL_CLOSED:
+	case BEVENT_CALL_CLOSED:
 		win = get_call_window(mod, call);
 		if (win)
 			call_window_closed(win, txt);
@@ -667,26 +667,26 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 		}
 		break;
 
-	case UA_EVENT_CALL_RINGING:
+	case BEVENT_CALL_RINGING:
 		win = get_create_call_window(mod, call);
 		if (win)
 			call_window_ringing(win);
 		break;
 
-	case UA_EVENT_CALL_PROGRESS:
+	case BEVENT_CALL_PROGRESS:
 		win = get_create_call_window(mod, call);
 		if (win)
 			call_window_progress(win);
 		break;
 
-	case UA_EVENT_CALL_ESTABLISHED:
+	case BEVENT_CALL_ESTABLISHED:
 		win = get_create_call_window(mod, call);
 		if (win)
 			call_window_established(win);
 		denotify_incoming_call(mod, call);
 		break;
 
-	case UA_EVENT_CALL_TRANSFER_FAILED:
+	case BEVENT_CALL_TRANSFER_FAILED:
 		win = get_create_call_window(mod, call);
 		if (win)
 			call_window_transfer_failed(win, txt);

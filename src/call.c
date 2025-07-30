@@ -311,7 +311,7 @@ static int update_media(struct call *call)
 {
 	debug("call: update media\n");
 
-	bevent_call_emit(UA_EVENT_CALL_REMOTE_SDP, call,
+	bevent_call_emit(BEVENT_CALL_REMOTE_SDP, call,
 			 call->got_offer ? "offer" : "answer");
 
 	return call_update_media(call);
@@ -382,7 +382,7 @@ static void audio_level_handler(bool tx, double lvl, void *arg)
 	struct call *call = arg;
 	MAGIC_CHECK(call);
 
-	bevent_call_emit(tx ? UA_EVENT_VU_TX : UA_EVENT_VU_RX, call,
+	bevent_call_emit(tx ? BEVENT_VU_TX : BEVENT_VU_RX, call,
 			 "%.2f", lvl);
 }
 
@@ -395,7 +395,7 @@ static void audio_error_handler(int err, const char *str, void *arg)
 	if (err) {
 		warning("call: audio device error: %m (%s)\n", err, str);
 
-		bevent_call_emit(UA_EVENT_AUDIO_ERROR, call,
+		bevent_call_emit(BEVENT_AUDIO_ERROR, call,
 				 "%d,%s", err, str);
 
 		call_stream_stop(call);
@@ -403,7 +403,7 @@ static void audio_error_handler(int err, const char *str, void *arg)
 			"%s", str);
 	}
 	else
-		bevent_call_emit(UA_EVENT_END_OF_FILE, call, "");
+		bevent_call_emit(BEVENT_END_OF_FILE, call, "");
 }
 
 
@@ -524,7 +524,7 @@ static void stream_rtpestab_handler(struct stream *strm, void *arg)
 	struct call *call = arg;
 	MAGIC_CHECK(call);
 
-	bevent_call_emit(UA_EVENT_CALL_RTPESTAB, call,
+	bevent_call_emit(BEVENT_CALL_RTPESTAB, call,
 			 "%s", sdp_media_name(stream_sdpmedia(strm)));
 }
 
@@ -542,12 +542,12 @@ static void stream_rtcp_handler(struct stream *strm,
 		if (call->config_avt.rtp_stats)
 			call_set_xrtpstat(call);
 
-		bevent_call_emit(UA_EVENT_CALL_RTCP, call,
+		bevent_call_emit(BEVENT_CALL_RTCP, call,
 				 "%s", sdp_media_name(stream_sdpmedia(strm)));
 		break;
 
 	case RTCP_APP:
-		bevent_call_emit(UA_EVENT_CALL_RTCP, call,
+		bevent_call_emit(BEVENT_CALL_RTCP, call,
 				 "%s", sdp_media_name(stream_sdpmedia(strm)));
 		break;
 	}
@@ -1095,7 +1095,7 @@ int call_modify(struct call *call)
 	if (call_refresh_allowed(call)) {
 		err = call_sdp_get(call, &desc, true);
 		if (!err) {
-			bevent_call_emit(UA_EVENT_CALL_LOCAL_SDP, call,
+			bevent_call_emit(BEVENT_CALL_LOCAL_SDP, call,
 					 "offer");
 
 			err = sipsess_modify(call->sess, desc);
@@ -1255,7 +1255,7 @@ int call_progress_dir(struct call *call, enum sdp_dir adir, enum sdp_dir vdir)
 		goto out;
 
 	if (call->got_offer) {
-		bevent_call_emit(UA_EVENT_CALL_LOCAL_SDP, call, "answer");
+		bevent_call_emit(BEVENT_CALL_LOCAL_SDP, call, "answer");
 		err = call_update_media(call);
 	}
 
@@ -1326,7 +1326,7 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 			return err;
 	}
 
-	bevent_call_emit(UA_EVENT_CALL_LOCAL_SDP, call,
+	bevent_call_emit(BEVENT_CALL_LOCAL_SDP, call,
 			 "%s", !call->got_offer ? "offer" : "answer");
 
 	err = sdp_encode(&desc, call->sdp, !call->got_offer);
@@ -1781,9 +1781,9 @@ static int sipsess_offer_handler(struct mbuf **descp,
 		}
 
 		if (aurx && !(sdp_media_dir(m) & SDP_SENDONLY))
-			bevent_call_emit(UA_EVENT_CALL_HOLD, call, "");
+			bevent_call_emit(BEVENT_CALL_HOLD, call, "");
 		else if (!aurx && sdp_media_dir(m) & SDP_SENDONLY)
-			bevent_call_emit(UA_EVENT_CALL_RESUME, call, "");
+			bevent_call_emit(BEVENT_CALL_RESUME, call, "");
 
 		err = update_media(call);
 		if (err) {
@@ -1814,7 +1814,7 @@ static int sipsess_offer_handler(struct mbuf **descp,
 	if (err)
 		return err;
 
-	bevent_call_emit(UA_EVENT_CALL_LOCAL_SDP, call, "%s",
+	bevent_call_emit(BEVENT_CALL_LOCAL_SDP, call, "%s",
 			 got_offer ? "answer" : "offer");
 
 	return 0;
@@ -2307,7 +2307,7 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 			bundle_sdp_decode(call->sdp, &call->streaml);
 		}
 
-		bevent_call_emit(UA_EVENT_CALL_REMOTE_SDP, call, "offer");
+		bevent_call_emit(BEVENT_CALL_REMOTE_SDP, call, "offer");
 	}
 
 	hdr = sip_msg_hdr(msg, SIP_HDR_REPLACES);
@@ -2468,7 +2468,7 @@ static void redirect_handler(const struct sip_msg *msg, const char *uri,
 	struct call *call = arg;
 
 	info("call: redirect to %s\n", uri);
-	bevent_call_emit(UA_EVENT_CALL_REDIRECT, call,
+	bevent_call_emit(BEVENT_CALL_REDIRECT, call,
 			 "%d,%s", msg->scode, uri);
 	return;
 }
@@ -2565,7 +2565,7 @@ static int send_invite(struct call *call)
 	/* save call setup timer */
 	call->time_conn = time(NULL);
 
-	bevent_call_emit(UA_EVENT_CALL_LOCAL_SDP, call, "offer");
+	bevent_call_emit(BEVENT_CALL_LOCAL_SDP, call, "offer");
 
 	return 0;
 }

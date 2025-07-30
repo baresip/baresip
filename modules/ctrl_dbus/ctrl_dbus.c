@@ -231,7 +231,7 @@ on_handle_invoke(DBusBaresip *interface,
 /*
  * Relay UA events
  */
-static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
+static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 {
 	struct ctrl_st *st = arg;
 	struct mbuf *buf;
@@ -239,7 +239,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 	struct odict *od = NULL;
 	int err = 0;
 	const char *class;
-	const char *etype = uag_event_str(ev);
+	const char *etype = bevent_str(ev);
 
 	if (!st->interface)
 		return;

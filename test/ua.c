@@ -55,7 +55,7 @@ static void test_abort(struct test *t, int err)
 }
 
 
-static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
+static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 {
 	struct test *t = arg;
 	size_t i;
@@ -72,7 +72,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 	if (ua != t->ua)
 		return;
 
-	if (ev == UA_EVENT_REGISTER_OK) {
+	if (ev == BEVENT_REGISTER_OK) {
 
 		info("event: Register OK!\n");
 
@@ -87,12 +87,12 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 
 		t->ua = mem_deref(t->ua);
 	}
-	else if (ev == UA_EVENT_REGISTER_FAIL) {
+	else if (ev == BEVENT_REGISTER_FAIL) {
 
 		err = EAUTH;
 		re_cancel();
 	}
-	else if (ev == UA_EVENT_REFER) {
+	else if (ev == BEVENT_REFER) {
 		ASSERT_STREQ(referto, prm);
 		++t->n_ev;
 	}
