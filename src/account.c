@@ -132,9 +132,6 @@ static int stunsrv_decode(struct account *acc, const struct sip_addr *aor)
 
 	if (0 == msg_param_exists(&aor->params, "stunpass", &tmp))
 		err |= param_dstr(&acc->stun_pass, &aor->params, "stunpass");
-	else if (pl_isset(&uri.password))
-		err |= re_sdprintf(&acc->stun_pass, "%H",
-					uri_password_unescape, &uri.password);
 
 	return err;
 }
@@ -565,7 +562,7 @@ static int encode_uri_user(struct re_printf *pf, const struct uri *uri)
 {
 	struct uri uuri = *uri;
 
-	uuri.password = uuri.params = uuri.headers = pl_null;
+	uuri.params = uuri.headers = pl_null;
 
 	return uri_encode(pf, &uuri);
 }
@@ -606,7 +603,6 @@ int account_alloc(struct account **accp, const char *sipaddr)
 	}
 
 	acc->luri = acc->laddr.uri;
-	acc->luri.password = pl_null;
 
 	err = re_sdprintf(&acc->aor, "%H", encode_uri_user, &acc->luri);
 	if (err)

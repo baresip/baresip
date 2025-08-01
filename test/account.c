@@ -50,7 +50,6 @@ int test_account(void)
 	TEST_STRCMP("Mr User", 7, addr->dname.p,        addr->dname.l);
 	TEST_STRCMP("sip",     3, addr->uri.scheme.p,   addr->uri.scheme.l);
 	TEST_STRCMP("user",    4, addr->uri.user.p,     addr->uri.user.l);
-	TEST_STRCMP("",        0, addr->uri.password.p, addr->uri.password.l);
 	TEST_STRCMP("domain.com", 10, addr->uri.host.p, addr->uri.host.l);
 	ASSERT_EQ(0, addr->uri.params.l);
 	ASSERT_TRUE(addr->params.l > 0);
