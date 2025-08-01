@@ -2834,7 +2834,6 @@ static int normalize_uri(char **out, const char *uri, const struct uri *luri)
 		uri2 = *luri;
 
 		uri2.user     = pl;
-		uri2.password = pl_null;
 		uri2.params   = pl_null;
 
 		err = re_sdprintf(out, "%H", uri_encode, &uri2);

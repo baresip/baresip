@@ -107,9 +107,6 @@ static bool my_uri_cmp(const struct uri *l, const struct uri *r)
 	if (pl_cmp(&l->user, &r->user))
 		return false;
 
-	if (pl_cmp(&l->password, &r->password))
-		return false;
-
 	if (pl_casecmp(&l->host, &r->host))
 		return false;
 	if (l->af != r->af)
