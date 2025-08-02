@@ -183,7 +183,7 @@ static int start_register(struct ua *ua, bool fallback)
 		return 0;
 
 	uri = ua->acc->luri;
-	uri.user = uri.password = pl_null;
+	uri.user = pl_null;
 
 	err = re_sdprintf(&reg_uri, "%H", uri_encode, &uri);
 	if (err)
