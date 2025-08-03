@@ -1240,22 +1240,6 @@ int audio_update(struct audio *a)
 
 
 /**
- * This function simply calls audio_update() and kept for backward
- * compatibility
- *
- * @param a Audio object
- *
- * @return 0 if success, otherwise errorcode
- *
- * @deprecated Use audio_update() instead
- */
-int audio_start(struct audio *a)
-{
-	return audio_update(a);
-}
-
-
-/**
  * Start the audio source
  *
  * @param a       Audio object
