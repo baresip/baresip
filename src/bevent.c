@@ -11,7 +11,6 @@
 
 enum {
 	EVENT_MAXSZ = 4096,
-	CNT_DEPRECATED_WARNINGS = 3,
 };
 
 
