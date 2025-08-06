@@ -1,0 +1,1 @@
+. "/Users/palmarti/development/baresip/deactivate_conanrunenv-release-armv8.sh"

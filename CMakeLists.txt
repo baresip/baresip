@@ -31,12 +31,40 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 
 ##############################################################################
 #
+# Conan Integration
+#
+
+# Check for Conan integration
+option(USE_CONAN "Use Conan for dependency management" ON)
+
+# Detect if we're using Conan by checking multiple indicators
+if(USE_CONAN AND (DEFINED BARESIP_USE_CONAN OR 
+                  EXISTS "${CMAKE_BINARY_DIR}/conan_toolchain.cmake" OR 
+                  EXISTS "${CMAKE_CURRENT_BINARY_DIR}/conan_toolchain.cmake" OR
+                  DEFINED CONAN_CMAKE_VERSION))
+    set(BARESIP_USE_CONAN TRUE)
+    include(conan)
+    message(STATUS "Using Conan for dependency management")
+else()
+    set(BARESIP_USE_CONAN FALSE)
+    message(STATUS "Conan not detected, using traditional dependency management")
+endif()
+
+##############################################################################
+#
 # Module/Package Includes
 #
 
 include(GNUInstallDirs)
 include(CheckIncludeFile)
-find_package(RE REQUIRED)
+
+# Check for system headers
+check_include_file(unistd.h HAVE_UNISTD_H)
+if(HAVE_UNISTD_H)
+    add_definitions(-DHAVE_UNISTD_H)
+endif()
+
+# RE (libre) dependency is handled below with the original CONFIG-style find
 
 ##############################################################################
 #
@@ -97,7 +125,28 @@ endif()
 
 
 
-find_package(re CONFIG REQUIRED HINTS ../re/cmake)
+# Try to find RE via Conan first, then fallback to manual
+if(BARESIP_USE_CONAN)
+    find_package(libre QUIET)
+    if(libre_FOUND)
+        message(STATUS "Found RE via Conan")
+        set(RE_FOUND TRUE)
+        set(RE_LIBRARIES libre::libre)
+        # For Conan targets, extract the actual path from generator expression
+        get_target_property(RE_INCLUDE_DIRS_RAW libre::libre INTERFACE_INCLUDE_DIRECTORIES)
+        message(STATUS "DEBUG: Raw include dirs = ${RE_INCLUDE_DIRS_RAW}")
+        
+        # Extract actual path from generator expression like $<$<CONFIG:Debug>:/path>
+        string(REGEX REPLACE "\\$<\\$<CONFIG:[^>]*>:([^>]+)>" "\\1" RE_INCLUDE_BASE "${RE_INCLUDE_DIRS_RAW}")
+        # Conan puts headers in include/re/, but we need to point to the re subdirectory
+        set(RE_INCLUDE_DIRS "${RE_INCLUDE_BASE}/re")
+        message(STATUS "DEBUG: Processed RE_INCLUDE_DIRS = ${RE_INCLUDE_DIRS}")
+    else()
+        find_package(re CONFIG REQUIRED HINTS ../re/cmake)
+    endif()
+else()
+    find_package(re CONFIG REQUIRED HINTS ../re/cmake)
+endif()
 
 list(APPEND RE_DEFINITIONS
   VERSION="${PROJECT_VERSION_FULL}"
@@ -262,6 +311,30 @@ set(LINKLIBS ${RE_LIBRARIES} ${RE_LIBS})
 
 if(WIN32)
   list(APPEND LINKLIBS winmm gdi32 crypt32 strmiids ole32 oleaut32)
+endif()
+
+# Add libraries requested by modules via global property
+get_property(MODULE_LINK_LIBRARIES GLOBAL PROPERTY BARESIP_LINK_LIBRARIES)
+if(MODULE_LINK_LIBRARIES)
+  # Find packages for the targets that modules requested
+  if("ffmpeg::ffmpeg" IN_LIST MODULE_LINK_LIBRARIES AND BARESIP_USE_CONAN)
+    find_package(ffmpeg QUIET)
+  endif()
+  if("Opus::opus" IN_LIST MODULE_LINK_LIBRARIES AND BARESIP_USE_CONAN)
+    find_package(opus QUIET)
+  endif()
+  if("libvpx::libvpx" IN_LIST MODULE_LINK_LIBRARIES AND BARESIP_USE_CONAN)
+    find_package(libvpx QUIET)
+  endif()
+  if("libaom-av1::libaom-av1" IN_LIST MODULE_LINK_LIBRARIES AND BARESIP_USE_CONAN)
+    find_package(libaom-av1 QUIET)
+  endif()
+  if("SDL2::SDL2" IN_LIST MODULE_LINK_LIBRARIES AND BARESIP_USE_CONAN)
+    find_package(SDL2 QUIET)
+  endif()
+  list(APPEND LINKLIBS ${MODULE_LINK_LIBRARIES})
+  list(REMOVE_DUPLICATES LINKLIBS)
+  message(STATUS "Added module libraries to LINKLIBS: ${MODULE_LINK_LIBRARIES}")
 endif()
 
 if(STATIC)

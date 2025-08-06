@@ -1,0 +1,11 @@
+sources:
+  "3.24.0":
+    url: "https://github.com/baresip/baresip/archive/v3.24.0.tar.gz"
+    sha256: "placeholder"  # Replace with actual SHA256 when available
+    strip_root: 1
+
+patches:
+  "3.24.0":
+    - patch_file: "patches/conan-integration.patch"
+      patch_description: "Add Conan integration support"
+      patch_type: "enhancement"

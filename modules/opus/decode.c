@@ -7,8 +7,8 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#include <opus/opus.h>
-#include "opus.h"
+#include <opus.h>  /* Conan's Opus types */
+#include "baresip_opus.h"
 
 
 struct audec_state {

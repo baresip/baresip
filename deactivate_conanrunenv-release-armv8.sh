@@ -1,0 +1,4 @@
+echo Restoring environment
+unset GSTREAMER_ROOT
+unset GST_PLUGIN_SCANNER
+unset OPENSSL_MODULES

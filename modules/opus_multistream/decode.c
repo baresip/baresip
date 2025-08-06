@@ -7,8 +7,8 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#include <opus/opus_multistream.h>
-#include "opus_multistream.h"
+#include <opus_multistream.h>  /* Conan's Opus multistream types */
+#include "baresip_opus_multistream.h"
 
 
 struct audec_state {

@@ -6,8 +6,8 @@
 
 #include <re.h>
 #include <baresip.h>
-#include <opus/opus.h>
-#include "opus.h"
+#include <opus.h>  /* Conan's Opus types */
+#include "baresip_opus.h"
 
 
 static void assign_if(opus_int32 *v, const struct pl *pl,

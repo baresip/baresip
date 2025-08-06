@@ -1,0 +1,1066 @@
+{
+    "components": [
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "Modular SIP User-Agent with audio and video support",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://github.com/baresip/baresip"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "BSD-3-Clause"
+                    }
+                }
+            ],
+            "name": "baresip",
+            "purl": "pkg:conan/baresip@3.24.0",
+            "type": "library",
+            "version": "3.24.0"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "Generic library for real-time communications with async IO support",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://github.com/baresip/re"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "BSD-3-Clause"
+                    }
+                }
+            ],
+            "name": "libre",
+            "purl": "pkg:conan/libre@3.24.0",
+            "type": "library",
+            "version": "3.24.0"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "A toolkit for the Transport Layer Security (TLS) and Secure Sockets Layer (SSL) protocols",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://github.com/openssl/openssl"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "Apache-2.0"
+                    }
+                }
+            ],
+            "name": "openssl",
+            "purl": "pkg:conan/openssl@3.5.1",
+            "type": "library",
+            "version": "3.5.1"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "AV1 Codec Library",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://aomedia.googlesource.com/aom"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "BSD-2-Clause"
+                    }
+                }
+            ],
+            "name": "libaom-av1",
+            "purl": "pkg:conan/libaom-av1@3.6.1",
+            "type": "library",
+            "version": "3.6.1"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "A complete, cross-platform solution to record, convert and stream audio and video",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://ffmpeg.org"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "LGPL-2.1-or-later"
+                    }
+                },
+                {
+                    "license": {
+                        "id": "GPL-2.0-or-later"
+                    }
+                }
+            ],
+            "name": "ffmpeg",
+            "purl": "pkg:conan/ffmpeg@6.1.1",
+            "type": "library",
+            "version": "6.1.1"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "GStreamer is a development framework for creating applications like media players, video editors, streaming media broadcasters and so on",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://gstreamer.freedesktop.org/"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "LGPL-2.0-or-later"
+                    }
+                }
+            ],
+            "name": "gstreamer",
+            "purl": "pkg:conan/gstreamer@1.24.7",
+            "type": "library",
+            "version": "1.24.7"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "Access to audio, keyboard, mouse, joystick, and graphics hardware via OpenGL, Direct3D and Vulkan",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://www.libsdl.org"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "Zlib"
+                    }
+                }
+            ],
+            "name": "sdl",
+            "purl": "pkg:conan/sdl@2.30.8",
+            "type": "library",
+            "version": "2.30.8"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "Eclipse Mosquitto MQTT library, broker and more",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://mosquitto.org"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "EPL-2.0"
+                    }
+                }
+            ],
+            "name": "mosquitto",
+            "purl": "pkg:conan/mosquitto@2.0.21",
+            "type": "library",
+            "version": "2.0.21"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "libpng is the official PNG file format reference library.",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "http://www.libpng.org"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "libpng-2.0"
+                    }
+                }
+            ],
+            "name": "libpng",
+            "purl": "pkg:conan/libpng@1.6.50",
+            "type": "library",
+            "version": "1.6.50"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "Libsndfile is a library of C routines for reading and writing files containing sampled audio data.",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "http://www.mega-nerd.com/libsndfile"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "LGPL-2.1"
+                    }
+                }
+            ],
+            "name": "libsndfile",
+            "purl": "pkg:conan/libsndfile@1.2.2",
+            "type": "library",
+            "version": "1.2.2"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "A Massively Spiffy Yet Delicately Unobtrusive Compression Library (Also Free, Not to Mention Unencumbered by Patents)",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://zlib.net"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "Zlib"
+                    }
+                }
+            ],
+            "name": "zlib",
+            "purl": "pkg:conan/zlib@1.3.1",
+            "type": "library",
+            "version": "1.3.1"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "bzip2 is a free and open-source file compression program that uses the Burrows Wheeler algorithm.",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://sourceware.org/bzip2"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "bzip2-1.0.8"
+                    }
+                }
+            ],
+            "name": "bzip2",
+            "purl": "pkg:conan/bzip2@1.0.8",
+            "type": "library",
+            "version": "1.0.8"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "XZ Utils is free general-purpose data compression software with a high compression ratio. XZ Utils were written for POSIX-like systems, but also work on some not-so-POSIX systems. XZ Utils are the successor to LZMA Utils.",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://tukaani.org/xz"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "Unlicense"
+                    }
+                },
+                {
+                    "license": {
+                        "id": "LGPL-2.1-or-later"
+                    }
+                },
+                {
+                    "license": {
+                        "id": "GPL-2.0-or-later"
+                    }
+                },
+                {
+                    "license": {
+                        "id": "GPL-3.0-or-later"
+                    }
+                }
+            ],
+            "name": "xz_utils",
+            "purl": "pkg:conan/xz_utils@5.4.5",
+            "type": "library",
+            "version": "5.4.5"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "Convert text to and from Unicode",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://www.gnu.org/software/libiconv/"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "LGPL-2.1-or-later"
+                    }
+                }
+            ],
+            "name": "libiconv",
+            "purl": "pkg:conan/libiconv@1.17",
+            "type": "library",
+            "version": "1.17"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "FreeType is a freely available software library to render fonts.",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://www.freetype.org"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "FTL"
+                    }
+                }
+            ],
+            "name": "freetype",
+            "purl": "pkg:conan/freetype@2.13.2",
+            "type": "library",
+            "version": "2.13.2"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "OpenJPEG is an open-source JPEG 2000 codec written in C language.",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://github.com/uclouvain/openjpeg"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "BSD-2-Clause"
+                    }
+                }
+            ],
+            "name": "openjpeg",
+            "purl": "pkg:conan/openjpeg@2.5.2",
+            "type": "library",
+            "version": "2.5.2"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "Open Source H.264 Codec",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "http://www.openh264.org/"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "BSD-2-Clause"
+                    }
+                }
+            ],
+            "name": "openh264",
+            "purl": "pkg:conan/openh264@2.4.1",
+            "type": "library",
+            "version": "2.4.1"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "The VORBIS audio codec library",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://xiph.org/vorbis/"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "BSD-3-Clause"
+                    }
+                }
+            ],
+            "name": "vorbis",
+            "purl": "pkg:conan/vorbis@1.3.7",
+            "type": "library",
+            "version": "1.3.7"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "Opus is a totally open, royalty-free, highly versatile audio codec.",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://opus-codec.org"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "BSD-3-Clause"
+                    }
+                }
+            ],
+            "name": "opus",
+            "purl": "pkg:conan/opus@1.5.2",
+            "type": "library",
+            "version": "1.5.2"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "x264 is a free software library and application for encoding video streams into the H.264/MPEG-4 AVC compression format",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://www.videolan.org/developers/x264.html"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "GPL-2.0"
+                    }
+                }
+            ],
+            "name": "libx264",
+            "purl": "pkg:conan/libx264@cci.20240224",
+            "type": "library",
+            "version": "cci.20240224"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "x265 is the leading H.265 / HEVC encoder software library",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://www.videolan.org/developers/x265.html"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "GPL-2.0-only"
+                    }
+                },
+                {
+                    "license": {
+                        "id": "commercial"
+                    }
+                }
+            ],
+            "name": "libx265",
+            "purl": "pkg:conan/libx265@3.4",
+            "type": "library",
+            "version": "3.4"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "WebM VP8/VP9 Codec SDK",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://www.webmproject.org/code"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "BSD-3-Clause"
+                    }
+                }
+            ],
+            "name": "libvpx",
+            "purl": "pkg:conan/libvpx@1.14.1",
+            "type": "library",
+            "version": "1.14.1"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "LAME is a high quality MPEG Audio Layer III (MP3) encoder licensed under the LGPL.",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "http://lame.sourceforge.net"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "LGPL-2.0"
+                    }
+                }
+            ],
+            "name": "libmp3lame",
+            "purl": "pkg:conan/libmp3lame@3.100",
+            "type": "library",
+            "version": "3.100"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "A standalone library of the Fraunhofer FDK AAC code from Android",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://sourceforge.net/projects/opencore-amr/"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "https://github.com/mstorsjo/fdk-aac/blob/master/NOTICE"
+                    }
+                }
+            ],
+            "name": "libfdk_aac",
+            "purl": "pkg:conan/libfdk_aac@2.0.3",
+            "type": "library",
+            "version": "2.0.3"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "Library to encode and decode images in WebP format",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://chromium.googlesource.com/webm/libwebp"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "BSD-3-Clause"
+                    }
+                }
+            ],
+            "name": "libwebp",
+            "purl": "pkg:conan/libwebp@1.3.2",
+            "type": "library",
+            "version": "1.3.2"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "An AV1-compliant software encoder/decoder library",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://gitlab.com/AOMediaCodec/SVT-AV1"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "BSD-3-Clause"
+                    }
+                }
+            ],
+            "name": "libsvtav1",
+            "purl": "pkg:conan/libsvtav1@2.1.0",
+            "type": "library",
+            "version": "2.1.0"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "dav1d is a new AV1 cross-platform decoder, open-source, and focused on speed, size and correctness.",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://www.videolan.org/projects/dav1d.html"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "BSD-2-Clause"
+                    }
+                }
+            ],
+            "name": "dav1d",
+            "purl": "pkg:conan/dav1d@1.4.3",
+            "type": "library",
+            "version": "1.4.3"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "Low-level core library that forms the basis for projects such as GTK+ and GNOME. It provides data structure handling for C, portability wrappers, and interfaces for such runtime functionality as an event loop, threads, dynamic loading, and an object system.",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://gitlab.gnome.org/GNOME/glib"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "LGPL-2.1-or-later"
+                    }
+                }
+            ],
+            "name": "glib",
+            "purl": "pkg:conan/glib@2.78.3",
+            "type": "library",
+            "version": "2.78.3"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "The OGG library",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://github.com/xiph/ogg"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "BSD-2-Clause"
+                    }
+                }
+            ],
+            "name": "ogg",
+            "purl": "pkg:conan/ogg@1.3.5",
+            "type": "library",
+            "version": "1.3.5"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "Free Lossless Audio Codec",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://github.com/xiph/flac"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "BSD-3-Clause"
+                    }
+                },
+                {
+                    "license": {
+                        "id": "GPL-2.0-or-later"
+                    }
+                },
+                {
+                    "license": {
+                        "id": "LGPL-2.1-or-later"
+                    }
+                },
+                {
+                    "license": {
+                        "id": "GFDL-1.2"
+                    }
+                }
+            ],
+            "name": "flac",
+            "purl": "pkg:conan/flac@1.4.2",
+            "type": "library",
+            "version": "1.4.2"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "Fast console MPEG Audio Player and decoder library",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "http://mpg123.org/"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "LGPL-2.1-or-later"
+                    }
+                },
+                {
+                    "license": {
+                        "id": "GPL-2.0-or-later"
+                    }
+                }
+            ],
+            "name": "mpg123",
+            "purl": "pkg:conan/mpg123@1.31.2",
+            "type": "library",
+            "version": "1.31.2"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "Brotli compression format",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://github.com/google/brotli"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "MIT"
+                    }
+                }
+            ],
+            "name": "brotli",
+            "purl": "pkg:conan/brotli@1.1.0",
+            "type": "library",
+            "version": "1.1.0"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "cpuinfo is a library to detect essential for performance optimization information about host CPU.",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://github.com/pytorch/cpuinfo"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "BSD-2-Clause"
+                    }
+                }
+            ],
+            "name": "cpuinfo",
+            "purl": "pkg:conan/cpuinfo@cci.20231129",
+            "type": "library",
+            "version": "cci.20231129"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "A portable, high level programming interface to various calling conventions",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://sourceware.org/libffi/"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "MIT"
+                    }
+                }
+            ],
+            "name": "libffi",
+            "purl": "pkg:conan/libffi@3.4.8",
+            "type": "library",
+            "version": "3.4.8"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "Perl Compatible Regular Expressions",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://www.pcre.org/"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "BSD-3-Clause"
+                    }
+                }
+            ],
+            "name": "pcre2",
+            "purl": "pkg:conan/pcre2@10.42",
+            "type": "library",
+            "version": "10.42"
+        },
+        {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "description": "An internationalization and localization system for multilingual programs",
+            "externalReferences": [
+                {
+                    "type": "website",
+                    "url": "https://www.gnu.org/software/gettext"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "LGPL-2.1-or-later"
+                    }
+                }
+            ],
+            "name": "libgettext",
+            "purl": "pkg:conan/libgettext@0.22",
+            "type": "library",
+            "version": "0.22"
+        }
+    ],
+    "dependencies": [
+        {
+            "ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "dependsOn": [
+                "pkg:conan/baresip@3.24.0?rref=070cea7d9c1c711042f7072a3e660d32"
+            ]
+        },
+        {
+            "ref": "pkg:conan/baresip@3.24.0?rref=070cea7d9c1c711042f7072a3e660d32",
+            "dependsOn": [
+                "pkg:conan/libre@3.24.0?rref=2d2dcfd4b7e5a6dab57f860834fa23d2",
+                "pkg:conan/openssl@3.5.1?rref=7884fb47cae4130ac03814e53e3c7167",
+                "pkg:conan/libaom-av1@3.6.1?rref=a2b22c70d6fce43887881431808ab8a6",
+                "pkg:conan/ffmpeg@6.1.1?rref=f609c40def079691ef3a0ccac9747c6b",
+                "pkg:conan/gstreamer@1.24.7?rref=793f48d4e9e19ae876d0d4b604d5df51",
+                "pkg:conan/sdl@2.30.8?rref=8f7a8dfdb5e04d7588dc1fdfc53db62a",
+                "pkg:conan/mosquitto@2.0.21?rref=83c216ada499cc2e3619b28898480264",
+                "pkg:conan/libpng@1.6.50?rref=c96b3b9fa67d44545d6583bb0c348904",
+                "pkg:conan/libsndfile@1.2.2?rref=d9f679cca7d3c067b8ed52b0760cb46b"
+            ]
+        },
+        {
+            "ref": "pkg:conan/libre@3.24.0?rref=2d2dcfd4b7e5a6dab57f860834fa23d2",
+            "dependsOn": [
+                "pkg:conan/openssl@3.5.1?rref=7884fb47cae4130ac03814e53e3c7167",
+                "pkg:conan/zlib@1.3.1?rref=99d6f9ea0a1dd63d973392c24ce0aa9b"
+            ]
+        },
+        {
+            "ref": "pkg:conan/openssl@3.5.1?rref=7884fb47cae4130ac03814e53e3c7167",
+            "dependsOn": [
+                "pkg:conan/zlib@1.3.1?rref=99d6f9ea0a1dd63d973392c24ce0aa9b"
+            ]
+        },
+        {
+            "ref": "pkg:conan/libaom-av1@3.6.1?rref=a2b22c70d6fce43887881431808ab8a6"
+        },
+        {
+            "ref": "pkg:conan/ffmpeg@6.1.1?rref=f609c40def079691ef3a0ccac9747c6b",
+            "dependsOn": [
+                "pkg:conan/zlib@1.3.1?rref=99d6f9ea0a1dd63d973392c24ce0aa9b",
+                "pkg:conan/bzip2@1.0.8?rref=00b4a4658791c1f06914e087f0e792f5",
+                "pkg:conan/xz_utils@5.4.5?rref=b885d1d79c9d30cff3803f7f551dbe66",
+                "pkg:conan/libiconv@1.17?rref=1e65319e945f2d31941a9d28cc13c058",
+                "pkg:conan/freetype@2.13.2?rref=5d2563803c8558d4ef47271a82c73d20",
+                "pkg:conan/openjpeg@2.5.2?rref=6f7b733e151d1bbf5ed05cbabb846828",
+                "pkg:conan/openh264@2.4.1?rref=e7b055ba4fc635a6a3e0dbec088e18ea",
+                "pkg:conan/vorbis@1.3.7?rref=a019e93187ade6ee8a51762f88092604",
+                "pkg:conan/opus@1.5.2?rref=3300a940e853eb5e1ad3a0d6b2bd54cb",
+                "pkg:conan/libx264@cci.20240224?rref=a037063ce0a3e5a2f75b9c1b56038aed",
+                "pkg:conan/libx265@3.4?rref=d92862056e216025fc154565baab7cb9",
+                "pkg:conan/libvpx@1.14.1?rref=18d555b919f7824741bf2f9422f09a36",
+                "pkg:conan/libmp3lame@3.100?rref=44b12d19316eb2b223d98d3e75dae438",
+                "pkg:conan/libfdk_aac@2.0.3?rref=0115f6598be7303e042684e3a846b12d",
+                "pkg:conan/libwebp@1.3.2?rref=9c32dd81887041c939c97990d04d14c8",
+                "pkg:conan/openssl@3.5.1?rref=7884fb47cae4130ac03814e53e3c7167",
+                "pkg:conan/libsvtav1@2.1.0?rref=3afefba35b1b1218a700c4699f0c84b2",
+                "pkg:conan/libaom-av1@3.6.1?rref=a2b22c70d6fce43887881431808ab8a6",
+                "pkg:conan/dav1d@1.4.3?rref=5e2459e132c77183bd16d23d12fd8f4a"
+            ]
+        },
+        {
+            "ref": "pkg:conan/gstreamer@1.24.7?rref=793f48d4e9e19ae876d0d4b604d5df51",
+            "dependsOn": [
+                "pkg:conan/glib@2.78.3?rref=ab1631d8312dedc7e1dd3706e568ed6d"
+            ]
+        },
+        {
+            "ref": "pkg:conan/sdl@2.30.8?rref=8f7a8dfdb5e04d7588dc1fdfc53db62a"
+        },
+        {
+            "ref": "pkg:conan/mosquitto@2.0.21?rref=83c216ada499cc2e3619b28898480264",
+            "dependsOn": [
+                "pkg:conan/openssl@3.5.1?rref=7884fb47cae4130ac03814e53e3c7167"
+            ]
+        },
+        {
+            "ref": "pkg:conan/libpng@1.6.50?rref=c96b3b9fa67d44545d6583bb0c348904",
+            "dependsOn": [
+                "pkg:conan/zlib@1.3.1?rref=99d6f9ea0a1dd63d973392c24ce0aa9b"
+            ]
+        },
+        {
+            "ref": "pkg:conan/libsndfile@1.2.2?rref=d9f679cca7d3c067b8ed52b0760cb46b",
+            "dependsOn": [
+                "pkg:conan/ogg@1.3.5?rref=e8186fe05ebe9f8e706fa4bde2164d12",
+                "pkg:conan/vorbis@1.3.7?rref=a019e93187ade6ee8a51762f88092604",
+                "pkg:conan/flac@1.4.2?rref=fe87e6e5a29094d221525fbf3bbea90f",
+                "pkg:conan/opus@1.5.2?rref=3300a940e853eb5e1ad3a0d6b2bd54cb",
+                "pkg:conan/mpg123@1.31.2?rref=2dfb30511ada5a43fd9f4e328281a1a8",
+                "pkg:conan/libmp3lame@3.100?rref=44b12d19316eb2b223d98d3e75dae438"
+            ]
+        },
+        {
+            "ref": "pkg:conan/zlib@1.3.1?rref=99d6f9ea0a1dd63d973392c24ce0aa9b"
+        },
+        {
+            "ref": "pkg:conan/bzip2@1.0.8?rref=00b4a4658791c1f06914e087f0e792f5"
+        },
+        {
+            "ref": "pkg:conan/xz_utils@5.4.5?rref=b885d1d79c9d30cff3803f7f551dbe66"
+        },
+        {
+            "ref": "pkg:conan/libiconv@1.17?rref=1e65319e945f2d31941a9d28cc13c058"
+        },
+        {
+            "ref": "pkg:conan/freetype@2.13.2?rref=5d2563803c8558d4ef47271a82c73d20",
+            "dependsOn": [
+                "pkg:conan/libpng@1.6.50?rref=c96b3b9fa67d44545d6583bb0c348904",
+                "pkg:conan/zlib@1.3.1?rref=99d6f9ea0a1dd63d973392c24ce0aa9b",
+                "pkg:conan/bzip2@1.0.8?rref=00b4a4658791c1f06914e087f0e792f5",
+                "pkg:conan/brotli@1.1.0?rref=406ce8f1c997f4ef7852fa01ff85ef9f"
+            ]
+        },
+        {
+            "ref": "pkg:conan/openjpeg@2.5.2?rref=6f7b733e151d1bbf5ed05cbabb846828"
+        },
+        {
+            "ref": "pkg:conan/openh264@2.4.1?rref=e7b055ba4fc635a6a3e0dbec088e18ea"
+        },
+        {
+            "ref": "pkg:conan/vorbis@1.3.7?rref=a019e93187ade6ee8a51762f88092604",
+            "dependsOn": [
+                "pkg:conan/ogg@1.3.5?rref=e8186fe05ebe9f8e706fa4bde2164d12"
+            ]
+        },
+        {
+            "ref": "pkg:conan/opus@1.5.2?rref=3300a940e853eb5e1ad3a0d6b2bd54cb"
+        },
+        {
+            "ref": "pkg:conan/libx264@cci.20240224?rref=a037063ce0a3e5a2f75b9c1b56038aed"
+        },
+        {
+            "ref": "pkg:conan/libx265@3.4?rref=d92862056e216025fc154565baab7cb9"
+        },
+        {
+            "ref": "pkg:conan/libvpx@1.14.1?rref=18d555b919f7824741bf2f9422f09a36"
+        },
+        {
+            "ref": "pkg:conan/libmp3lame@3.100?rref=44b12d19316eb2b223d98d3e75dae438"
+        },
+        {
+            "ref": "pkg:conan/libfdk_aac@2.0.3?rref=0115f6598be7303e042684e3a846b12d"
+        },
+        {
+            "ref": "pkg:conan/libwebp@1.3.2?rref=9c32dd81887041c939c97990d04d14c8"
+        },
+        {
+            "ref": "pkg:conan/libsvtav1@2.1.0?rref=3afefba35b1b1218a700c4699f0c84b2",
+            "dependsOn": [
+                "pkg:conan/cpuinfo@cci.20231129?rref=4e1d0e2a9de9ff2b64cb14784cc0dde2"
+            ]
+        },
+        {
+            "ref": "pkg:conan/dav1d@1.4.3?rref=5e2459e132c77183bd16d23d12fd8f4a"
+        },
+        {
+            "ref": "pkg:conan/glib@2.78.3?rref=ab1631d8312dedc7e1dd3706e568ed6d",
+            "dependsOn": [
+                "pkg:conan/zlib@1.3.1?rref=99d6f9ea0a1dd63d973392c24ce0aa9b",
+                "pkg:conan/libffi@3.4.8?rref=a045c00fb26779635e3bed40e80c5254",
+                "pkg:conan/pcre2@10.42?rref=9a35f5089feb875ec61a38eca364ce77",
+                "pkg:conan/libgettext@0.22?rref=fa8b27229e313150381bece065181b26",
+                "pkg:conan/libiconv@1.17?rref=1e65319e945f2d31941a9d28cc13c058"
+            ]
+        },
+        {
+            "ref": "pkg:conan/ogg@1.3.5?rref=e8186fe05ebe9f8e706fa4bde2164d12"
+        },
+        {
+            "ref": "pkg:conan/flac@1.4.2?rref=fe87e6e5a29094d221525fbf3bbea90f",
+            "dependsOn": [
+                "pkg:conan/ogg@1.3.5?rref=e8186fe05ebe9f8e706fa4bde2164d12"
+            ]
+        },
+        {
+            "ref": "pkg:conan/mpg123@1.31.2?rref=2dfb30511ada5a43fd9f4e328281a1a8"
+        },
+        {
+            "ref": "pkg:conan/brotli@1.1.0?rref=406ce8f1c997f4ef7852fa01ff85ef9f"
+        },
+        {
+            "ref": "pkg:conan/cpuinfo@cci.20231129?rref=4e1d0e2a9de9ff2b64cb14784cc0dde2"
+        },
+        {
+            "ref": "pkg:conan/libffi@3.4.8?rref=a045c00fb26779635e3bed40e80c5254"
+        },
+        {
+            "ref": "pkg:conan/pcre2@10.42?rref=9a35f5089feb875ec61a38eca364ce77",
+            "dependsOn": [
+                "pkg:conan/zlib@1.3.1?rref=99d6f9ea0a1dd63d973392c24ce0aa9b",
+                "pkg:conan/bzip2@1.0.8?rref=00b4a4658791c1f06914e087f0e792f5"
+            ]
+        },
+        {
+            "ref": "pkg:conan/libgettext@0.22?rref=fa8b27229e313150381bece065181b26",
+            "dependsOn": [
+                "pkg:conan/libiconv@1.17?rref=1e65319e945f2d31941a9d28cc13c058"
+            ]
+        }
+    ],
+    "metadata": {
+        "component": {
+            "author": "Unknown",
+            "bom-ref": "4e5bb8f3-42f7-42f6-934e-7fcb77f14eb7",
+            "name": "conan-sbom",
+            "type": "library"
+        },
+        "timestamp": "2025-08-04T16:44:28Z",
+        "tools": [
+            {
+                "externalReferences": [
+                    {
+                        "type": "website",
+                        "url": "https://github.com/conan-io/conan"
+                    }
+                ],
+                "name": "Conan-io"
+            }
+        ]
+    },
+    "serialNumber": "urn:uuid:1ea9a757-fd24-4023-958c-50e73d9b5c81",
+    "bomFormat": "CycloneDX",
+    "specVersion": "1.4",
+    "version": 1
+}

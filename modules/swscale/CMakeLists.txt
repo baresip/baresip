@@ -1,10 +1,21 @@
 project(swscale)
 
-find_package(FFMPEG COMPONENTS
-    avcodec avfilter avformat swscale swresample avdevice avutil)
+# Skip if explicitly disabled via Conan
+if(BARESIP_USE_CONAN AND DEFINED CONAN_FFMPEG_ENABLED AND NOT CONAN_FFMPEG_ENABLED)
+    return()
+endif()
 
-if(NOT FFMPEG_FOUND)
-  return()
+# Try Conan package first, then fallback to system Find module
+if(BARESIP_USE_CONAN)
+    find_package(ffmpeg QUIET)
+endif()
+
+if(NOT TARGET ffmpeg::ffmpeg)
+    find_package(FFMPEG COMPONENTS
+        avcodec avfilter avformat swscale swresample avdevice avutil)
+    if(NOT FFMPEG_FOUND)
+        return()
+    endif()
 endif()
 
 list(APPEND MODULES_DETECTED ${PROJECT_NAME})
@@ -18,5 +29,12 @@ else()
   add_library(${PROJECT_NAME} MODULE ${SRCS})
 endif()
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${FFMPEG_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} PRIVATE ${FFMPEG_LIBRARIES})
+# Link dependencies based on whether we're using Conan or not
+if(BARESIP_USE_CONAN AND TARGET ffmpeg::ffmpeg)
+    target_link_libraries(${PROJECT_NAME} PRIVATE ffmpeg::ffmpeg)
+    # Add to global list for main baresip library linking
+    set_property(GLOBAL APPEND PROPERTY BARESIP_LINK_LIBRARIES ffmpeg::ffmpeg)
+else()
+    target_include_directories(${PROJECT_NAME} PRIVATE ${FFMPEG_INCLUDE_DIRS})
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${FFMPEG_LIBRARIES})
+endif()

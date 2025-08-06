@@ -1,0 +1,1 @@
+. "/Users/palmarti/development/baresip/deactivate_conanbuildenv-release-armv8.sh"

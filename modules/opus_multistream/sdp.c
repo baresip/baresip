@@ -6,8 +6,8 @@
 
 #include <re.h>
 #include <baresip.h>
-#include <opus/opus_multistream.h>
-#include "opus_multistream.h"
+#include <opus_multistream.h>  /* Conan's Opus multistream types */
+#include "baresip_opus_multistream.h"
 
 
 static void assign_if(opus_int32 *v, const struct pl *pl,

@@ -1,0 +1,57 @@
+# Example Conan profile for Baresip
+# Copy to ~/.conan2/profiles/baresip and customize as needed
+
+[settings]
+os=Linux
+arch=x86_64
+compiler=gcc
+compiler.version=11
+compiler.libcxx=libstdc++11
+build_type=Release
+
+[options]
+# Core options
+baresip/*:shared=False
+baresip/*:static=False
+
+# Audio codecs - enable commonly used ones
+baresip/*:with_opus=True
+baresip/*:with_g722=True
+baresip/*:with_g711=True
+baresip/*:with_aac=False
+
+# Video codecs
+baresip/*:with_vpx=True
+baresip/*:with_av1=False
+baresip/*:with_ffmpeg=True
+
+# Audio systems - Linux defaults
+baresip/*:with_alsa=True
+baresip/*:with_pulseaudio=True
+baresip/*:with_jack=False
+baresip/*:with_portaudio=False
+baresip/*:with_pipewire=False
+
+# Security and networking
+baresip/*:with_openssl=True
+
+# UI and media
+baresip/*:with_gstreamer=False
+baresip/*:with_gtk=False
+baresip/*:with_sdl=False
+baresip/*:with_png=True
+baresip/*:with_sndfile=True
+
+# IoT and messaging
+baresip/*:with_mosquitto=False
+
+[buildenv]
+# Set specific compiler if needed
+# CC=gcc-11
+# CXX=g++-11
+
+[conf]
+# Parallel builds
+tools.cmake.cmaketoolchain:generator=Unix Makefiles
+tools.system.package_manager:mode=install
+tools.system.package_manager:sudo=True
