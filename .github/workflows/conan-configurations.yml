@@ -125,13 +125,13 @@ jobs:
     - name: Test package
       run: |
         # List what was built
-        conan list baresip/3.24.0:*
+        conan list baresip/4.0.0:*
         
         # Create simple test
         mkdir test && cd test
         cat > conanfile.txt << 'EOF'
         [requires]
-        baresip/3.24.0
+        baresip/4.0.0
         
         [generators]
         CMakeDeps
@@ -244,7 +244,7 @@ jobs:
           -o with_sdl=False \
           --build=missing
           
-        MINIMAL_PKG=$(conan list baresip/3.24.0:* --format=compact | head -1)
+        MINIMAL_PKG=$(conan list baresip/4.0.0:* --format=compact | head -1)
         MINIMAL_PATH=$(conan cache path $MINIMAL_PKG)
         MINIMAL_SIZE=$(du -sh "$MINIMAL_PATH" | cut -f1)
         
@@ -257,7 +257,7 @@ jobs:
           -o with_sdl=True \
           --build=missing
           
-        FULL_PKG=$(conan list baresip/3.24.0:* --format=compact | tail -1)
+        FULL_PKG=$(conan list baresip/4.0.0:* --format=compact | tail -1)
         FULL_PATH=$(conan cache path $FULL_PKG)
         FULL_SIZE=$(du -sh "$FULL_PATH" | cut -f1)
         

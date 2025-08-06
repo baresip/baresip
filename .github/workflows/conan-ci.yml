@@ -318,7 +318,7 @@ jobs:
         
     - name: Validate Conan recipe
       run: |
-        conan export . --name=baresip --version=3.24.0
+        conan export . --name=baresip --version=4.0.0
         
     - name: Check workflow syntax
       run: |

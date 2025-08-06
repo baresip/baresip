@@ -101,7 +101,7 @@ class BaresipConan(ConanFile):
     
     def requirements(self):
         # Core dependencies
-        self.requires("libre/3.24.0", transitive_headers=True)
+        self.requires("libre/4.0.0", transitive_headers=True)
         
         # Version overrides to resolve conflicts
         self.requires("opus/1.4")  # Use version compatible with FFmpeg to avoid conflicts

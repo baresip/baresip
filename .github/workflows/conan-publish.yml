@@ -8,7 +8,7 @@ on:
       version:
         description: 'Package version to publish'
         required: true
-        default: '3.24.0'
+        default: '4.0.0'
       remote:
         description: 'Conan remote to publish to'
         required: true
@@ -133,7 +133,7 @@ jobs:
           
     - name: Create package
       run: |
-        VERSION="${{ github.event.inputs.version || '3.24.0' }}"
+        VERSION="${{ github.event.inputs.version || '4.0.0' }}"
         
         # Build the package with optimized settings for distribution
         conan create . \
@@ -150,7 +150,7 @@ jobs:
           
     - name: Test package
       run: |
-        VERSION="${{ github.event.inputs.version || '3.24.0' }}"
+        VERSION="${{ github.event.inputs.version || '4.0.0' }}"
         
         # Create test consumer
         mkdir test-package && cd test-package
@@ -219,7 +219,7 @@ jobs:
       env:
         CONAN_REMOTE_URL: ${{ secrets.CONAN_REMOTE_URL }}
       run: |
-        VERSION="${{ github.event.inputs.version || '3.24.0' }}"
+        VERSION="${{ github.event.inputs.version || '4.0.0' }}"
         REMOTE_NAME="${{ github.event.inputs.remote || 'conancenter' }}"
         
         if [[ "$REMOTE_NAME" == "custom" && -n "$CONAN_REMOTE_URL" ]]; then
@@ -232,7 +232,7 @@ jobs:
         
     - name: Generate package info
       run: |
-        VERSION="${{ github.event.inputs.version || '3.24.0' }}"
+        VERSION="${{ github.event.inputs.version || '4.0.0' }}"
         
         echo "## 📦 Package Information" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY

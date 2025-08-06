@@ -64,10 +64,10 @@ jobs:
     - name: Verify package
       run: |
         # Quick verification that package was created successfully
-        conan list baresip/3.24.0:*
+        conan list baresip/4.0.0:*
         
         # Check if executable exists in package
-        PKG_PATH=$(conan cache path $(conan list baresip/3.24.0:* --format=compact | head -1))
+        PKG_PATH=$(conan cache path $(conan list baresip/4.0.0:* --format=compact | head -1))
         if [[ -f "$PKG_PATH/bin/baresip" ]]; then
           echo "✅ baresip executable found in package"
         else
