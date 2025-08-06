@@ -2,10 +2,14 @@ name: Conan Multi-Platform CI
 
 on:
   push:
-    branches: [ main, conan-integration ]
-  pull_request:
-    branches: [ main, conan-integration ]
+    branches: [ main ]  # Only run full CI on main branch
   workflow_dispatch:  # Allow manual triggering
+    inputs:
+      full_matrix:
+        description: 'Run full platform matrix'
+        required: false
+        default: 'false'
+        type: boolean
 
 env:
   CONAN_USER_HOME: "${{ github.workspace }}/conan-home"

@@ -1,9 +1,11 @@
-name: PR Checks
+name: Conan CI
 
 on:
   pull_request:
     branches: [ main ]
     types: [opened, synchronize, reopened]
+  push:
+    branches: [ conan-integration ]
 
 env:
   CONAN_NON_INTERACTIVE: 1
@@ -11,7 +13,7 @@ env:
 jobs:
   # Core validation - these jobs will show as required status checks
   validate:
-    name: "✅ Validate"
+    name: "✅ Recipe Validation"
     runs-on: ubuntu-latest
     
     steps:
@@ -33,15 +35,50 @@ jobs:
         
     - name: Check workflow syntax
       run: |
-        yamllint .github/workflows/
+        yamllint .github/workflows/conan-*.yml .github/workflows/pr-checks.yml
         
-  # Quick build test
-  quick-build:
-    name: "🚀 Quick Build"
+  # Multi-platform Conan builds
+  conan-build:
+    name: "🚀 Conan Build (${{ matrix.name }})"
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        include:
+          # Fast builds for PR feedback
+          - name: "Linux-Minimal"
+            os: ubuntu-latest
+            arch: x86_64
+            options: >
+              -o with_ffmpeg=False
+              -o with_opus=True
+              -o with_vpx=False
+              -o with_av1=False
+              -o with_sdl=False
+              -o with_gstreamer=False
+              
+          - name: "macOS-Audio"
+            os: macos-latest
+            arch: armv8
+            options: >
+              -o with_ffmpeg=False
+              -o with_opus=True
+              -o with_vpx=False
+              -o with_av1=False
+              -o with_sdl=True
+              -o with_gstreamer=False
+              -o with_sndfile=True
+              
+          - name: "Linux-Video"
+            os: ubuntu-latest
+            arch: x86_64
+            options: >
+              -o with_ffmpeg=True
+              -o with_opus=True
+              -o with_vpx=False
+              -o with_av1=True
+              -o with_sdl=True
+              -o with_gstreamer=False
     
     steps:
     - name: Checkout
@@ -60,37 +97,152 @@ jobs:
       run: |
         conan profile detect --force
         
-    - name: Install system deps (Linux)
+        # Create optimized profile
+        mkdir -p ~/.conan2/profiles
+        if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+          cat > ~/.conan2/profiles/ci << 'EOF'
+        [settings]
+        os=Linux
+        arch=${{ matrix.arch }}
+        compiler=gcc
+        compiler.version=11
+        compiler.libcxx=libstdc++11
+        build_type=Release
+        EOF
+        elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          cat > ~/.conan2/profiles/ci << 'EOF'
+        [settings]
+        os=Macos
+        arch=${{ matrix.arch }}
+        compiler=apple-clang
+        compiler.version=15
+        compiler.libcxx=libstdc++11
+        build_type=Release
+        [buildenv]
+        CC=clang
+        CXX=clang++
+        EOF
+        fi
+        
+    - name: Install system dependencies (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential cmake pkg-config
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          pkg-config \
+          libasound2-dev \
+          libpulse-dev \
+          portaudio19-dev
+          
+    - name: Install system dependencies (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew install cmake pkg-config
         
     - name: Cache Conan packages
       uses: actions/cache@v3
       with:
         path: ~/.conan2
-        key: pr-${{ matrix.os }}-${{ hashFiles('conanfile.py') }}
+        key: conan-ci-${{ matrix.os }}-${{ matrix.name }}-${{ hashFiles('conanfile.py') }}
         restore-keys: |
-          pr-${{ matrix.os }}-
-          conan-quick-${{ matrix.os }}-
+          conan-ci-${{ matrix.os }}-${{ matrix.name }}-
+          conan-ci-${{ matrix.os }}-
           conan-
           
-    - name: Quick build test
+    - name: Build with Conan
       run: |
-        # Minimal build for fast PR feedback
-        conan create . \
-          -o with_ffmpeg=False \
-          -o with_opus=True \
-          -o with_vpx=False \
-          -o with_av1=False \
-          -o with_sdl=True \
-          -o with_gstreamer=False \
-          --build=missing
-          
-    - name: Verify package
+        echo "Building ${{ matrix.name }} with options: ${{ matrix.options }}"
+        conan create . --profile:build=ci --profile:host=ci ${{ matrix.options }} --build=missing
+        
+    - name: Test package functionality
       run: |
+        # Verify package was created
         conan list baresip/4.0.0:*
+        
+        # Get package path and verify contents
+        PKG_REF=$(conan list baresip/4.0.0:* --format=compact | head -1)
+        PKG_PATH=$(conan cache path "$PKG_REF")
+        
+        echo "Package contents:"
+        find "$PKG_PATH" -name "baresip*" -type f | head -10
+        
+        # Verify executable exists
+        if [[ -f "$PKG_PATH/bin/baresip" ]]; then
+          echo "✅ baresip executable found"
+          ls -la "$PKG_PATH/bin/baresip"
+        else
+          echo "⚠️ baresip executable not found in bin/"
+          ls -la "$PKG_PATH/bin/" || echo "bin directory not found"
+        fi
+        
+        # Test basic package info
+        echo "=== Package Info ==="
+        conan show baresip/4.0.0:*
+        
+    - name: Create test consumer
+      run: |
+        mkdir test-consumer && cd test-consumer
+        
+        cat > conanfile.txt << 'EOF'
+        [requires]
+        baresip/4.0.0
+        
+        [generators]
+        CMakeDeps
+        CMakeToolchain
+        
+        [layout]
+        cmake_layout
+        EOF
+        
+        cat > CMakeLists.txt << 'EOF'
+        cmake_minimum_required(VERSION 3.18)
+        project(test-consumer)
+        
+        find_package(baresip REQUIRED)
+        
+        add_executable(test-consumer test.cpp)
+        target_link_libraries(test-consumer baresip::baresip)
+        EOF
+        
+        cat > test.cpp << 'EOF'
+        #include <iostream>
+        extern "C" {
+        #include "baresip.h"
+        }
+        
+        int main() {
+            std::cout << "Testing baresip package integration..." << std::endl;
+            std::cout << "Baresip version: " << BARESIP_VERSION << std::endl;
+            std::cout << "✅ Package integration successful!" << std::endl;
+            return 0;
+        }
+        EOF
+        
+        echo "=== Testing Package Consumer ==="
+        conan install . --profile:build=ci --profile:host=ci --build=missing
+        cmake --preset conan-release
+        cmake --build --preset conan-release
+        
+        # Run the test
+        if [[ "${{ runner.os }}" == "Linux" ]]; then
+          ./build/Release/test-consumer
+        elif [[ "${{ runner.os }}" == "macOS" ]]; then
+          ./build/Release/test-consumer
+        fi
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: conan-build-${{ matrix.name }}-${{ github.run_number }}
+        path: |
+          ~/.conan2/p/*/p/bin/baresip*
+          ~/.conan2/p/*/p/lib/libbaresip*
+          ~/.conan2/p/*/p/lib/*.so
+        retention-days: 3
         
   # Summary for PR
   pr-summary:

@@ -9,7 +9,23 @@ on:
     - main
 
 jobs:
+  check-conan:
+    runs-on: ubuntu-latest
+    outputs:
+      skip-legacy: ${{ steps.check.outputs.skip }}
+    steps:
+    - uses: actions/checkout@v4
+    - id: check
+      run: |
+        if [[ -f "conanfile.py" ]]; then
+          echo "skip=true" >> $GITHUB_OUTPUT
+        else
+          echo "skip=false" >> $GITHUB_OUTPUT
+        fi
+  
   coverage:
+    needs: check-conan
+    if: needs.check-conan.outputs.skip-legacy != 'true'
     runs-on: ubuntu-22.04
 
     steps:

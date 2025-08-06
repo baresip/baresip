@@ -2,14 +2,8 @@ name: Conan Configuration Matrix
 
 on:
   push:
-    branches: [ main, conan-integration ]
+    branches: [ main ]  # Only run on main branch
     paths: 
-      - 'conanfile.py'
-      - 'conandata.yml'
-      - '.github/workflows/conan-*.yml'
-  pull_request:
-    branches: [ main, conan-integration ]
-    paths:
       - 'conanfile.py'
       - 'conandata.yml'
       - '.github/workflows/conan-*.yml'

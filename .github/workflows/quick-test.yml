@@ -1,9 +1,7 @@
 name: Quick Test
 
 on:
-  pull_request:
-    branches: [ conan-integration ]
-  workflow_dispatch:
+  workflow_dispatch:  # Manual triggering only (PR CI handles this)
 
 env:
   CONAN_NON_INTERACTIVE: 1

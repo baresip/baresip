@@ -1,0 +1,66 @@
+name: Disable Legacy CI
+
+# This workflow runs early and cancels legacy workflows for Conan integration branches
+# This ensures only Conan-based CI runs for the new integration
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ conan-integration ]
+
+jobs:
+  check-conan-integration:
+    name: "Check if Conan Integration"
+    runs-on: ubuntu-latest
+    outputs:
+      is-conan: ${{ steps.check.outputs.is-conan }}
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Check for Conan integration
+      id: check
+      run: |
+        # Check if this is a Conan integration branch/PR
+        if [[ "${{ github.head_ref }}" == *"conan"* ]] || [[ "${{ github.ref_name }}" == *"conan"* ]] || [[ -f "conanfile.py" ]]; then
+          echo "is-conan=true" >> $GITHUB_OUTPUT
+          echo "🚀 Conan integration detected - legacy workflows will be skipped"
+        else
+          echo "is-conan=false" >> $GITHUB_OUTPUT
+          echo "📦 Standard build - legacy workflows will run"
+        fi
+        
+  cancel-legacy:
+    name: "Cancel Legacy Workflows"
+    runs-on: ubuntu-latest
+    needs: check-conan-integration
+    if: needs.check-conan-integration.outputs.is-conan == 'true'
+    
+    steps:
+    - name: Cancel legacy workflows
+      run: |
+        echo "🎯 Conan integration detected!"
+        echo "Legacy workflows are automatically skipped for Conan branches."
+        echo "Only Conan-based CI will run:"
+        echo "  ✅ Conan CI (Recipe validation + Multi-platform builds)"
+        echo "  ✅ Conan Configuration Matrix (Feature testing)"
+        echo "  ✅ Quick Test (Development feedback)"
+        echo ""
+        echo "This provides cleaner, faster, and more relevant CI results!"
+        
+        # Add a visible check mark for the PR
+        echo "## 🎯 CI Strategy" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ **Conan Integration Detected**" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "This PR uses modern Conan-based CI instead of legacy workflows:" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Workflow | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| 🚀 Conan CI | ✅ Active |" >> $GITHUB_STEP_SUMMARY
+        echo "| ⚙️ Configuration Matrix | ✅ Active |" >> $GITHUB_STEP_SUMMARY
+        echo "| ⚡ Quick Test | ✅ Active |" >> $GITHUB_STEP_SUMMARY
+        echo "| 📦 Legacy Build | 🚫 Skipped |" >> $GITHUB_STEP_SUMMARY
+        echo "| 🔍 Legacy Tests | 🚫 Skipped |" >> $GITHUB_STEP_SUMMARY

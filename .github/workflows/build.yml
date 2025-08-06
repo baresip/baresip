@@ -10,8 +10,26 @@ on:
     - stable
 
 jobs:
+  # Check if this is a Conan integration (skip legacy build if so)
+  check-conan:
+    runs-on: ubuntu-latest
+    outputs:
+      skip-legacy: ${{ steps.check.outputs.skip }}
+    steps:
+    - uses: actions/checkout@v4
+    - id: check
+      run: |
+        if [[ -f "conanfile.py" ]]; then
+          echo "skip=true" >> $GITHUB_OUTPUT
+          echo "🚀 Conan integration detected - skipping legacy build"
+        else
+          echo "skip=false" >> $GITHUB_OUTPUT
+        fi
+  
   build:
     runs-on: ${{ matrix.os }}
+    needs: check-conan
+    if: needs.check-conan.outputs.skip-legacy != 'true'
 
     strategy:
       matrix:
