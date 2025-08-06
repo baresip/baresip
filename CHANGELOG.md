@@ -5,10 +5,38 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v4.0.0 - 2025-08-06
+
+### What's Changed
+
+This major release drops backward wrappers for the old UA-events API. Applications now have to be ported to the new baresip events API. Release v4.0.0 further includes breaking API renaming, code/API cleanup and drops obsolete API functions.
+The breaking changes of re/baresip are listed here: https://github.com/baresip/re/discussions/1372
+
+* bevent: ensure that pointer to call is valid by @cspiel1 in https://github.com/baresip/baresip/pull/3436
+* ebuacip: move to baresip-apps by @alfredh in https://github.com/baresip/baresip/pull/3438
+* net: remove IPv6 check which is no longer needed by @alfredh in https://github.com/baresip/baresip/pull/3439
+* av1: remove backwards definition of AOM_USAGE_REALTIME by @alfredh in https://github.com/baresip/baresip/pull/3440
+* srtp: fix size err printf by @sreimers in https://github.com/baresip/baresip/pull/3441
+* avcodec: remove ifdef AV_CODEC_ID_H265, should be always enabled by @alfredh in https://github.com/baresip/baresip/pull/3443
+* misc: add baresip_version() to get Baresip version string by @alfredh in https://github.com/baresip/baresip/pull/3442
+* docs: update README by @alfredh in https://github.com/baresip/baresip/pull/3444
+* bevent: remove deprecated ua_event API by @cspiel1 in https://github.com/baresip/baresip/pull/3437
+* ctrl_dbus: check return value of mtx_init() by @alfredh in https://github.com/baresip/baresip/pull/3447
+* pulse: use str_ncpy() instead of insecure strcpy() by @alfredh in https://github.com/baresip/baresip/pull/3446
+* av1: use av1_packetize() function instead of wrapper by @alfredh in https://github.com/baresip/baresip/pull/3448
+* enum ua event rename by @cspiel1 in https://github.com/baresip/baresip/pull/3445
+* call: prepare to receive video immediately with 200 Ok by @cspiel1 in https://github.com/baresip/baresip/pull/3449
+* in_band_dtmf: fix cross compiler alignment warning by @cspiel1 in https://github.com/baresip/baresip/pull/3450
+* uri: remove password field by @alfredh in https://github.com/baresip/baresip/pull/3451
+* audio: remove deprecated audio_start by @sreimers in https://github.com/baresip/baresip/pull/3453
+* bevent: remove unused CNT_DEPRECATED_WARNINGS enum by @sreimers in https://github.com/baresip/baresip/pull/3452
+
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v3.24.0...v4.0.0
 
 ## v3.24.0 - 2025-07-09
 
-## What's Changed
+### What's Changed
 * test/ccheck: add LIST_FOREACH_SAFE check by @sreimers in https://github.com/baresip/baresip/pull/3412
 * config: removed "rtp_rxmode thread is currently experimental" warning by @juha-h in https://github.com/baresip/baresip/pull/3413
 * gzrtp: increase mbuf size if about to run out by @juha-h in https://github.com/baresip/baresip/pull/3414
