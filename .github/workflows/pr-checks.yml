@@ -97,6 +97,9 @@ jobs:
       run: |
         conan profile detect --force
         
+        # Add SubGridLabs remote for shared packages (if available)
+        conan remote add subgridlabs https://raw.githubusercontent.com/SubGridLabs/conan-packages/main || true
+        
         # Create optimized profile
         mkdir -p ~/.conan2/profiles
         if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
@@ -154,7 +157,67 @@ jobs:
     - name: Build with Conan
       run: |
         echo "Building ${{ matrix.name }} with options: ${{ matrix.options }}"
-        conan create . --profile:build=ci --profile:host=ci ${{ matrix.options }} --build=missing
+        
+        # Try to build with existing packages first
+        if ! conan create . --profile:build=ci --profile:host=ci ${{ matrix.options }} --build=missing; then
+          echo "⚠️ Build failed, likely due to missing libre/4.0.0"
+          echo "🔧 Attempting to build libre from source as fallback..."
+          
+          # Build libre from source
+          cd /tmp
+          git clone https://github.com/baresip/re.git
+          cd re
+          git checkout v4.0.0 || git checkout main
+          
+          # Create a simple conanfile for libre if it doesn't exist
+          if [[ ! -f conanfile.py ]]; then
+            cat > conanfile.py << 'EOF'
+        from conan import ConanFile
+        from conan.tools.cmake import CMakeToolchain, CMake, cmake_layout
+        
+        class LibreConan(ConanFile):
+            name = "libre"
+            version = "4.0.0"
+            
+            settings = "os", "compiler", "build_type", "arch"
+            options = {"shared": [True, False], "fPIC": [True, False]}
+            default_options = {"shared": False, "fPIC": True}
+            
+            exports_sources = "*"
+            
+            def config_options(self):
+                if self.settings.os == "Windows":
+                    del self.options.fPIC
+                    
+            def configure(self):
+                if self.options.shared:
+                    self.options.rm_safe("fPIC")
+            
+            def layout(self):
+                cmake_layout(self)
+                
+            def generate(self):
+                tc = CMakeToolchain(self)
+                tc.generate()
+                
+            def build(self):
+                cmake = CMake(self)
+                cmake.configure()
+                cmake.build()
+                
+            def package(self):
+                cmake = CMake(self)
+                cmake.install()
+        EOF
+          fi
+          
+          # Build libre
+          conan create . --profile:build=ci --profile:host=ci
+          
+          # Go back and try building baresip again
+          cd ${{ github.workspace }}
+          conan create . --profile:build=ci --profile:host=ci ${{ matrix.options }} --build=missing
+        fi
         
     - name: Test package functionality
       run: |

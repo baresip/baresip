@@ -1,0 +1,156 @@
+name: Setup Conan Artifactory
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        default: 'setup'
+        type: choice
+        options:
+          - setup
+          - upload-libre
+          - test-remote
+
+env:
+  CONAN_NON_INTERACTIVE: 1
+
+jobs:
+  setup-artifactory:
+    runs-on: ubuntu-latest
+    name: "🏗️ Setup Conan Repository"
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install Conan
+      run: |
+        pip install "conan>=2.0.0"
+        
+    - name: Configure Conan profiles
+      run: |
+        conan profile detect --force
+        
+    - name: Setup GitHub Packages as Conan remote
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        # Add GitHub Packages as a Conan remote
+        conan remote add github-packages https://nuget.pkg.github.com/SubGridLabs/index.json
+        
+        # Alternative: Use generic GitHub Packages for Conan
+        # This approach uses GitHub's generic package registry
+        echo "Setting up GitHub Packages as Conan repository..."
+        
+        # Create a proper Conan remote configuration
+        cat > ~/.conan2/remotes.json << 'EOF'
+        {
+          "remotes": [
+            {
+              "name": "subgridlabs",
+              "url": "https://api.github.com/repos/SubGridLabs/conan-packages",
+              "verify_ssl": true,
+              "disabled": false
+            },
+            {
+              "name": "conancenter", 
+              "url": "https://center.conan.io",
+              "verify_ssl": true,
+              "disabled": false
+            }
+          ]
+        }
+        EOF
+        
+    - name: Upload libre package (if exists locally)
+      if: github.event.inputs.action == 'upload-libre'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "This step would upload libre/4.0.0 if it existed locally"
+        echo "Since we're in CI, we'll need to build it first"
+        
+        # Check if libre package exists in any form
+        conan list libre/4.0.0:* || echo "libre/4.0.0 not found in cache"
+        
+    - name: Test remote connection
+      if: github.event.inputs.action == 'test-remote'
+      run: |
+        conan remote list
+        echo "Testing connection to configured remotes..."
+        
+        # Test each remote
+        for remote in $(conan remote list --format=compact); do
+          echo "Testing remote: $remote"
+          conan search --remote=$remote "*" || echo "Remote $remote not accessible"
+        done
+        
+  # Alternative approach: Setup JFrog Cloud
+  setup-jfrog:
+    runs-on: ubuntu-latest
+    name: "☁️ JFrog Cloud Setup (Alternative)"
+    if: false  # Disabled by default
+    
+    steps:
+    - name: Setup JFrog CLI
+      uses: jfrog/setup-jfrog-cli@v3
+      env:
+        JF_URL: ${{ secrets.JFROG_URL }}
+        JF_ACCESS_TOKEN: ${{ secrets.JFROG_ACCESS_TOKEN }}
+        
+    - name: Configure Conan with JFrog
+      run: |
+        conan remote add jfrog-conan ${{ secrets.JFROG_CONAN_URL }}
+        echo ${{ secrets.JFROG_ACCESS_TOKEN }} | conan remote login jfrog-conan ${{ secrets.JFROG_USERNAME }}
+        
+  # Generate instructions for manual setup
+  generate-instructions:
+    runs-on: ubuntu-latest
+    name: "📋 Generate Setup Instructions"
+    
+    steps:
+    - name: Generate comprehensive setup guide
+      run: |
+        echo "# 🏗️ Conan Artifactory Setup Guide" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Quick Start Options" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        echo "### Option 1: GitHub Packages (Recommended)" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+        echo "# Add SubGridLabs Conan remote" >> $GITHUB_STEP_SUMMARY
+        echo "conan remote add subgridlabs https://raw.githubusercontent.com/SubGridLabs/conan-packages/main" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "# Upload your libre package" >> $GITHUB_STEP_SUMMARY
+        echo "conan upload libre/4.0.0 --remote=subgridlabs --all" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        echo "### Option 2: JFrog Cloud Free Tier" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+        echo "# Sign up at https://jfrog.com/start-free/" >> $GITHUB_STEP_SUMMARY
+        echo "# Create Conan repository" >> $GITHUB_STEP_SUMMARY
+        echo "conan remote add jfrog-conan https://yourorg.jfrog.io/artifactory/api/conan/conan" >> $GITHUB_STEP_SUMMARY
+        echo "conan remote login jfrog-conan your-username" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        echo "### Option 3: Simple File-based Repository" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+        echo "# Create a simple file-based repository in GitHub" >> $GITHUB_STEP_SUMMARY
+        echo "# Store packages as GitHub releases" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        echo "## Next Steps" >> $GITHUB_STEP_SUMMARY
+        echo "1. Choose your preferred option" >> $GITHUB_STEP_SUMMARY
+        echo "2. Upload libre/4.0.0 to the repository" >> $GITHUB_STEP_SUMMARY
+        echo "3. Configure CI secrets for authentication" >> $GITHUB_STEP_SUMMARY
+        echo "4. Update workflows to use the shared repository" >> $GITHUB_STEP_SUMMARY
