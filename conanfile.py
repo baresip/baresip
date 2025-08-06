@@ -6,7 +6,7 @@ import os
 
 class BaresipConan(ConanFile):
     name = "baresip"
-    version = "3.24.0"
+    version = "4.0.0"
     
     # Export all source files needed for building
     exports_sources = "CMakeLists.txt", "src/*", "include/*", "modules/*", "test/*", "share/*", "packaging/*", "webrtc/*", "cmake/*", "mk/*", "LICENSE", "README.md"

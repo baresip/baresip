@@ -1,0 +1,77 @@
+name: Quick Test
+
+on:
+  pull_request:
+    branches: [ conan-integration ]
+  workflow_dispatch:
+
+env:
+  CONAN_NON_INTERACTIVE: 1
+
+jobs:
+  quick-build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    name: "Quick test on ${{ matrix.os }}"
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install Conan
+      run: |
+        pip install "conan>=2.0.0"
+        
+    - name: Configure Conan
+      run: |
+        conan profile detect --force
+        
+    - name: Install minimal system deps (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake pkg-config
+        
+    - name: Cache Conan packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.conan2
+        key: conan-quick-${{ matrix.os }}-${{ hashFiles('conanfile.py') }}
+        restore-keys: |
+          conan-quick-${{ matrix.os }}-
+          conan-quick-
+          conan-
+          
+    - name: Quick build test
+      run: |
+        # Test with minimal dependencies for speed
+        conan create . \
+          -o with_ffmpeg=False \
+          -o with_opus=True \
+          -o with_vpx=False \
+          -o with_av1=False \
+          -o with_sdl=True \
+          -o with_gstreamer=False \
+          --build=missing
+          
+    - name: Verify package
+      run: |
+        # Quick verification that package was created successfully
+        conan list baresip/3.24.0:*
+        
+        # Check if executable exists in package
+        PKG_PATH=$(conan cache path $(conan list baresip/3.24.0:* --format=compact | head -1))
+        if [[ -f "$PKG_PATH/bin/baresip" ]]; then
+          echo "✅ baresip executable found in package"
+        else
+          echo "❌ baresip executable not found"
+          ls -la "$PKG_PATH/bin/" || echo "bin directory not found"
+          exit 1
+        fi

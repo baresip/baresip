@@ -1,0 +1,277 @@
+name: Conan Configuration Matrix
+
+on:
+  push:
+    branches: [ main, conan-integration ]
+    paths: 
+      - 'conanfile.py'
+      - 'conandata.yml'
+      - '.github/workflows/conan-*.yml'
+  pull_request:
+    branches: [ main, conan-integration ]
+    paths:
+      - 'conanfile.py'
+      - 'conandata.yml'
+      - '.github/workflows/conan-*.yml'
+  workflow_dispatch:
+    inputs:
+      test_all_configs:
+        description: 'Test all configuration combinations'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  CONAN_NON_INTERACTIVE: 1
+
+jobs:
+  # Test different feature combinations
+  feature-matrix:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        include:
+          # Minimal configuration - fastest build
+          - name: "minimal"
+            options: >
+              -o with_ffmpeg=False
+              -o with_opus=False
+              -o with_vpx=False
+              -o with_av1=False
+              -o with_sdl=False
+              -o with_gstreamer=False
+              
+          # Audio-focused configuration
+          - name: "audio-focus"
+            options: >
+              -o with_ffmpeg=False
+              -o with_opus=True
+              -o with_vpx=False
+              -o with_av1=False
+              -o with_sdl=False
+              -o with_gstreamer=False
+              -o with_sndfile=True
+              
+          # Video-focused configuration  
+          - name: "video-focus"
+            options: >
+              -o with_ffmpeg=True
+              -o with_opus=False
+              -o with_vpx=True
+              -o with_av1=True
+              -o with_sdl=True
+              -o with_gstreamer=True
+              
+          # Full-featured configuration
+          - name: "full-featured"
+            options: >
+              -o with_ffmpeg=True
+              -o with_opus=True
+              -o with_vpx=True
+              -o with_av1=True
+              -o with_sdl=True
+              -o with_gstreamer=True
+              -o with_sndfile=True
+              -o with_mosquitto=True
+              -o with_png=True
+              
+    runs-on: ${{ matrix.os }}
+    name: "${{ matrix.name }} on ${{ matrix.os }}"
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install Conan
+      run: |
+        pip install "conan>=2.0.0"
+        
+    - name: Configure Conan
+      run: |
+        conan profile detect --force
+        
+    - name: Install system dependencies (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          pkg-config \
+          libasound2-dev \
+          libpulse-dev \
+          portaudio19-dev
+          
+    - name: Cache Conan packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.conan2
+        key: conan-${{ matrix.os }}-${{ matrix.name }}-${{ hashFiles('conanfile.py') }}
+        restore-keys: |
+          conan-${{ matrix.os }}-
+          conan-
+          
+    - name: Build configuration
+      run: |
+        echo "Building with options: ${{ matrix.options }}"
+        conan create . ${{ matrix.options }} --build=missing
+        
+    - name: Test package
+      run: |
+        # List what was built
+        conan list baresip/3.24.0:*
+        
+        # Create simple test
+        mkdir test && cd test
+        cat > conanfile.txt << 'EOF'
+        [requires]
+        baresip/3.24.0
+        
+        [generators]
+        CMakeDeps
+        CMakeToolchain
+        EOF
+        
+        conan install . ${{ matrix.options }}
+        
+  # Test cross-compilation scenarios
+  cross-compile:
+    if: github.event.inputs.test_all_configs == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        target:
+          - name: "ios-arm64"
+            profile: |
+              [settings]
+              os=iOS
+              arch=armv8
+              compiler=apple-clang
+              compiler.version=15
+              compiler.libcxx=libstdc++11
+              build_type=Release
+            options: >
+              -o with_ffmpeg=False
+              -o with_opus=True
+              -o with_sdl=False
+              -o with_alsa=False
+              -o with_pulseaudio=False
+              -o with_portaudio=False
+              
+          - name: "ios-simulator"
+            profile: |
+              [settings]
+              os=iOS
+              arch=x86_64
+              compiler=apple-clang
+              compiler.version=15
+              compiler.libcxx=libstdc++11
+              build_type=Release
+            options: >
+              -o with_ffmpeg=False
+              -o with_opus=True
+              -o with_sdl=False
+              -o with_alsa=False
+              -o with_pulseaudio=False
+              -o with_portaudio=False
+              
+    name: "Cross-compile ${{ matrix.target.name }}"
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install Conan
+      run: |
+        pip install "conan>=2.0.0"
+        
+    - name: Configure Conan
+      run: |
+        conan profile detect --force
+        mkdir -p ~/.conan2/profiles
+        cat > ~/.conan2/profiles/target << 'EOF'
+        ${{ matrix.target.profile }}
+        EOF
+        
+    - name: Build for target
+      run: |
+        conan create . --profile:build=default --profile:host=target ${{ matrix.target.options }} --build=missing
+        
+  # Performance and size analysis
+  analysis:
+    runs-on: ubuntu-latest
+    name: "Package Analysis"
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install tools
+      run: |
+        pip install "conan>=2.0.0"
+        sudo apt-get update
+        sudo apt-get install -y tree
+        
+    - name: Configure Conan
+      run: |
+        conan profile detect --force
+        
+    - name: Build and analyze
+      run: |
+        # Build minimal and full configurations
+        echo "=== Building Minimal Configuration ==="
+        conan create . \
+          -o with_ffmpeg=False \
+          -o with_opus=False \
+          -o with_vpx=False \
+          -o with_av1=False \
+          -o with_sdl=False \
+          --build=missing
+          
+        MINIMAL_PKG=$(conan list baresip/3.24.0:* --format=compact | head -1)
+        MINIMAL_PATH=$(conan cache path $MINIMAL_PKG)
+        MINIMAL_SIZE=$(du -sh "$MINIMAL_PATH" | cut -f1)
+        
+        echo "=== Building Full Configuration ==="
+        conan create . \
+          -o with_ffmpeg=True \
+          -o with_opus=True \
+          -o with_vpx=True \
+          -o with_av1=True \
+          -o with_sdl=True \
+          --build=missing
+          
+        FULL_PKG=$(conan list baresip/3.24.0:* --format=compact | tail -1)
+        FULL_PATH=$(conan cache path $FULL_PKG)
+        FULL_SIZE=$(du -sh "$FULL_PATH" | cut -f1)
+        
+        # Generate summary
+        echo "## 📊 Package Analysis" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Configuration | Package Size |" >> $GITHUB_STEP_SUMMARY
+        echo "|---------------|--------------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Minimal | $MINIMAL_SIZE |" >> $GITHUB_STEP_SUMMARY
+        echo "| Full-featured | $FULL_SIZE |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Show package contents
+        echo "### 📁 Package Structure" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        tree "$FULL_PATH" -L 3 >> $GITHUB_STEP_SUMMARY || ls -la "$FULL_PATH" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

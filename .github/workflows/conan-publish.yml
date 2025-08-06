@@ -1,0 +1,254 @@
+name: Publish Conan Package
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Package version to publish'
+        required: true
+        default: '3.24.0'
+      remote:
+        description: 'Conan remote to publish to'
+        required: true
+        default: 'conancenter'
+        type: choice
+        options:
+          - conancenter
+          - artifactory
+          - custom
+
+env:
+  CONAN_NON_INTERACTIVE: 1
+
+jobs:
+  publish:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: x86_64
+          - os: macos-latest  
+            arch: armv8
+          - os: macos-latest
+            arch: x86_64
+          - os: windows-latest
+            arch: x86_64
+            
+    name: "Build & Upload ${{ matrix.os }}-${{ matrix.arch }}"
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install Conan
+      run: |
+        pip install "conan>=2.0.0"
+        
+    - name: Configure Conan
+      run: |
+        conan profile detect --force
+        
+        # Set up the target profile
+        if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+          PROFILE_OS="Linux"
+          COMPILER="gcc"
+          COMPILER_VERSION="11"
+        elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          PROFILE_OS="Macos" 
+          COMPILER="apple-clang"
+          COMPILER_VERSION="15"
+        elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          PROFILE_OS="Windows"
+          COMPILER="msvc"
+          COMPILER_VERSION="193"
+        fi
+        
+        mkdir -p ~/.conan2/profiles
+        cat > ~/.conan2/profiles/release << EOF
+        [settings]
+        os=$PROFILE_OS
+        arch=${{ matrix.arch }}
+        compiler=$COMPILER
+        compiler.version=$COMPILER_VERSION
+        build_type=Release
+        EOF
+        
+        if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+          echo "compiler.libcxx=libstdc++11" >> ~/.conan2/profiles/release
+        elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          echo "compiler.libcxx=libstdc++11" >> ~/.conan2/profiles/release
+        elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          echo "compiler.runtime=dynamic" >> ~/.conan2/profiles/release
+        fi
+        
+    - name: Install system dependencies (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          pkg-config \
+          libasound2-dev \
+          libpulse-dev \
+          portaudio19-dev
+          
+    - name: Configure remote
+      env:
+        CONAN_LOGIN_USERNAME: ${{ secrets.CONAN_LOGIN_USERNAME }}
+        CONAN_PASSWORD: ${{ secrets.CONAN_PASSWORD }}
+        CONAN_REMOTE_URL: ${{ secrets.CONAN_REMOTE_URL }}
+      run: |
+        # Configure the upload remote
+        REMOTE_NAME="${{ github.event.inputs.remote || 'conancenter' }}"
+        
+        if [[ "$REMOTE_NAME" == "conancenter" ]]; then
+          echo "Publishing to ConanCenter (requires approval process)"
+          # ConanCenter publishing is via pull requests, not direct upload
+          echo "Note: ConanCenter requires submitting a PR to conan-center-index"
+        elif [[ "$REMOTE_NAME" == "custom" && -n "$CONAN_REMOTE_URL" ]]; then
+          conan remote add custom "$CONAN_REMOTE_URL"
+          if [[ -n "$CONAN_LOGIN_USERNAME" ]]; then
+            echo "$CONAN_PASSWORD" | conan remote login custom "$CONAN_LOGIN_USERNAME"
+          fi
+        fi
+        
+    - name: Cache Conan packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.conan2
+        key: conan-publish-${{ matrix.os }}-${{ matrix.arch }}-${{ hashFiles('conanfile.py') }}
+        restore-keys: |
+          conan-publish-${{ matrix.os }}-${{ matrix.arch }}-
+          conan-publish-${{ matrix.os }}-
+          conan-publish-
+          
+    - name: Create package
+      run: |
+        VERSION="${{ github.event.inputs.version || '3.24.0' }}"
+        
+        # Build the package with optimized settings for distribution
+        conan create . \
+          --name=baresip \
+          --version=$VERSION \
+          --profile:build=default \
+          --profile:host=release \
+          -o with_ffmpeg=True \
+          -o with_opus=True \
+          -o with_sdl=True \
+          -o with_sndfile=True \
+          -o with_openssl=True \
+          --build=missing
+          
+    - name: Test package
+      run: |
+        VERSION="${{ github.event.inputs.version || '3.24.0' }}"
+        
+        # Create test consumer
+        mkdir test-package && cd test-package
+        cat > conanfile.py << 'EOF'
+        from conan import ConanFile
+        from conan.tools.cmake import cmake_layout, CMakeToolchain, CMakeDeps, CMake
+        
+        class TestBaresip(ConanFile):
+            settings = "os", "compiler", "build_type", "arch"
+            
+            def requirements(self):
+                self.requires("baresip/$VERSION")
+                
+            def layout(self):
+                cmake_layout(self)
+                
+            def generate(self):
+                deps = CMakeDeps(self)
+                deps.generate()
+                tc = CMakeToolchain(self)
+                tc.generate()
+                
+            def build(self):
+                cmake = CMake(self)
+                cmake.configure()
+                cmake.build()
+                
+            def test(self):
+                if self.settings.os == "Windows":
+                    self.run("./build/Release/test_package.exe")
+                else:
+                    self.run("./build/Release/test_package")
+        EOF
+        
+        # Replace $VERSION in the file
+        sed -i.bak "s/\$VERSION/$VERSION/g" conanfile.py
+        rm conanfile.py.bak
+        
+        cat > CMakeLists.txt << 'EOF'
+        cmake_minimum_required(VERSION 3.18)
+        project(test_package)
+        
+        find_package(baresip REQUIRED)
+        
+        add_executable(test_package test_package.cpp)
+        target_link_libraries(test_package baresip::baresip)
+        EOF
+        
+        cat > test_package.cpp << 'EOF'
+        #include <iostream>
+        extern "C" {
+        #include "baresip.h"
+        }
+        
+        int main() {
+            std::cout << "Testing baresip package..." << std::endl;
+            std::cout << "Baresip version: " << BARESIP_VERSION << std::endl;
+            std::cout << "✅ Package test successful!" << std::endl;
+            return 0;
+        }
+        EOF
+        
+        conan create . --profile:build=default --profile:host=release
+        
+    - name: Upload package (if remote configured)
+      env:
+        CONAN_REMOTE_URL: ${{ secrets.CONAN_REMOTE_URL }}
+      run: |
+        VERSION="${{ github.event.inputs.version || '3.24.0' }}"
+        REMOTE_NAME="${{ github.event.inputs.remote || 'conancenter' }}"
+        
+        if [[ "$REMOTE_NAME" == "custom" && -n "$CONAN_REMOTE_URL" ]]; then
+          echo "Uploading to custom remote..."
+          conan upload "baresip/$VERSION" --remote=custom --confirm
+        else
+          echo "Package created successfully. For ConanCenter, submit a PR to conan-center-index."
+          echo "Package reference: baresip/$VERSION"
+        fi
+        
+    - name: Generate package info
+      run: |
+        VERSION="${{ github.event.inputs.version || '3.24.0' }}"
+        
+        echo "## 📦 Package Information" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Package**: baresip/$VERSION" >> $GITHUB_STEP_SUMMARY
+        echo "- **Platform**: ${{ matrix.os }}-${{ matrix.arch }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Build Type**: Release" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        PKG_PATH=$(conan cache path $(conan list "baresip/$VERSION:*" --format=compact | head -1))
+        if [[ -d "$PKG_PATH" ]]; then
+          PKG_SIZE=$(du -sh "$PKG_PATH" | cut -f1)
+          echo "- **Package Size**: $PKG_SIZE" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Package Contents" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        conan list "baresip/$VERSION:*" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
