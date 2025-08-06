@@ -248,7 +248,7 @@ jobs:
   pr-summary:
     name: "📋 PR Summary"
     runs-on: ubuntu-latest
-    needs: [validate, quick-build]
+    needs: [validate, conan-build]
     if: always()
     
     steps:
@@ -263,10 +263,10 @@ jobs:
           echo "- ❌ **Recipe Validation**: Failed" >> $GITHUB_STEP_SUMMARY
         fi
         
-        if [[ "${{ needs.quick-build.result }}" == "success" ]]; then
-          echo "- ✅ **Quick Build**: Passed on Linux & macOS" >> $GITHUB_STEP_SUMMARY
+        if [[ "${{ needs.conan-build.result }}" == "success" ]]; then
+          echo "- ✅ **Conan Build**: Passed (Linux-Minimal, macOS-Audio, Linux-Video)" >> $GITHUB_STEP_SUMMARY
         else
-          echo "- ❌ **Quick Build**: Failed" >> $GITHUB_STEP_SUMMARY
+          echo "- ❌ **Conan Build**: Failed" >> $GITHUB_STEP_SUMMARY
         fi
         
         echo "" >> $GITHUB_STEP_SUMMARY
