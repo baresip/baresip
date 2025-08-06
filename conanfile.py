@@ -68,34 +68,79 @@ class BaresipConan(ConanFile):
         "with_av1": True,  # Modern codec, good hardware support on macOS
         "with_ffmpeg": False,
         
-        # Audio systems - cross-platform friendly defaults
-        "with_alsa": False,        # Linux-specific
-        "with_pulseaudio": False,  # Linux-specific
+        # Audio systems - defaults overridden per platform in config_options()
+        "with_alsa": False,        # Linux-specific (enabled on Linux)
+        "with_pulseaudio": False,  # Linux-specific (enabled on Linux) 
         "with_jack": False,        # Professional audio, opt-in
-        "with_portaudio": False,   # Not available in Conan Center
-        "with_pipewire": False,    # Linux-specific modern audio
+        "with_portaudio": False,   # System package (enabled per platform)
+        "with_pipewire": False,    # Linux-specific modern audio (enabled on Linux)
         
-        # Modern multimedia features - enabled for better experience
+        # Modern multimedia features - defaults overridden per platform in config_options()
         "with_openssl": True,
-        "with_gstreamer": True,    # Powerful multimedia framework
-        "with_gtk": False,         # GUI toolkit, platform-specific
-        "with_sdl": True,          # Great for media display and input
+        "with_gstreamer": True,    # Powerful multimedia framework (disabled on mobile)
+        "with_gtk": False,         # GUI toolkit, Linux-specific (enabled on Linux)
+        "with_sdl": True,          # Great for media display (disabled on mobile)
         "with_mosquitto": True,    # MQTT for modern IoT applications
         "with_png": True,
         "with_sndfile": True,
     }
     
-    def configure(self):
-        # Platform-specific adjustments to the cross-platform defaults
+    def config_options(self):
+        # Platform-specific option adjustments - must be done before configure()
+        
         if self.settings.os == "Linux":
             # Enable Linux-specific audio systems
             self.options.with_alsa = True
             self.options.with_pulseaudio = True
-            self.options.with_pipewire = True  # Modern Linux audio
+            self.options.with_pipewire = True
+            # Enable GTK for Linux GUI applications
+            self.options.with_gtk = True
+            # PortAudio available on Linux
+            self.options.with_portaudio = True
             
-        # Note: macOS and Windows use the cross-platform defaults above
-        # which are already optimized for those platforms
-        
+        elif self.settings.os == "Macos":
+            # macOS has excellent built-in audio, but PortAudio provides cross-platform API
+            self.options.with_portaudio = True
+            # Keep Linux-specific audio disabled
+            self.options.with_alsa = False
+            self.options.with_pulseaudio = False
+            self.options.with_pipewire = False
+            # No GTK on macOS by default
+            self.options.with_gtk = False
+            
+        elif self.settings.os == "Windows":
+            # Windows audio systems
+            self.options.with_portaudio = True
+            # Keep Linux-specific audio disabled
+            self.options.with_alsa = False
+            self.options.with_pulseaudio = False
+            self.options.with_pipewire = False
+            # No GTK on Windows by default
+            self.options.with_gtk = False
+            
+        elif self.settings.os == "iOS":
+            # iOS has very limited system access - minimal configuration
+            self.options.with_alsa = False
+            self.options.with_pulseaudio = False
+            self.options.with_pipewire = False
+            self.options.with_portaudio = False
+            self.options.with_gtk = False
+            self.options.with_gstreamer = False  # Not available on iOS
+            self.options.with_sdl = False        # Limited on iOS
+            
+        elif self.settings.os == "Android":
+            # Android-specific configuration
+            self.options.with_alsa = False
+            self.options.with_pulseaudio = False
+            self.options.with_pipewire = False
+            self.options.with_portaudio = False
+            self.options.with_gtk = False
+            self.options.with_gstreamer = False  # Limited on Android
+            
+        # Note: FreeBSD, other Unix systems will use the cross-platform defaults
+    
+    def configure(self):
+        # Remove fPIC for shared libraries (standard Conan pattern)
         if self.options.shared:
             self.options.rm_safe("fPIC")
     
