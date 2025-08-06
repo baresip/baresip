@@ -511,11 +511,6 @@ int jbuf_put(struct jbuf *jb, const struct rtp_header *hdr, void *mem)
 	if (!jb || !hdr)
 		return EINVAL;
 
-	if (!jb->srate) {
-		DEBUG_WARNING("no clock srate set!\n");
-		return EINVAL;
-	}
-
 	if (!hdr->ts_arrive) {
 		DEBUG_WARNING("invalid ts_arrive header!\n");
 		return EINVAL;
@@ -531,6 +526,13 @@ int jbuf_put(struct jbuf *jb, const struct rtp_header *hdr, void *mem)
 	}
 
 	mtx_lock(jb->lock);
+
+	if (!jb->srate) {
+		DEBUG_WARNING("no clock srate set!\n");
+		err = EINVAL;
+		goto out;
+	}
+
 	jb->ssrc = hdr->ssrc;
 
 	if (jb->running) {
