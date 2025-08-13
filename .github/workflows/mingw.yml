@@ -23,7 +23,7 @@ jobs:
       run: |
         sudo apt-get update && sudo apt-get install -y mingw-w64
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - uses: sreimers/pr-dependency-action@v1
       with:
@@ -41,7 +41,7 @@ jobs:
       run: |
         mv re baresip-win32/
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         path: baresip-win32/baresip
 
@@ -74,7 +74,7 @@ jobs:
 
     steps:
     - uses: actions/download-artifact@v4
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         path: baresip
 

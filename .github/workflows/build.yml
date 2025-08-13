@@ -29,7 +29,7 @@ jobs:
       MACOSX_DEPLOYMENT_TARGET: "10.12"
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: openssl path macos
       if: ${{ runner.os == 'macOS' }}

@@ -17,7 +17,7 @@ jobs:
         ssl: [libressl, openssl]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - uses: sreimers/pr-dependency-action@v1
       with:
