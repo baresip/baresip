@@ -11,14 +11,31 @@
 #include <re.h>
 #include <rem_au.h>
 #include <baresip.h>
+
+/* Forward declarations */
+static void encode_destructor(void *arg);
+static void decode_destructor(void *arg);
+
+#ifdef USE_SPANDSP
 #define SPANDSP_EXPOSE_INTERNAL_STRUCTURES 1
 #include <spandsp.h>
+#endif
 
+#ifdef USE_LIBG722
+#include <g722_codec.h>
+#endif
+
+#if !defined(USE_SPANDSP) && !defined(USE_LIBG722)
+#error "Neither SPANDSP nor libg722 is available. Please install one of them."
+#endif
 
 /**
  * @defgroup g722 g722
  *
  * The G.722 audio codec
+ *
+ * This module supports both SPANDSP and libg722 libraries.
+ * SPANDSP is preferred if both are available.
  *
  * ## From RFC 3551:
 
@@ -37,9 +54,10 @@
    unchanged for backward compatibility.  The octet rate or sample-pair
    rate is 8,000 Hz.
 
-   ##   Reference:
+   ##   References:
 
   http://www.soft-switch.org/spandsp-modules.html
+  https://github.com/pschatzmann/libg722
 
  */
 
@@ -53,11 +71,21 @@ enum {
 
 
 struct auenc_state {
+#ifdef USE_SPANDSP
 	g722_encode_state_t enc;
+#endif
+#ifdef USE_LIBG722
+	G722_ENC_CTX *enc;
+#endif
 };
 
 struct audec_state {
+#ifdef USE_SPANDSP
 	g722_decode_state_t dec;
+#endif
+#ifdef USE_LIBG722
+	G722_DEC_CTX *dec;
+#endif
 };
 
 
@@ -76,14 +104,24 @@ static int encode_update(struct auenc_state **aesp,
 	if (*aesp)
 		return 0;
 
-	st = mem_alloc(sizeof(*st), NULL);
+	st = mem_alloc(sizeof(*st), encode_destructor);
 	if (!st)
 		return ENOMEM;
 
+#ifdef USE_SPANDSP
 	if (!g722_encode_init(&st->enc, G722_BITRATE_64k, 0)) {
 		err = EPROTO;
 		goto out;
 	}
+#endif
+
+#ifdef USE_LIBG722
+	st->enc = g722_encoder_new(G722_BITRATE_64k, 0);
+	if (!st->enc) {
+		err = EPROTO;
+		goto out;
+	}
+#endif
 
  out:
 	if (err)
@@ -108,14 +146,24 @@ static int decode_update(struct audec_state **adsp,
 	if (*adsp)
 		return 0;
 
-	st = mem_alloc(sizeof(*st), NULL);
+	st = mem_alloc(sizeof(*st), decode_destructor);
 	if (!st)
 		return ENOMEM;
 
+#ifdef USE_SPANDSP
 	if (!g722_decode_init(&st->dec, G722_BITRATE_64k, 0)) {
 		err = EPROTO;
 		goto out;
 	}
+#endif
+
+#ifdef USE_LIBG722
+	st->dec = g722_decoder_new(G722_BITRATE_64k, 0);
+	if (!st->dec) {
+		err = EPROTO;
+		goto out;
+	}
+#endif
 
  out:
 	if (err)
@@ -134,10 +182,22 @@ static int encode(struct auenc_state *st,
 	int n;
 	(void)marker;
 
+	if (!st)
+		return EINVAL;
+
 	if (fmt != AUFMT_S16LE)
 		return ENOTSUP;
 
+#ifdef USE_SPANDSP
 	n = g722_encode(&st->enc, buf, sampv, (int)sampc);
+#endif
+
+#ifdef USE_LIBG722
+	if (!st->enc)
+		return EINVAL;
+	n = g722_encode(st->enc, (const int16_t *)sampv, (int)sampc, buf);
+#endif
+
 	if (n <= 0) {
 		return EPROTO;
 	}
@@ -163,13 +223,52 @@ static int decode(struct audec_state *st, int fmt, void *sampv, size_t *sampc,
 	if (fmt != AUFMT_S16LE)
 		return ENOTSUP;
 
+#ifdef USE_SPANDSP
 	n = g722_decode(&st->dec, sampv, buf, (int)len);
+#endif
+
+#ifdef USE_LIBG722
+	if (!st->dec)
+		return EINVAL;
+	n = g722_decode(st->dec, buf, (int)len, (int16_t *)sampv);
+#endif
+
 	if (n < 0)
 		return EPROTO;
 
 	*sampc = n;
 
 	return 0;
+}
+
+
+static void encode_destructor(void *arg)
+{
+	struct auenc_state *st = arg;
+	if (!st)
+		return;
+
+#ifdef USE_LIBG722
+	if (st->enc) {
+		g722_encoder_destroy(st->enc);
+		st->enc = NULL;
+	}
+#endif
+}
+
+
+static void decode_destructor(void *arg)
+{
+	struct audec_state *st = arg;
+	if (!st)
+		return;
+
+#ifdef USE_LIBG722
+	if (st->dec) {
+		g722_decoder_destroy(st->dec);
+		st->dec = NULL;
+	}
+#endif
 }
 
 
@@ -189,6 +288,15 @@ static struct aucodec g722 = {
 
 static int module_init(void)
 {
+#ifdef USE_SPANDSP
+	info("g722: using SPANDSP library\n");
+#elif USE_LIBG722
+	info("g722: using libg722 library\n");
+#else
+	warning("g722: no G.722 library available\n");
+	return ENOSYS;
+#endif
+
 	aucodec_register(baresip_aucodecl(), &g722);
 	return 0;
 }
