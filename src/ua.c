@@ -1206,11 +1206,11 @@ int ua_alloc(struct ua **uap, const char *aor)
 		goto out;
 
 
-	if (ua->acc->cuser_ua) {
+	if (ua->acc->cuser_ua && list_count(uag_list()) > 0) {
 		/* generate a unique contact-user, this is needed to route
 		   incoming requests when using multiple useragents */
-		err = re_sdprintf(&ua->cuser, "%r-%p", &ua->acc->luri.user,
-				  ua);
+		err = re_sdprintf(&ua->cuser, "%r-%z", &ua->acc->luri.user,
+				  list_count(uag_list()) + 1);
 	}
 	else {
 		err = re_sdprintf(&ua->cuser, "%r", &ua->acc->luri.user);
