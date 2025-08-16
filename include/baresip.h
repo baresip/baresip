@@ -429,12 +429,9 @@ struct config_avt {
 	bool rtcp_mux;          /**< RTP/RTCP multiplexing          */
 	struct {
 		enum jbuf_type jbtype;  /**< Jitter buffer type     */
-		struct range jbuf_del;  /**< Delay, number of frames*/
-	} audio;
-	struct {
-		enum jbuf_type jbtype;  /**< Jitter buffer type     */
-		struct range jbuf_del;  /**< Delay, number of frames*/
-	} video;
+		struct range jbuf_del;  /**< Max./Min. Delay [ms]   */
+		uint32_t jbuf_sz;       /**< Max. buffer  [packets] */
+	} audio, video;
 	bool rtp_stats;         /**< Enable RTP statistics          */
 	uint32_t rtp_timeout;   /**< RTP Timeout in seconds (0=off) */
 	bool bundle;            /**< Media Multiplexing (BUNDLE)    */
@@ -1552,6 +1549,8 @@ void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms);
 struct jbuf;
 struct rtp_header;
 
+typedef uint64_t (jbuf_next_play_h)(const struct jbuf *jb);
+
 /** Jitter buffer statistics */
 struct jbuf_stat {
 	uint32_t n_put;        /**< Number of frames put into jitter buffer */
@@ -1559,14 +1558,22 @@ struct jbuf_stat {
 	uint32_t n_oos;        /**< Number of out-of-sequence frames        */
 	uint32_t n_dups;       /**< Number of duplicate frames detected     */
 	uint32_t n_late;       /**< Number of frames arriving too late      */
+	uint32_t n_late_lost;  /**< Number of frames too late and lost      */
 	uint32_t n_lost;       /**< Number of lost frames                   */
 	uint32_t n_overflow;   /**< Number of overflows                     */
-	uint32_t n_underflow;  /**< Number of underflows                    */
 	uint32_t n_flush;      /**< Number of times jitter buffer flushed   */
+	uint32_t n_gnacks;     /**< Number of generic NACKS send            */
+	uint32_t c_delay;      /**< Current jitter buffer delay in [ms]     */
+	uint32_t c_packets;    /**< Current packets                         */
+	uint32_t c_jitter;     /**< Current jitter delay in [ms]            */
+	int32_t  c_skew;       /**< Current jitter buffer skew in [ms]      */
 };
 
 
-int  jbuf_alloc(struct jbuf **jbp, uint32_t min, uint32_t max);
+int jbuf_alloc(struct jbuf **jbp, uint32_t mind, uint32_t maxd,
+	       uint32_t maxsz);
+void jbuf_set_srate(struct jbuf *jb, uint32_t srate);
+void jbuf_set_id(struct jbuf *jb, struct pl *id);
 int  jbuf_set_type(struct jbuf *jb, enum jbuf_type jbtype);
 void jbuf_set_gnack(struct jbuf *jb, struct rtp_sock *rtp);
 int  jbuf_put(struct jbuf *jb, const struct rtp_header *hdr, void *mem);
@@ -1577,6 +1584,8 @@ int  jbuf_stats(const struct jbuf *jb, struct jbuf_stat *jstat);
 int  jbuf_debug(struct re_printf *pf, const struct jbuf *jb);
 uint32_t jbuf_frames(const struct jbuf *jb);
 uint32_t jbuf_packets(const struct jbuf *jb);
+int32_t jbuf_next_play(const struct jbuf *jb);
+void jbuf_set_next_play_h(struct jbuf *jb, jbuf_next_play_h *p);
 
 
 /*
