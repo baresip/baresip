@@ -1347,7 +1347,7 @@ static int append_params(struct mbuf *mb, struct pl *params)
 out:
 	mem_deref(str);
 	mem_deref(buf);
-	return 0;
+	return err;
 }
 
 
