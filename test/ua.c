@@ -308,7 +308,7 @@ static int reg_dns(enum sip_transp tp)
 			goto out;
 		}
 
-		err = domain_add(t.srvv[0], domain);
+		err = domain_add(t.srvv[i], domain);
 		if (err)
 			goto out;
 
