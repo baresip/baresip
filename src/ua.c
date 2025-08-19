@@ -1166,7 +1166,7 @@ static const char *autoans_header_name(enum answer_method met)
 }
 
 
-static bool find_user(struct le *le, void *arg)
+static bool user_cmp_handler(struct le *le, void *arg)
 {
 	struct ua *ua = le->data;
 	struct pl *user = arg;
@@ -1215,7 +1215,8 @@ int ua_alloc(struct ua **uap, const char *aor)
 		goto out;
 
 
-	if (list_apply(uag_list(), true, find_user, &ua->acc->luri.user)) {
+	if (list_apply(uag_list(), true, user_cmp_handler,
+		       &ua->acc->luri.user)) {
 		/* generate a unique contact-user, this is needed to route
 		 * incoming requests when using multiple useragents */
 		err = re_sdprintf(&ua->cuser, "%r-%u", &ua->acc->luri.user,
