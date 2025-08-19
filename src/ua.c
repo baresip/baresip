@@ -1304,7 +1304,6 @@ int ua_update_account(struct ua *ua)
  */
 static int append_params(struct mbuf *mb, struct pl *params)
 {
-	char param[512];
 	char *str = NULL;
 	char *buf = NULL;
 	char *pstr;
@@ -1315,22 +1314,37 @@ static int append_params(struct mbuf *mb, struct pl *params)
 		return EINVAL;
 
 	err = pl_strdup(&str, params);
-	if (err || !str)
-		return err ? err : ENOMEM;
-
-	err = mbuf_strdup(mb, &buf, mbuf_get_left(mb));
 	if (err)
 		return err;
 
+	mbuf_set_pos(mb, 0);
+	err = mbuf_strdup(mb, &buf, mbuf_get_left(mb));
+	if (err)
+		goto out;
+
 	pstr = str;
 	while((token = strtok(pstr, ";"))) {
-		re_snprintf(param, sizeof(param), ";%s", token);
-		if (strstr(buf, param) == NULL)
-			mbuf_write_str(mb, param);
+		char *eq;
+		char *dup;
+		err = str_dup(&dup, token);
+		if (err)
+			goto out;
 
+		if ((eq = strchr(dup, '=')))
+			*eq = '\0';
+
+		if (strstr(buf, dup) == NULL) {
+			err  = mbuf_write_str(mb, ";");
+			err |= mbuf_write_str(mb, token);
+		}
+
+		mem_deref(dup);
 		pstr = NULL;
+		if (err)
+			break;
 	}
 
+out:
 	mem_deref(str);
 	mem_deref(buf);
 	return 0;
