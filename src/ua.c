@@ -1166,6 +1166,15 @@ static const char *autoans_header_name(enum answer_method met)
 }
 
 
+static bool find_user(struct le *le, void *arg)
+{
+	struct ua *ua = le->data;
+	struct pl *user = arg;
+
+	return pl_cmp(&ua->acc->luri.user, user) == 0;
+}
+
+
 /**
  * Allocate a SIP User-Agent
  *
@@ -1206,9 +1215,16 @@ int ua_alloc(struct ua **uap, const char *aor)
 		goto out;
 
 
-	/* generate a unique contact-user, this is needed to route
-	   incoming requests when using multiple useragents */
-	err = re_sdprintf(&ua->cuser, "%r-%p", &ua->acc->luri.user, ua);
+	if (list_apply(uag_list(), true, find_user, &ua->acc->luri.user)) {
+		/* generate a unique contact-user, this is needed to route
+		 * incoming requests when using multiple useragents */
+		err = re_sdprintf(&ua->cuser, "%r-%u", &ua->acc->luri.user,
+				  list_count(uag_list()));
+	}
+	else {
+		err = pl_strdup(&ua->cuser, &ua->acc->luri.user);
+	}
+
 	if (err)
 		goto out;
 
