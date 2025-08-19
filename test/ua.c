@@ -60,12 +60,9 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 	struct test *t = arg;
 	size_t i;
 	const char    *prm  = bevent_get_text(event);
-	struct call   *call = bevent_get_call(event);
 	struct ua     *ua   = bevent_get_ua(event);
 	int err = 0;
 	const char referto[] = "sip:user@127.0.0.1";
-	(void)call;
-	(void)prm;
 
 	ASSERT_TRUE(t != NULL);
 
