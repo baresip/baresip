@@ -35,6 +35,7 @@ set(MODULES
   g722
   g7221
   g726
+  g729
   gst
   gtk
   gzrtp
