@@ -1302,52 +1302,47 @@ int ua_update_account(struct ua *ua)
  *
  * @return 0 if success, otherwise errorcode
  */
-static int append_params(struct mbuf *mb, struct pl *params)
+static int mbuf_append_params(struct mbuf *mb, struct pl *params)
 {
-	char *str = NULL;
-	char *buf = NULL;
-	char *pstr;
-	char *token;
-	int err;
-
 	if (!mb || !params)
 		return EINVAL;
 
-	err = pl_strdup(&str, params);
-	if (err)
-		return err;
-
-	mbuf_set_pos(mb, 0);
-	err = mbuf_strdup(mb, &buf, mbuf_get_left(mb));
-	if (err)
-		goto out;
-
-	pstr = str;
-	while((token = strtok(pstr, ";"))) {
-		char *eq;
-		char *dup;
-		err = str_dup(&dup, token);
+	struct pl cur = *params;
+	const char *e = cur.p + cur.l;
+	struct pl par = PL_INIT;
+	while (!re_regex(cur.p, cur.l, ";[ \t\r\n]*[~ \t\r\n=;]*",
+			NULL, &par)) {
+		char *buf;
+		int err = pl_strdup(&buf, &par);
 		if (err)
-			goto out;
+			return err;
 
-		if ((eq = strchr(dup, '=')))
-			*eq = '\0';
+		struct pl value = PL_INIT;
+		(void)msg_param_decode(&cur, buf, &value);
 
-		if (strstr(buf, dup) == NULL) {
-			err  = mbuf_write_str(mb, ";");
-			err |= mbuf_write_str(mb, token);
+		struct pl pl = {.p = (const char*) mb->buf, .l = mb->pos};
+		if (msg_param_exists(&pl, buf, &par) != 0) {
+			if (pl_isset(&value))
+				err = mbuf_printf(mb, ";%r=%r", &par, &value);
+			else
+				err = mbuf_printf(mb, ";%r", &par);
 		}
 
-		mem_deref(dup);
-		pstr = NULL;
+		mem_deref(buf);
+
+		/* skip over the parameter */
+		if (pl_isset(&value))
+			cur.p = value.p + value.l;
+		else
+			cur.p = par.p + par.l;
+
+		cur.l = e - cur.p;
+
 		if (err)
-			break;
+			return err;
 	}
 
-out:
-	mem_deref(str);
-	mem_deref(buf);
-	return err;
+	return 0;
 }
 
 
@@ -1392,7 +1387,7 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
 		goto out;
 
 	/* Append any optional URI parameters */
-	err |= append_params(dialbuf, &ua->acc->luri.params);
+	err |= mbuf_append_params(dialbuf, &ua->acc->luri.params);
 	if (err)
 		goto out;
 
