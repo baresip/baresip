@@ -299,9 +299,10 @@ static int exec_att_xfer(struct re_printf *pf, void *arg)
 	(void) pf;
 
 	if (menu->xfer_call) {
-		err = call_hold(ua_call(ua), true);
-		if (err)
-			goto out;
+		/*** Handle on Agent's Driver: */
+		/* err = call_hold(ua_call(ua), true); */
+		/* if (err) */
+		/* 	goto out; */
 
 		err = call_replace_transfer(menu->xfer_call, ua_call(ua));
 	}
