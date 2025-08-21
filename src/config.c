@@ -502,6 +502,17 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 		cfg->avt.rtp_bw.max *= 1000;
 	}
 
+	if (0 == conf_get(conf, "audio_jitter_buffer_delay", &jbtype)) {
+		warning("config: audio_jitter_buffer_delay is deprecated, use "
+			"audio_jitter_buffer_ms and "
+			"audio_jitter_buffer_size\n");
+	}
+	if (0 == conf_get(conf, "video_jitter_buffer_delay", &jbtype)) {
+		warning("config: video_jitter_buffer_delay is deprecated, use "
+			"video_jitter_buffer_ms and "
+			"video_jitter_buffer_size\n");
+	}
+
 	if (0 == conf_get(conf, "audio_jitter_buffer_type", &jbtype))
 		cfg->avt.audio.jbtype = conf_get_jbuf_type(&jbtype);
 
@@ -517,7 +528,7 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	(void)conf_get_range(conf, "video_jitter_buffer_ms",
 			     &cfg->avt.video.jbuf_del);
 
-	(void)conf_get_u32(conf, "audio_jitter_buffer_size",
+	(void)conf_get_u32(conf, "video_jitter_buffer_size",
 			   &cfg->avt.video.jbuf_sz);
 
 	(void)conf_get_bool(conf, "rtp_stats", &cfg->avt.rtp_stats);
