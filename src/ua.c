@@ -1302,7 +1302,7 @@ int ua_update_account(struct ua *ua)
  *
  * @return 0 if success, otherwise errorcode
  */
-static int mbuf_append_params(struct mbuf *mb, struct pl *params)
+static int mbuf_append_params(struct mbuf *mb, const struct pl *params)
 {
 	if (!mb || !params)
 		return EINVAL;
