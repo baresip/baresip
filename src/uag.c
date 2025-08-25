@@ -908,7 +908,7 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 		struct ua *ua = le->data;
 		struct account *acc = ua_account(ua);
 
-		if (!acc->regint)
+		if (!acc || !acc->regint)
 			continue;
 
 		if (0 == pl_strcasecmp(cuser, ua_local_cuser(ua))) {
