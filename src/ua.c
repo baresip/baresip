@@ -1189,6 +1189,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 	struct uri *luri;
 	char *buf = NULL;
 	char *host = NULL;
+	static uint32_t ua_suffix = 0;
 	int err;
 
 	if (!aor)
@@ -1220,7 +1221,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 		/* generate a unique contact-user, this is needed to route
 		 * incoming requests when using multiple useragents */
 		err = re_sdprintf(&ua->cuser, "%r-%u", &ua->acc->luri.user,
-				  list_count(uag_list()));
+				  ++ua_suffix);
 	}
 	else {
 		err = pl_strdup(&ua->cuser, &ua->acc->luri.user);
