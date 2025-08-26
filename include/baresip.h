@@ -1007,6 +1007,7 @@ struct sip  *uag_sip(void);
 struct list *uag_list(void);
 uint32_t     uag_call_count(void);
 struct tls  *uag_tls(void);
+uint32_t     uag_unique(void);
 struct sipsess_sock  *uag_sipsess_sock(void);
 struct sipevent_sock *uag_sipevent_sock(void);
 struct call *uag_call_find(const char *id);

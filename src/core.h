@@ -399,6 +399,7 @@ struct uag {
 	bool nodial;                   /**< Prevent outgoing calls          */
 	void *arg;                     /**< UA Exit handler argument        */
 	char *eprm;                    /**< Extra UA parameters             */
+	uint32_t unique;               /**< Unique counter                  */
 #ifdef USE_TLS
 	struct tls *tls;               /**< TLS Context                     */
 	struct tls *wss_tls;           /**< Secure websocket TLS Context    */
