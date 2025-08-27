@@ -904,6 +904,8 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 		return NULL;
 
 	cuser = &msg->uri.user;
+
+	/* match for registered accounts */
 	for (le = uag.ual.head; le; le = le->next) {
 		struct ua *ua = le->data;
 		struct account *acc = ua_account(ua);
@@ -917,11 +919,13 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 		}
 	}
 
-	/* Try also matching by AOR, for better interop and for peer-to-peer
-	 * calls */
+	/* match for peer-to-peer calls (only un-registered accounts) */
 	for (le = uag.ual.head; le; le = le->next) {
 		struct ua *ua = le->data;
 		struct account *acc = ua_account(ua);
+
+		if (!acc || acc->regint)
+			continue;
 
 		if (!uri_match_transport(&acc->luri, NULL, msg->tp))
 			continue;
@@ -933,13 +937,13 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 			ua_printf(ua, "account match for %r\n", cuser);
 			return ua;
 		}
-		if (!acc->regint && !uaf && ua_catchall(ua))
-			uaf = ua;
 
+		if (!uaf && ua_catchall(ua))
+			uaf = ua;
 	}
 
 	if (uaf)
-		ua_printf(uaf, "selected\n");
+		ua_printf(uaf, "selected fallback\n");
 
 	return uaf;
 }
