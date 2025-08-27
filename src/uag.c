@@ -1270,14 +1270,3 @@ sip_msg_h *uag_subh(void)
 {
 	return uag.subh;
 }
-
-
-/**
- * Increments the unique counter uag.unique
- *
- * @return Unique counter
- */
-uint32_t uag_unique(void)
-{
-	return ++uag.unique;
-}
