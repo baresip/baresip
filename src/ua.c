@@ -1181,16 +1181,14 @@ static int ua_cuser_gen(struct ua *ua)
 	int err;
 
 	conf_get_bool(conf_cur(), "cuser_random", &suffix);
+
+	suffix |= list_apply(uag_list(), true, user_cmp_handler,
+			     &ua->acc->luri.user) != NULL;
 	if (suffix) {
-		err = re_sdprintf(&ua->cuser, "%r-%u", &ua->acc->luri.user,
-				  rand_u32());
-	}
-	else if (list_apply(uag_list(), true, user_cmp_handler,
-		       &ua->acc->luri.user)) {
-		/* generate a unique contact-user, this is needed to route
-		 * incoming requests when using multiple useragents */
-		err = re_sdprintf(&ua->cuser, "%r-%u", &ua->acc->luri.user,
-				  uag_unique());
+		char buf[16];
+		rand_str(buf, sizeof(buf));
+		err = re_sdprintf(&ua->cuser, "%r-%s", &ua->acc->luri.user,
+				  buf);
 	}
 	else {
 		err = pl_strdup(&ua->cuser, &ua->acc->luri.user);
