@@ -1175,6 +1175,32 @@ static bool user_cmp_handler(struct le *le, void *arg)
 }
 
 
+static int ua_cuser_gen(struct ua *ua)
+{
+	bool suffix = false;
+	int err;
+
+	conf_get_bool(conf_cur(), "cuser_random", &suffix);
+	if (suffix) {
+		err = re_sdprintf(&ua->cuser, "%r-%u", &ua->acc->luri.user,
+				  rand_u32());
+	}
+	else if (list_apply(uag_list(), true, user_cmp_handler,
+		       &ua->acc->luri.user)) {
+		/* generate a unique contact-user, this is needed to route
+		 * incoming requests when using multiple useragents */
+		err = re_sdprintf(&ua->cuser, "%r-%u", &ua->acc->luri.user,
+				  uag_unique());
+	}
+	else {
+		err = pl_strdup(&ua->cuser, &ua->acc->luri.user);
+	}
+
+	debug("ua: contact user %s\n", ua->cuser);
+	return err;
+}
+
+
 /**
  * Allocate a SIP User-Agent
  *
@@ -1214,18 +1240,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 	if (err)
 		goto out;
 
-
-	if (list_apply(uag_list(), true, user_cmp_handler,
-		       &ua->acc->luri.user)) {
-		/* generate a unique contact-user, this is needed to route
-		 * incoming requests when using multiple useragents */
-		err = re_sdprintf(&ua->cuser, "%r-%u", &ua->acc->luri.user,
-				  uag_unique());
-	}
-	else {
-		err = pl_strdup(&ua->cuser, &ua->acc->luri.user);
-	}
-
+	err = ua_cuser_gen(ua);
 	if (err)
 		goto out;
 
