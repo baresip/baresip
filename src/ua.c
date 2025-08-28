@@ -1166,6 +1166,39 @@ static const char *autoans_header_name(enum answer_method met)
 }
 
 
+static bool user_cmp_handler(struct le *le, void *arg)
+{
+	struct ua *ua = le->data;
+	struct pl *user = arg;
+
+	return pl_cmp(&ua->acc->luri.user, user) == 0;
+}
+
+
+static int ua_cuser_gen(struct ua *ua)
+{
+	bool suffix = false;
+	int err;
+
+	conf_get_bool(conf_cur(), "cuser_random", &suffix);
+
+	suffix |= list_apply(uag_list(), true, user_cmp_handler,
+			     &ua->acc->luri.user) != NULL;
+	if (suffix) {
+		char buf[16];
+		rand_str(buf, sizeof(buf));
+		err = re_sdprintf(&ua->cuser, "%r-%s", &ua->acc->luri.user,
+				  buf);
+	}
+	else {
+		err = pl_strdup(&ua->cuser, &ua->acc->luri.user);
+	}
+
+	debug("ua: contact user %s\n", ua->cuser);
+	return err;
+}
+
+
 /**
  * Allocate a SIP User-Agent
  *
@@ -1205,10 +1238,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 	if (err)
 		goto out;
 
-
-	/* generate a unique contact-user, this is needed to route
-	   incoming requests when using multiple useragents */
-	err = re_sdprintf(&ua->cuser, "%r-%p", &ua->acc->luri.user, ua);
+	err = ua_cuser_gen(ua);
 	if (err)
 		goto out;
 
