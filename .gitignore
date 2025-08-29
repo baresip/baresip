@@ -61,3 +61,6 @@ install_manifest.txt
 
 # Visual Studio Code
 .vscode/*
+
+# Temporary build folder
+out/
