@@ -71,9 +71,11 @@ rtp_video_tos		136
 #rtp_ports		10000-20000
 #rtp_bandwidth		512-1024 # [kbit/s]
 audio_jitter_buffer_type	fixed	# off, fixed, adaptive
-audio_jitter_buffer_delay	5-10	# (min. frames)-(max. packets)
-video_jitter_buffer_type	fixed	# off, fixed, adaptive
-video_jitter_buffer_delay	5-10	# (min. frames)-(max. packets)
+audio_jitter_buffer_ms	        100-200 # delay range in [ms]
+audio_jitter_buffer_size	50      # max. packets
+video_jitter_buffer_type	fixed
+video_jitter_buffer_ms	        100-200
+video_jitter_buffer_size	250
 rtp_stats		no
 #rtp_timeout		60
 #avt_bundle		no
