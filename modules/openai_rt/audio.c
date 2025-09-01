@@ -135,9 +135,7 @@ struct audio_state g_audio = {0};
 
 /* Initialize audio subsystem */
 int audio_init(void)
-{
-    DEBUG_ENTER();
-    
+{   
     /* Initialize audio buffers */
     g_audio.buffer_size = 160;  /* 160 samples = 20ms at 24kHz */
     g_audio.g711u_input_buffer = mbuf_alloc(g_audio.buffer_size);
@@ -246,8 +244,6 @@ cleanup:
 /* Clean up audio subsystem */
 void audio_close(void)
 {
-    DEBUG_ENTER();
-    
     /* Always clean up, regardless of whether audio threads were active */
     
     /* Stop audio threads if they exist */
@@ -396,7 +392,6 @@ void handle_outgoing_audio(const uint8_t *g711u_data, size_t len)
 /* Audio source destructor */
 static void ausrc_destructor(void *arg)
 {
-    DEBUG_ENTER();
     struct ausrc_st *st = arg;
 
     if (st) {
@@ -432,7 +427,6 @@ static void ausrc_destructor(void *arg)
 /* Audio playback destructor */
 static void auplay_destructor(void *arg)
 {
-    DEBUG_ENTER();
     struct auplay_st *st = arg;
 
     if (st) {
@@ -790,7 +784,6 @@ void openai_rt_check_messages(void)
 /* Stop audio threads when call ends */
 void audio_stop_threads(void)
 {
-    DEBUG_ENTER();
     
     /* Properly free all audio frames in queues to prevent memory leaks */
     free_audio_queue(&g_audio.read_queue, &g_audio.read_queue_mutex);
@@ -864,7 +857,6 @@ void audio_stop_threads(void)
 /* Restart audio threads for new call */
 void audio_restart_threads(void)
 {
-    DEBUG_ENTER();
     
     /* Check if audio system is ready for a new call */
     if (!audio_ready_for_call()) {
@@ -1177,7 +1169,6 @@ static void force_audio_commit(void)
 /* Reset audio state for new call */
 void audio_reset_for_new_call(void)
 {
-    DEBUG_ENTER();
     
     /* Reset accumulation tracking */
     g_audio.audio_accumulated = 0;

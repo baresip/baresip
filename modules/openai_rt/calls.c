@@ -8,7 +8,6 @@
 static void event_handler(struct ua *ua, enum ua_event ev,
                          struct call *call, const char *prm, void *arg)
 {
-	DEBUG_ENTER();
 	(void)ua;
 	(void)prm;
 	(void)arg;
@@ -69,7 +68,6 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 
 int calls_init(void)
 {
-	DEBUG_ENTER();
 	int err;
 
 	/* Register UA event handler */
@@ -85,7 +83,6 @@ int calls_init(void)
 
 void calls_close(void)
 {
-	DEBUG_ENTER();
 
 	/* Unregister event handler */
 	uag_event_unregister(event_handler);

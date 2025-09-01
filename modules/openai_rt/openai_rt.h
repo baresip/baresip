@@ -134,7 +134,6 @@ int read_config(void);
 
 
 /* Debug macros */
-#define DEBUG_ENTER() debug("openai_rt: %s()\n", __func__)
 #define DEBUG_INFO(...) info("openai_rt: " __VA_ARGS__)
 
 /* Audio frame structure for queue communication */

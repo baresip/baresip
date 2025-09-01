@@ -8,7 +8,6 @@ struct openai_rt g_oairt;
 
 static void module_destructor(void *arg)
 {
-	DEBUG_ENTER();
 	struct openai_rt *ort = arg;
 	(void)ort;
 
@@ -32,7 +31,6 @@ static void module_destructor(void *arg)
 
 static int module_init(void)
 {
-	DEBUG_ENTER();
 	int err;
 
 	/* Initialize global state */
@@ -102,7 +100,6 @@ out:
 
 static int module_close(void)
 {
-	DEBUG_ENTER();
 	module_destructor(&g_oairt);
 	info("openai_rt: Module closed\n");
 	return 0;

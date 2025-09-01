@@ -7,7 +7,7 @@
 /* Base64 encoding wrapper for audio data */
 char *encode_audio_base64(const void *data, size_t len)
 {
-    DEBUG_ENTER();
+
     char *encoded;
     size_t out_len;
     int err;
@@ -60,7 +60,6 @@ char *encode_audio_base64(const void *data, size_t len)
 /* Base64 decoding wrapper for audio data */
 size_t decode_audio_base64(const char *data, uint8_t **out)
 {
-    DEBUG_ENTER();
     size_t in_len = str_len(data);
     size_t out_len;
     uint8_t *decoded;
@@ -107,7 +106,6 @@ size_t decode_audio_base64(const char *data, uint8_t **out)
 
 int read_config(void)
 {
-    DEBUG_ENTER();
 
     conf_get_str(conf_cur(), "openai_rt_prompt", g_oairt.prompt, sizeof(g_oairt.prompt));
     conf_get_str(conf_cur(), "openai_rt_api_key", g_oairt.api_key, sizeof(g_oairt.api_key));

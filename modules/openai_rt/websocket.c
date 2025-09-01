@@ -695,7 +695,6 @@ static void handle_openai_audio_delta(const char *json_str)
  /* Initialize WebSocket */
  int websocket_init(void)
  {
-     DEBUG_ENTER();
  
      g_oairt.ws_state = WS_DISCONNECTED;
      g_oairt.ws_context = NULL; /* Will be created in thread */
@@ -726,7 +725,6 @@ static void handle_openai_audio_delta(const char *json_str)
  /* Close WebSocket */
  void websocket_close(void)
  {
-     DEBUG_ENTER();
  
      /* Stop WebSocket thread */
      g_oairt.ws_thread_running = false;
@@ -784,7 +782,6 @@ static void handle_openai_audio_delta(const char *json_str)
  /* Request immediate WebSocket shutdown */
  void websocket_request_shutdown(void)
  {
-     DEBUG_ENTER();
  
      /* Set shutdown flag */
      g_oairt.ws_thread_running = false;
@@ -805,7 +802,6 @@ static void handle_openai_audio_delta(const char *json_str)
  /* Force WebSocket shutdown with timeout */
  void websocket_force_shutdown(int timeout_ms)
  {
-     DEBUG_ENTER();
  
      /* Request shutdown first */
      websocket_request_shutdown();
