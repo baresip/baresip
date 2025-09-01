@@ -49,7 +49,8 @@ Every time the websocket connection receives a `response.output_audio.delta` mes
 The module requires the following configuration parameters in your baresip config file:
 
 - `openai_rt_api_key` - OpenAI API key (preferably an ephemeral token from `/v1/realtime/client_secrets`)
-- `openai_rt_wait_for_greeting` - Whether OpenAI is instructed to actively start the conversation 
+- `openai_rt_prompt` - The instructions for OpenAI used in `session.update` and `response.create`
+- `openai_rt_wait_for_greeting` - Whether OpenAI is instructed to actively start the conversation bu sending a `response.create` message to OpenAI 
 
 ### Audio Settings
 

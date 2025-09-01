@@ -149,7 +149,6 @@ struct audio_frame {
 enum event_type {
     EVENT_CALL_START,         /* Call started - connect to OpenAI */
     EVENT_CALL_END,           /* Call ended - disconnect from OpenAI */
-    EVENT_SEND_PROMPT,        /* Send initial prompt to OpenAI */
 };
 
 /* Event structure for the event queue */

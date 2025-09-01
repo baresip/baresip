@@ -666,11 +666,6 @@ static void handle_openai_audio_delta(const char *json_str)
                  /* Keep connection alive */
                  info("openai_rt: Call ended, keeping OpenAI connection alive\n");
                  break;
- 
-             case EVENT_SEND_PROMPT:
-                 info("openai_rt: Processing send prompt event\n");
-                 // TODO: Send initial prompt to OpenAI
-                 break;
              }
              mem_deref(event);
          }
