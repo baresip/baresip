@@ -10,7 +10,9 @@
 #include "test.h"
 
 
-#define NUM_SAMPLES 320  /* 8000 Hz, 1 channel, 40ms */
+enum {
+	NUM_SAMPLES = 320  /* 8000 Hz, 1 channel, 40ms */
+};
 
 
 struct test {

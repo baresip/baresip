@@ -14,7 +14,7 @@
 #include <re_dbg.h>
 
 
-#define LOCAL_PORT 0
+enum { LOCAL_PORT = 0 };
 
 
 static void dns_server_match(struct dns_server *srv, struct list *rrl,

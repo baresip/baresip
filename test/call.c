@@ -1277,7 +1277,7 @@ int test_call_answer_hangup_b(void)
 
 int test_call_rtp_timeout(void)
 {
-#define RTP_TIMEOUT_MS 1
+	enum { RTP_TIMEOUT_MS = 1 };
 	struct fixture fix, *f = &fix;
 	struct call *call;
 	int err = 0;

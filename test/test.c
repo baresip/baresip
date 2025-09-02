@@ -56,7 +56,7 @@ void test_hexdump_dual(FILE *f,
 	const uint8_t *ebuf = ep;
 	const uint8_t *abuf = ap;
 	size_t i, j, len;
-#define WIDTH 8
+	enum { WIDTH = 8 };
 
 	if (!f || !ep || !ap)
 		return;
