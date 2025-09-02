@@ -92,6 +92,8 @@ static bool request_handler(const struct sip_msg *msg, void *arg)
 
 	ua = uag_find_msg(msg);
 	if (!ua) {
+		info("ua: %r: UA not found: %H\n",
+		     &msg->from.auri, uri_encode, &msg->uri);
 		(void)sip_treply(NULL, uag_sip(), msg, 404, "Not Found");
 		return true;
 	}
