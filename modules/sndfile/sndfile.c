@@ -48,8 +48,6 @@ static char file_path[512] = ".";
 
 static int timestamp_print_usec(struct re_printf *pf, const struct timeval *tv)
 {
-	struct tm tm;
-	int err;
 	long long usec;
 
 	if (!tv)
@@ -115,8 +113,6 @@ static int filename_alloc(char **filenamep,
 			  const struct stream *strm,
 			  bool enc)
 {
-	time_t tnow = time(0);
-	struct tm *tm = localtime(&tnow);
 	char *filename;
 	int err;
 	struct timeval tv;
@@ -124,7 +120,10 @@ static int filename_alloc(char **filenamep,
 	const char *cname = stream_cname(strm);
 	const char *peer = stream_peer(strm);
 
-	gettimeofday(&tv, NULL);
+	if (gettimeofday(&tv, NULL)) {
+		warning("sndfile: could not get time\n");
+		return EINVAL;
+	}
 	err = re_sdprintf(&filename,
 			  "%s/dump-%s=>%s-%H-%s.wav",
 			  file_path,
