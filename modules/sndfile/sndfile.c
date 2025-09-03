@@ -5,6 +5,7 @@
  */
 #include <sndfile.h>
 #include <time.h>
+#include <sys/time.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -45,6 +46,18 @@ struct sndfile_dec {
 
 static char file_path[512] = ".";
 
+static int timestamp_print_usec(struct re_printf *pf, const struct timeval *tv)
+{
+	struct tm tm;
+	int err;
+	long long usec;
+
+	if (!tv)
+		return 0;
+
+	usec = (long long)((tv->tv_sec) * 1000000) + tv->tv_usec;
+	return re_hprintf(pf, "%lld", usec);
+}
 
 static int timestamp_print(struct re_printf *pf, const struct tm *tm)
 {
@@ -106,15 +119,17 @@ static int filename_alloc(char **filenamep,
 	struct tm *tm = localtime(&tnow);
 	char *filename;
 	int err;
+	struct timeval tv;
 
 	const char *cname = stream_cname(strm);
 	const char *peer = stream_peer(strm);
 
+	gettimeofday(&tv, NULL);
 	err = re_sdprintf(&filename,
 			  "%s/dump-%s=>%s-%H-%s.wav",
 			  file_path,
 			  cname, peer,
-			  timestamp_print, tm, enc ? "enc" : "dec");
+			  timestamp_print_usec, &tv, enc ? "enc" : "dec");
 	if (err)
 		return err;
 
