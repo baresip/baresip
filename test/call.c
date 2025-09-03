@@ -3900,7 +3900,7 @@ int test_call_uag_find_msg(void)
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
-	/* very that correct UA was selected and got established call */
+	/* verify that the right UA was selected and got established call */
 	ASSERT_EQ(0, fix.a.n_incoming);
 	ASSERT_EQ(0, fix.a.n_established);
 	ASSERT_EQ(1, fix.b.n_incoming);
