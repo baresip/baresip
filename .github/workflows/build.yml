@@ -91,7 +91,7 @@ jobs:
         brew install codec2 \
                         aom \
                         fdk-aac \
-                        ffmpeg \
+                        ffmpeg@7 \
                         jack \
                         mpg123 \
                         spandsp \
