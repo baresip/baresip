@@ -11,7 +11,7 @@
 #include "../test.h"
 
 
-#define HDR_SIZE 12
+enum { HDR_SIZE = 12 };
 
 
 struct hdr {
