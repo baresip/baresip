@@ -106,39 +106,60 @@
  }
  
  static void handle_session_updated(const char *json_str)
- {
-     struct json_object *root = json_tokener_parse(json_str);
-     if (!root) return;
- 
-     struct json_object *type_obj = NULL;
-     if (json_object_object_get_ex(root, "type", &type_obj)) {
-         const char *type = json_object_get_string(type_obj);
-         if (type && strcmp(type, "session.updated") == 0) {
-             g_oairt.session_cfg_applied = true;
-             g_oairt.session_ready = true;   /* now it's truly ready */
-             info("openai_rt: session.updated received; input_audio_format now active\n");
- 
-             /* Flush any accumulated audio now that session is ready */
-             audio_flush_accumulated();
-         }
-     }
-     json_object_put(root);
- }
+{
+    struct json_object *root = json_tokener_parse(json_str);
+    if (!root) {
+        warning("openai_rt: Failed to parse session update JSON\n");
+        return;
+    }
+
+    struct json_object *type_obj = NULL;
+    if (json_object_object_get_ex(root, "type", &type_obj)) {
+        if (!json_object_is_type(type_obj, json_type_string)) {
+            warning("openai_rt: Session update 'type' field is not a string\n");
+            json_object_put(root);
+            return;
+        }
+        
+        const char *type = json_object_get_string(type_obj);
+        if (type && strcmp(type, "session.updated") == 0) {
+            g_oairt.session_cfg_applied = true;
+            g_oairt.session_ready = true;   /* now it's truly ready */
+            info("openai_rt: session.updated received; input_audio_format now active\n");
+
+            /* Flush any accumulated audio now that session is ready */
+            audio_flush_accumulated();
+        }
+    }
+    json_object_put(root);
+}
  
 static void handle_openai_audio_delta(const char *json_str)
 {
     /* Parse JSON and ensure it's an audio delta */
     struct json_object *root = json_tokener_parse(json_str);
-    if (!root) return;
+    if (!root) {
+        warning("openai_rt: Failed to parse audio delta JSON\n");
+        return;
+    }
 
     /* Get base64 payload */
     struct json_object *delta_obj = NULL;
     if (!json_object_object_get_ex(root, "delta", &delta_obj)) {
+        warning("openai_rt: Audio delta JSON missing 'delta' field\n");
         json_object_put(root);
         return;
     }
+    
+    if (!json_object_is_type(delta_obj, json_type_string)) {
+        warning("openai_rt: Audio delta 'delta' field is not a string\n");
+        json_object_put(root);
+        return;
+    }
+    
     const char *b64 = json_object_get_string(delta_obj);
     if (!b64 || !*b64) {
+        warning("openai_rt: Audio delta 'delta' field is empty or null\n");
         json_object_put(root);
         return;
     }
@@ -169,42 +190,71 @@ static void handle_openai_audio_delta(const char *json_str)
 }
 
 /* websocket.c */
-static void handle_openai_function_call(const char *json_str)
+static void handle_openai_function_call(const char *call_id, const char *name, const char *arguments)
 {
-    /* Parse JSON and ensure it's an function call */
-    struct json_object *root = json_tokener_parse(json_str);
-    if (!root) return;
-
-    struct json_object *name_obj = NULL;
-    if (!json_object_object_get_ex(root, "name", &name_obj)) {
-        json_object_put(root);
-        return;
-    }
-    const char *name = json_object_get_string(name_obj);
-    if (!name) {
-        json_object_put(root);
-        return;
-    }
+    (void)arguments; /* Suppress unused parameter warning */
 
     if (strcmp(name, "hangup_call") == 0) {
+        DEBUG_INFO("openai_rt: Executing hangup_call function\n");
+
         calls_hangup();
+        DEBUG_INFO("openai_rt: hangup_call function executed\n");
+        char *json_msg = NULL;
+        int err;
+        
+        re_sdprintf(&json_msg,
+            "{"
+                "\"type\": \"conversation.item.create\","
+                "\"item\": {"
+                    "\"type\":\"function_call_output\","
+                    "\"call_id\": \"%s\","
+                    "\"output\": \"Call hung up\""
+                "}"
+            "}",
+            call_id
+        );
+    
+        info("openai_rt: function_call_output: %s\n", json_msg);
+        
+        if (json_msg) {
+            err = queue_message_to_openai(json_msg, str_len(json_msg), NULL, NULL);
+            if (err) {
+                warning("openai_rt: Failed to queue function_call_output: %m\n", err);
+            }
+            mem_deref(json_msg);
+        }
+
+    }
+    else {
+        warning("openai_rt: Unknown function call: %s\n", name);
     }
 
-    json_object_put(root);
 }
 static void handle_openai_handle_event(const char *json_str)
 {
-    /* Parse JSON and ensure it's an audio delta */
+    /* Parse JSON and ensure it's a valid message */
     struct json_object *root = json_tokener_parse(json_str);
-    if (!root) return;
+    if (!root) {
+        warning("openai_rt: Failed to parse JSON message\n");
+        return;
+    }
 
     struct json_object *type_obj = NULL;
     if (!json_object_object_get_ex(root, "type", &type_obj)) {
+        warning("openai_rt: JSON message missing 'type' field\n");
         json_object_put(root);
         return;
     }
+    
+    if (!json_object_is_type(type_obj, json_type_string)) {
+        warning("openai_rt: JSON 'type' field is not a string\n");
+        json_object_put(root);
+        return;
+    }
+    
     const char *type = json_object_get_string(type_obj);
     if (!type) {
+        warning("openai_rt: Failed to get string value from 'type' field\n");
         json_object_put(root);
         return;
     }
@@ -212,10 +262,105 @@ static void handle_openai_handle_event(const char *json_str)
     if (strcmp(type, "response.output_audio.delta") == 0) {
         handle_openai_audio_delta(json_str);
     }
-    else if (strcmp(type, "function_call") == 0) {
-        handle_openai_function_call(json_str);
-    }
+    else if (strcmp(type, "response.output_item.done") == 0) {
 
+        /*
+            {
+            "type": "response.output_item.done",
+            "event_id": "event_CCPrjw2MyBPd9VuKlUVpr",
+            "response_id": "resp_CCPriWZsESu3xVKH0cA5d",
+            "output_index": 0,
+            "item": {
+                "id": "item_CCPrilCP19fczE3iYlkpN",
+                "type": "function_call",
+                "status": "completed",
+                "name": "hangup_call",
+                "call_id": "call_l4ZCLwE1TjfrZe2Q",
+                "arguments": "{}"
+            }
+            }        
+        */
+
+        DEBUG_INFO("openai_rt: response.output_item.done received\n");
+        // get the 'item' field
+        struct json_object *item_obj = NULL;
+        if (!json_object_object_get_ex(root, "item", &item_obj)) {
+            warning("openai_rt: JSON message missing 'item' field\n");
+            json_object_put(root);
+            return;
+        }
+        // get the 'type' field
+        struct json_object *item_type_obj = NULL;
+        if (!json_object_object_get_ex(item_obj, "type", &item_type_obj)) {
+            warning("openai_rt: JSON message missing 'type' field\n");
+            json_object_put(root);
+            return;
+        }
+        if (!json_object_is_type(item_type_obj, json_type_string)) {
+            warning("openai_rt: JSON 'type' field is not a string\n");
+            json_object_put(root);
+            return;
+        }
+        const char *item_type = json_object_get_string(item_type_obj);
+        if (strcmp(item_type, "function_call") == 0) {
+            // get name, call_id and arguments
+            struct json_object *name_obj = NULL;
+            if (!json_object_object_get_ex(item_obj, "name", &name_obj)) {
+                warning("openai_rt: JSON message missing 'name' field\n");
+                json_object_put(root);
+                return;
+            }
+            if (!json_object_is_type(name_obj, json_type_string)) {
+                warning("openai_rt: JSON 'name' field is not a string\n");
+                json_object_put(root);
+                return;
+            }
+            const char *name = json_object_get_string(name_obj);
+            if (!name) {
+                warning("openai_rt: Failed to get string value from 'name' field\n");
+                json_object_put(root);
+                return;
+            }
+            struct json_object *call_id_obj = NULL;
+            if (!json_object_object_get_ex(item_obj, "call_id", &call_id_obj)) {
+                warning("openai_rt: JSON message missing 'call_id' field\n");
+                json_object_put(root);
+                return;
+            }
+            if (!json_object_is_type(call_id_obj, json_type_string)) {
+                warning("openai_rt: JSON 'call_id' field is not a string\n");
+                json_object_put(root);
+                return;
+            }
+            const char *call_id = json_object_get_string(call_id_obj);
+            if (!call_id) {
+                warning("openai_rt: Failed to get string value from 'call_id' field\n");
+                json_object_put(root);
+                return;
+            }
+            struct json_object *arguments_obj = NULL;
+            if (!json_object_object_get_ex(item_obj, "arguments", &arguments_obj)) {
+                warning("openai_rt: JSON message missing 'arguments' field\n");
+                json_object_put(root);
+                return;
+            }
+            if (!json_object_is_type(arguments_obj, json_type_string)) {
+                warning("openai_rt: JSON 'arguments' field is not a string\n");
+                json_object_put(root);
+                return;
+            }
+            const char *arguments = json_object_get_string(arguments_obj);
+            if (!arguments) {
+                warning("openai_rt: Failed to get string value from 'arguments' field\n");
+                json_object_put(root);
+                return;
+            }
+            handle_openai_function_call(call_id, name, arguments);
+        }
+    }
+    else {
+        DEBUG_INFO("openai_rt: Unhandled message type: %s\n", type);
+    }
 
     json_object_put(root);
 }
@@ -491,36 +636,91 @@ static void handle_openai_handle_event(const char *json_str)
  }
  
  void send_session_update(void)
- {
-     char *json_msg = NULL;
-     int err;
- 
-     if (g_oairt.ws_state != WS_CONNECTED) {
-         warning("openai_rt: Cannot send session update - WebSocket not connected\n");
-         return;
-     }
- 
-     re_sdprintf(&json_msg,
-        "{"
-            "\"type\":\"session.update\","
-            "\"session\":{"
-                "\"type\":\"realtime\","
-                "\"instructions\": \"%s\","
-                "\"tool_choice\": \"auto\","
-                "\"tools\": ["
-                    "{"
-                        "\"type\": \"function\","
-                        "\"name\": \"hangup_call\","
-                        "\"description\": \"Hang up the call\""
-                    "}"
-                "]"            
-            "}"
-        "}",
-         g_oairt.prompt
-     );
+{
+    char *json_msg = NULL;
+    char *escaped_prompt = NULL;
+    int err;
+
+    if (g_oairt.ws_state != WS_CONNECTED) {
+        warning("openai_rt: Cannot send session update - WebSocket not connected\n");
+        return;
+    }
+
+    /* Escape JSON special characters in the prompt */
+    escaped_prompt = mem_zalloc(str_len(g_oairt.prompt) * 2 + 1, NULL);
+    if (!escaped_prompt) {
+        warning("openai_rt: Failed to allocate memory for escaped prompt\n");
+        return;
+    }
+    
+    /* Simple JSON escaping - escape quotes, backslashes, and control characters */
+    const char *src = g_oairt.prompt;
+    char *dst = escaped_prompt;
+    while (*src) {
+        switch (*src) {
+        case '"':
+            *dst++ = '\\';
+            *dst++ = '"';
+            break;
+        case '\\':
+            *dst++ = '\\';
+            *dst++ = '\\';
+            break;
+        case '\b':
+            *dst++ = '\\';
+            *dst++ = 'b';
+            break;
+        case '\f':
+            *dst++ = '\\';
+            *dst++ = 'f';
+            break;
+        case '\n':
+            *dst++ = '\\';
+            *dst++ = 'n';
+            break;
+        case '\r':
+            *dst++ = '\\';
+            *dst++ = 'r';
+            break;
+        case '\t':
+            *dst++ = '\\';
+            *dst++ = 't';
+            break;
+        default:
+            if (*src < 0x20) {
+                /* Escape other control characters as \uXXXX */
+                re_snprintf(dst, 7, "\\u%04x", (unsigned char)*src);
+                dst += 6;
+            } else {
+                *dst++ = *src;
+            }
+            break;
+        }
+        src++;
+    }
+    *dst = '\0';
+
+    re_sdprintf(&json_msg,
+       "{"
+           "\"type\":\"session.update\","
+           "\"session\":{"
+               "\"type\":\"realtime\","
+               "\"instructions\": \"%s\","
+               "\"tool_choice\": \"auto\","
+               "\"tools\": ["
+                   "{"
+                       "\"type\": \"function\","
+                       "\"name\": \"hangup_call\","
+                       "\"description\": \"Hang up the call\""
+                   "}"
+               "]"            
+           "}"
+       "}",
+        escaped_prompt
+    );
 
      info("openai_rt: Session update: %s\n", json_msg);
- 
+
      if (json_msg) {
          err = queue_message_to_openai(json_msg, str_len(json_msg), NULL, NULL);
          if (err) {
@@ -530,6 +730,8 @@ static void handle_openai_handle_event(const char *json_str)
          }
          mem_deref(json_msg);
      }
+     
+     mem_deref(escaped_prompt);
  }
  
  int queue_message_to_openai(const char *json_msg, size_t len,
