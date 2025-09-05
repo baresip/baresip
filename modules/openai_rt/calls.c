@@ -93,3 +93,10 @@ void calls_close(void)
 
 	DEBUG_INFO("Call management closed\n");
 }
+
+void calls_hangup(void)
+{
+	if (g_oairt.current_call) {
+		call_hangup(g_oairt.current_call, 0, NULL);
+	}
+}

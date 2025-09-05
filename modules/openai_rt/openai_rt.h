@@ -207,4 +207,7 @@ struct audio_event *audio_get_next_event(void);
 struct audio_frame *audio_get_next_write_frame(void);
 void audio_free_frame(struct audio_frame *frame);
 
+/* Call management functions accessible via tools */
+void calls_hangup(void);
+
 #endif /* OPENAI_RT_H */

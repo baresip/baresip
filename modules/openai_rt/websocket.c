@@ -125,23 +125,11 @@
      json_object_put(root);
  }
  
-/* websocket.c */
 static void handle_openai_audio_delta(const char *json_str)
 {
     /* Parse JSON and ensure it's an audio delta */
     struct json_object *root = json_tokener_parse(json_str);
     if (!root) return;
-
-    struct json_object *type_obj = NULL;
-    if (!json_object_object_get_ex(root, "type", &type_obj)) {
-        json_object_put(root);
-        return;
-    }
-    const char *type = json_object_get_string(type_obj);
-    if (!type || strcmp(type, "response.output_audio.delta") != 0) {
-        json_object_put(root);
-        return;
-    }
 
     /* Get base64 payload */
     struct json_object *delta_obj = NULL;
@@ -176,6 +164,59 @@ static void handle_openai_audio_delta(const char *json_str)
     }
 
     if (decoded) mem_deref(decoded);
+
+    json_object_put(root);
+}
+
+/* websocket.c */
+static void handle_openai_function_call(const char *json_str)
+{
+    /* Parse JSON and ensure it's an function call */
+    struct json_object *root = json_tokener_parse(json_str);
+    if (!root) return;
+
+    struct json_object *name_obj = NULL;
+    if (!json_object_object_get_ex(root, "name", &name_obj)) {
+        json_object_put(root);
+        return;
+    }
+    const char *name = json_object_get_string(name_obj);
+    if (!name) {
+        json_object_put(root);
+        return;
+    }
+
+    if (strcmp(name, "hangup_call") == 0) {
+        calls_hangup();
+    }
+
+    json_object_put(root);
+}
+static void handle_openai_handle_event(const char *json_str)
+{
+    /* Parse JSON and ensure it's an audio delta */
+    struct json_object *root = json_tokener_parse(json_str);
+    if (!root) return;
+
+    struct json_object *type_obj = NULL;
+    if (!json_object_object_get_ex(root, "type", &type_obj)) {
+        json_object_put(root);
+        return;
+    }
+    const char *type = json_object_get_string(type_obj);
+    if (!type) {
+        json_object_put(root);
+        return;
+    }
+
+    if (strcmp(type, "response.output_audio.delta") == 0) {
+        handle_openai_audio_delta(json_str);
+    }
+    else if (strcmp(type, "function_call") == 0) {
+        handle_openai_function_call(json_str);
+    }
+
+
     json_object_put(root);
 }
  
@@ -218,7 +259,7 @@ static void handle_openai_audio_delta(const char *json_str)
          if (len > 0 && g_oairt.ws_state == WS_CONNECTED) {
              queue_message_from_openai((const uint8_t *)in, len);
              handle_session_updated((const char *)in);     /* NEW */
-             handle_openai_audio_delta((const char *)in);  /* PCM 24k -> 8k inject */
+             handle_openai_handle_event((const char *)in); 
          }
          break;
  
@@ -460,15 +501,25 @@ static void handle_openai_audio_delta(const char *json_str)
      }
  
      re_sdprintf(&json_msg,
-         "{"
-           "\"type\":\"session.update\","
-           "\"session\":{"
-             "\"type\":\"realtime\","
-             "\"instructions\": \"%s\""
-           "}"
-         "}",
+        "{"
+            "\"type\":\"session.update\","
+            "\"session\":{"
+                "\"type\":\"realtime\","
+                "\"instructions\": \"%s\","
+                "\"tool_choice\": \"auto\","
+                "\"tools\": ["
+                    "{"
+                        "\"type\": \"function\","
+                        "\"name\": \"hangup_call\","
+                        "\"description\": \"Hang up the call\""
+                    "}"
+                "]"            
+            "}"
+        "}",
          g_oairt.prompt
      );
+
+     info("openai_rt: Session update: %s\n", json_msg);
  
      if (json_msg) {
          err = queue_message_to_openai(json_msg, str_len(json_msg), NULL, NULL);
