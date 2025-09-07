@@ -390,11 +390,11 @@ x11           X11 video output driver
 
 ## Supported platforms:
 
-* Android (7.0 or later)
+* Android (8.0 or later)
 * Apple MacOS 11 and later (Xcode 10 or later)
 * Apple iOS 10.0 or later
-* Linux (kernel 4.0 or later, and glibc 2.5.x or later)
-* Windows 10 or later (mingw and VS2019)
+* Linux (kernel 4.0 or later, and glibc 2.31 or later)
+* Windows 10 or later (mingw and VS2022)
 
 
 ### Supported versions of C Standard library
@@ -409,14 +409,13 @@ x11           X11 video output driver
 
 ### Supported compilers:
 
-* clang 10.x or later
-* gcc 10.x or later
-* MSVC 2019, 2022
+* clang 9.x or later
+* gcc 9.x or later
+* MSVC 2022 or later
 
 
 ### Supported versions of OpenSSL
 
-* OpenSSL version 1.1.1
 * OpenSSL version 3.x.x
 * LibreSSL version 3.x
 
