@@ -16,7 +16,13 @@
 #
 #
 
-import sys, os, re, fnmatch, getopt
+"""Code Checker"""
+
+import sys
+import os
+import re
+import fnmatch
+import getopt
 
 PROGRAM = 'ccheck'
 VERSION = '0.2.0'
@@ -200,13 +206,13 @@ class ccheck:
             self.listfor_next = False
             self.listfor_depth = 0
 
-        if (self.listfor_depth >= 1):
+        if self.listfor_depth >= 1:
             if '{' in line:
                 self.listfor_depth += 1
                 return
             if '}' in line:
                 self.listfor_depth -= 1
-                if (self.listfor_depth == 0):
+                if self.listfor_depth == 0:
                     self.listfor_next = False
                 return
             if '->next' in line:
