@@ -234,7 +234,6 @@ static bool enc_handler(const struct sip_hdr *hdr, const struct sip_msg *msg,
 {
 	struct hdr_handler_arg *harg = arg;
 	struct mbuf *mb = harg->mb;
-	(void)msg;
 
 	if (hdr->id == SIP_HDR_VIA && !msg->req)
 		return false;
@@ -262,7 +261,6 @@ static bool reply_via_handler(const struct sip_hdr *hdr,
 	struct mbuf *mb = vharg->mb;
 	struct sa *dst = vharg->dst;
 	int err = 0;
-	(void)msg;
 
 	struct sip_via via;
 	sip_via_decode(&via, &hdr->val);
@@ -460,7 +458,7 @@ static bool forward_msg(struct sip_server *srv, const struct sip_msg *msg)
 	if (err)
 		goto out;
 
-	mb->pos = 0;
+	mbuf_set_pos(mb, 0);
 	err = sip_send_conn(srv->sip, NULL, msg->tp, &dst, NULL, mb, NULL,
 			    NULL);
 	if (err)
@@ -469,7 +467,7 @@ static bool forward_msg(struct sip_server *srv, const struct sip_msg *msg)
 	DEBUG_INFO("successfully forwarded SIP message\n");
 out:
 	mem_deref(mb);
-	return err ? false : true;
+	return err == 0;
 }
 
 
