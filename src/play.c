@@ -439,8 +439,10 @@ static int play_file_ausrc(struct play **playp,
 		goto out;
 	}
 
-	str_dup(&play->mod, play_mod);
-	str_dup(&play->dev, play_dev);
+	err  = str_dup(&play->mod, play_mod);
+	err |= str_dup(&play->dev, play_dev);
+	if (err)
+		goto out;
 
 	sprm.ch = channels;
 	sprm.srate = srate;
@@ -449,7 +451,9 @@ static int play_file_ausrc(struct play **playp,
 
 	play->sprm = sprm;
 	play->repeat = repeat ? repeat : 1;
-	str_dup(&play->filename, filename);
+	err = str_dup(&play->filename, filename);
+	if (err)
+		goto out;
 
 	sampsz = aufmt_sample_size(sprm.fmt);
 	minsz =  3 * sampsz * srate * channels * PTIME / 1000;

@@ -267,7 +267,9 @@ int dns_server_add_srv(struct dns_server *srv, const char *name,
 	rr->rdata.srv.pri = pri;
 	rr->rdata.srv.weight = weight;
 	rr->rdata.srv.port = port;
-	str_dup(&rr->rdata.srv.target, target);
+	err = str_dup(&rr->rdata.srv.target, target);
+	if (err)
+		goto out;
 
 	list_append(&srv->rrl, &rr->le, rr);
 

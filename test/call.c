@@ -822,7 +822,9 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 
 		ag->close_scode = call_scode(call);
 		mem_deref(ag->close_prm);
-		str_dup(&ag->close_prm, prm);
+		err = str_dup(&ag->close_prm, prm);
+		if (err)
+			goto out;
 
 		if (ag->close_scode)
 			ag->failed = true;

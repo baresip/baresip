@@ -863,7 +863,9 @@ static void stream_remote_set(struct stream *s)
 	if (rmid) {
 		s->mid = mem_deref(s->mid);
 
-		str_dup(&s->mid, rmid);
+		int err = str_dup(&s->mid, rmid);
+		if (err)
+			return;
 
 		sdp_media_set_lattr(s->sdp, true, "mid", "%s", rmid);
 	}
@@ -1734,7 +1736,9 @@ void stream_parse_mid(struct stream *strm)
 
 		strm->mid = mem_deref(strm->mid);
 
-		str_dup(&strm->mid, rmid);
+		int err = str_dup(&strm->mid, rmid);
+		if (err)
+			return;
 
 		sdp_media_set_lattr(strm->sdp, true, "mid", "%s", rmid);
 	}
