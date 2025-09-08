@@ -85,7 +85,6 @@ struct jbuf {
 		int32_t max_skew_ms;	 /**< Max. skew in [ms]              */
 	} p;                 /**< Playout specific values                    */
 	jbuf_next_play_h *next_play_h;   /**< Next playout function          */
-	int pt;              /**< Payload type                               */
 	bool running;        /**< Jitter buffer is running                   */
 
 	mtx_t *lock;         /**< Makes jitter buffer thread safe            */
@@ -217,7 +216,6 @@ int jbuf_alloc(struct jbuf **jbp, uint32_t mind, uint32_t maxd, uint32_t maxsz)
 
 	DEBUG_INFO("alloc: delay=%u-%u [ms] maxsz=%u\n", mind, maxd, maxsz);
 
-	jb->pt = -1;
 	err = mutex_alloc(&jb->lock);
 	if (err)
 		goto out;
@@ -517,8 +515,6 @@ int jbuf_put(struct jbuf *jb, const struct rtp_header *hdr, void *mem)
 	}
 
 	seq = hdr->seq;
-	if (jb->pt == -1)
-		jb->pt = hdr->pt;
 
 	if (jb->ssrc && jb->ssrc != hdr->ssrc) {
 		DEBUG_INFO("ssrc changed %u %u\n", jb->ssrc, hdr->ssrc);
