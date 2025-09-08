@@ -3833,6 +3833,7 @@ int test_call_uag_find_msg(void)
 	struct sa sa1;
 	struct sa sa2;
 	char *aor=NULL;
+	char *curi=NULL;
 	struct cancel_rule *cr;
 	int err = 0;
 
@@ -3891,8 +3892,8 @@ int test_call_uag_find_msg(void)
 	cancel_rule_new(BEVENT_CALL_ESTABLISHED, f->c.ua, 0, 0, 1);
 	cancel_rule_and(BEVENT_CALL_ESTABLISHED, f->b.ua, 1, 0, 1);
 
-	char curi[32];
-	re_snprintf(curi, sizeof(curi), "sip:alice@%J", &sa2);
+	err = re_sdprintf(&curi, "sip:alice@%J", &sa2);
+	TEST_ERR(err);
 	err = ua_connect(f->c.ua, 0, NULL, curi, VIDMODE_OFF);
 	TEST_ERR(err);
 
@@ -3911,6 +3912,7 @@ int test_call_uag_find_msg(void)
 	mem_deref(srv1);
 	mem_deref(srv2);
 	fixture_close(f);
+	mem_deref(curi);
 
 	return err;
 }
