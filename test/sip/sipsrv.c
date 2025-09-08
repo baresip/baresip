@@ -344,6 +344,11 @@ static int sip_req_forward(struct sip_server *srv, const struct sip_msg *msg,
 	const struct sip_hdr *maxfwd = sip_msg_hdr(msg, SIP_HDR_MAX_FORWARDS);
 	if (maxfwd) {
 		uint32_t mf = pl_u32(&maxfwd->val);
+		if (mf == 0) {
+			DEBUG_WARNING("Max-Forwards is zero\n");
+			return EPROTO;
+		}
+
 		err |= mbuf_printf(mb, "%r: %u\r\n", &maxfwd->name, mf - 1);
 	}
 	else {
