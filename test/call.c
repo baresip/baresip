@@ -3858,12 +3858,12 @@ int test_call_uag_find_msg(void)
 	TEST_ERR(err);
 	err = ua_alloc(&f->a.ua, aor);
 	TEST_ERR(err);
-	mem_deref(aor);
+	aor = mem_deref(aor);
 	err = re_sdprintf(&aor, "B <sip:alice@%J>;regint=60", &sa2);
 	TEST_ERR(err);
 	err = ua_alloc(&f->b.ua, aor);
 	TEST_ERR(err);
-	mem_deref(aor);
+	aor = mem_deref(aor);
 	err = re_sdprintf(&aor, "C <sip:bob@%J>;regint=60", &sa2);
 	TEST_ERR(err);
 	err = ua_alloc(&f->c.ua, aor);
