@@ -261,8 +261,9 @@ static void handle_openai_handle_event(const char *json_str)
 
     if (strcmp(type, "response.output_audio.delta") == 0) {
         handle_openai_audio_delta(json_str);
-    }
-    else if (strcmp(type, "response.output_item.done") == 0) {
+    } else if (strcmp(type, "session.updated") == 0) {
+        handle_session_updated(json_str);
+    } else if (strcmp(type, "response.output_item.done") == 0) {
 
         /*
             {
@@ -402,9 +403,9 @@ static void handle_openai_handle_event(const char *json_str)
          DEBUG_INFO("Received message from OpenAI: %s\n", (const char *)in);
  
          if (len > 0 && g_oairt.ws_state == WS_CONNECTED) {
-             queue_message_from_openai((const uint8_t *)in, len);
-             handle_session_updated((const char *)in);     /* NEW */
-             handle_openai_handle_event((const char *)in); 
+            // TODO: remove the queue from openai completely, as we handle all events directly in this thread
+            //queue_message_from_openai((const uint8_t *)in, len);
+            handle_openai_handle_event((const char *)in); 
          }
          break;
  
