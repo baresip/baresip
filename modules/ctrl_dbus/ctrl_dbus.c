@@ -200,7 +200,9 @@ on_handle_invoke(DBusBaresip *interface,
 	struct ctrl_st *st = arg;
 	int err;
 
-	str_dup(&st->command, command);
+	err = str_dup(&st->command, command);
+	if (err)
+		return false;
 
 	mtx_lock(&st->wait.mtx);
 	err = mqueue_push(st->mqueue, 0, NULL);
