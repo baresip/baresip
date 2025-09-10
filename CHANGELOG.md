@@ -5,6 +5,35 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v4.1.0 - 2025-09-10
+
+### What's Changed
+
+* package: Fix not working libdir by @danielroedl in https://github.com/baresip/baresip/pull/3455
+* ci: temporary workaround for choco openssl failure by @alfredh in https://github.com/baresip/baresip/pull/3458
+* call: add getter call state name by @cspiel1 in https://github.com/baresip/baresip/pull/3459
+* play: set audio path to config by @cspiel1 in https://github.com/baresip/baresip/pull/3463
+* ci: update actions/checkout@v5 by @sreimers in https://github.com/baresip/baresip/pull/3466
+* audio: avoid tx underruns if ausrc delivers small audio frames by @cspiel1 in https://github.com/baresip/baresip/pull/3472
+* test: ua - event_handler remove unused variables by @cspiel1 in https://github.com/baresip/baresip/pull/3474
+* test: ua - fix index for domain_add by @cspiel1 in https://github.com/baresip/baresip/pull/3475
+* jbuf: adaptive playout time calculation by @sreimers in https://github.com/baresip/baresip/pull/2757
+* config: fix video_jitter_buffer_size and add deprecation warnings by @sreimers in https://github.com/baresip/baresip/pull/3476
+* ua: avoid duplicates of URI params by @cspiel1 in https://github.com/baresip/baresip/pull/3471
+* gst: fix crash on shutdown by @cspiel1 in https://github.com/baresip/baresip/pull/3480
+* ua: avoid suffix for contact user if possible by @cspiel1 in https://github.com/baresip/baresip/pull/3470
+* doc: update jbuf settings in examples by @cspiel1 in https://github.com/baresip/baresip/pull/3481
+* uag: avoid peer-to-peer calls to registered accounts (#3479) by @cspiel1 in https://github.com/baresip/baresip/pull/3482
+* message: log when UA is not found for incoming MESSAGE by @juha-h in https://github.com/baresip/baresip/pull/3486
+* ci/build/macos: use ffmpeg 7 by @sreimers in https://github.com/baresip/baresip/pull/3487
+* test: convert some define values to enum by @alfredh in https://github.com/baresip/baresip/pull/3485
+* readme: update list of platforms and compilers by @alfredh in https://github.com/baresip/baresip/pull/3488
+* test: fix some pylint warnings in ccheck by @alfredh in https://github.com/baresip/baresip/pull/3489
+* jbuf: remove payload type from struct, only set not read by @alfredh in https://github.com/baresip/baresip/pull/3491
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v4.0.0...v4.1.0
+
+
 ## v4.0.0 - 2025-08-06
 
 ### What's Changed
