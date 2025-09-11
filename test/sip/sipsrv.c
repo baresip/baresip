@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 - 2015 Alfred E. Heggestad
  */
+#include <stdint.h>
 #include <string.h>
 #include <time.h>
 #include <re.h>
@@ -183,14 +184,313 @@ static bool handle_register(struct sip_server *srv, const struct sip_msg *msg)
 }
 
 
+static bool enc_list_handler(const struct sip_hdr *hdr,
+			     const struct sip_msg *msg, void *arg)
+{
+	struct mbuf *mb = arg;
+	(void)msg;
+
+	int err = mbuf_printf(mb, "%s%r", mb->end ? "," : "", &hdr->val);
+	if (err)
+		return true;
+
+	return false;
+}
+
+
+static int sip_msg_hdr_encode_list(const struct sip_msg *msg,
+				   enum sip_hdrid id, struct mbuf *mb)
+{
+	const struct sip_hdr *hdr;
+	struct mbuf *values;
+	int err;
+
+	hdr = sip_msg_hdr(msg, id);
+	if (!hdr)
+		return 0;
+
+	values = mbuf_alloc(16);
+	if (!values)
+		return ENOMEM;
+
+	sip_msg_hdr_apply(msg, true, id, enc_list_handler, values);
+
+	values->pos = 0;
+	err = mbuf_printf(mb, "%r: %b\r\n", &hdr->name, mbuf_buf(values),
+			  mbuf_get_left(values));
+	mem_deref(values);
+	return err;
+}
+
+
+struct hdr_handler_arg {
+	struct mbuf *mb;
+	int err;
+};
+
+
+static bool enc_handler(const struct sip_hdr *hdr, const struct sip_msg *msg,
+			void *arg)
+{
+	struct hdr_handler_arg *harg = arg;
+	struct mbuf *mb = harg->mb;
+
+	if (hdr->id == SIP_HDR_VIA && !msg->req)
+		return false;
+
+	harg->err = mbuf_printf(mb, "%r: %r\r\n", &hdr->name, &hdr->val);
+	if (harg->err)
+		return true;
+
+	return false;
+}
+
+
+struct via_handler_arg {
+	struct mbuf *mb;
+	int err;
+	struct sa *dst;
+	uint32_t idx;
+};
+
+
+static bool reply_via_handler(const struct sip_hdr *hdr,
+			      const struct sip_msg *msg, void *arg)
+{
+	struct via_handler_arg *vharg = arg;
+	struct mbuf *mb = vharg->mb;
+	struct sa *dst = vharg->dst;
+	int err = 0;
+
+	struct sip_via via;
+	sip_via_decode(&via, &hdr->val);
+
+	/* remove own Via header */
+	if (vharg->idx==0 && sa_cmp(&via.addr, &msg->dst, SA_ALL)) {
+		goto out;
+	}
+	else if (vharg->idx==0) {
+		DEBUG_WARNING("top Via of reply does not match (%J vs %J)\n",
+			      &via.addr, &msg->dst);
+		err = EINVAL;
+		goto out;
+	}
+
+	/* get dst address from next Via */
+	if (!sa_isset(dst, SA_ADDR))
+		*dst = via.addr;
+
+	err = mbuf_printf(mb, "%r: %r\r\n", &hdr->name, &hdr->val);
+	if (err)
+		goto out;
+
+out:
+	++vharg->idx;
+	if (err) {
+		vharg->err = err;
+		return true;  /* stop processing */
+	}
+
+	return false;
+}
+
+
+static int sip_req_forward(struct sip_server *srv, const struct sip_msg *msg,
+			   struct mbuf *mb, struct sa *dst)
+{
+	struct aor *aor;
+	int err;
+
+	/* use request URI to find contact aor */
+	err = aor_find(srv, &aor, &msg->uri);
+	if (err) {
+		DEBUG_WARNING("aor not found (%r)\n", &msg->uri);
+		return err;
+	}
+
+	/* use first contact of aor */
+	struct location *loc = list_ledata(list_head(&aor->locl));
+	if (!loc) {
+		DEBUG_WARNING("aor missing (%r)\n", &msg->uri);
+		return err;
+	}
+
+	/* the contact aor needs to be an IP address + port number */
+	struct uri duri = loc->duri;
+	err = sa_set(dst, &duri.host, duri.port);
+	if (err)
+		return err;
+
+	struct sa laddr;
+	sip_transp_laddr(srv->sip, &laddr, msg->tp, dst);
+
+	struct hdr_handler_arg harg = {
+		.mb = mb,
+		.err = 0,
+	};
+
+	err  = mbuf_printf(mb, "%r %H SIP/2.0\r\n", &msg->met,
+			   uri_encode, &duri);
+	err |= mbuf_printf(mb, "Via: SIP/2.0/%s %J;"
+			   "branch=z9hG4bK%016llx;rport\r\n",
+			   sip_transp_name(msg->tp), &laddr,
+			   rand_u64());
+	sip_msg_hdr_apply(msg, true, SIP_HDR_VIA, enc_handler, &harg);
+	if (harg.err) {
+		err |= harg.err;
+		return err;
+	}
+
+	const struct sip_hdr *maxfwd = sip_msg_hdr(msg, SIP_HDR_MAX_FORWARDS);
+	if (maxfwd) {
+		uint32_t mf = pl_u32(&maxfwd->val);
+		if (mf == 0) {
+			DEBUG_WARNING("Max-Forwards is zero\n");
+			return EPROTO;
+		}
+
+		err |= mbuf_printf(mb, "%r: %u\r\n", &maxfwd->name, mf - 1);
+	}
+	else {
+		err |= mbuf_printf(mb, "Max-Forwards: 70\r\n");
+	}
+
+	if (err) {
+		DEBUG_WARNING("could not forward SIP request %r\n", &msg->met);
+		return err;
+	}
+
+	DEBUG_INFO("forwarding SIP request %r from %J via %J to %J\n",
+		   &msg->met, &msg->src, &laddr, dst);
+	return 0;
+}
+
+
+static int sip_reply_forward(struct sip_server *srv, const struct sip_msg *msg,
+			     struct mbuf *mb, struct sa *dst)
+{
+	int err;
+
+	if (!srv || !msg)
+		return EINVAL;
+
+	/* Get aor from registration */
+
+	struct mbuf *viamb = mbuf_alloc(32);
+	if (!viamb)
+		return ENOMEM;
+
+	struct via_handler_arg vharg = {
+		.mb = viamb,
+		.dst = dst,
+		.idx = 0,
+		.err = 0
+	};
+
+	sip_msg_hdr_apply(msg, true, SIP_HDR_VIA, reply_via_handler, &vharg);
+	if (vharg.err) {
+		err = vharg.err;
+		goto out;
+	}
+
+	viamb->pos = 0;
+	err  = mbuf_printf(mb, "SIP/2.0 %u %r\r\n", msg->scode, &msg->reason);
+	err |= mbuf_printf(mb, "%b", mbuf_buf(viamb), mbuf_get_left(viamb));
+out:
+	mem_deref(viamb);
+	if (err) {
+		DEBUG_WARNING("could not forward SIP reply %u %r (%m)\n",
+			      msg->scode, &msg->reason, err);
+		return err;
+	}
+
+	DEBUG_INFO("forwarding SIP reply %u %r from %J via %J to %J\n",
+		   msg->scode, &msg->reason, &msg->src, &msg->dst, dst);
+	return 0;
+}
+
+
+static bool forward_msg(struct sip_server *srv, const struct sip_msg *msg)
+{
+	int err;
+
+	/* Request URI */
+	if (msg->req) {
+		err = domain_find(srv, &msg->uri);
+		if (err)
+			return false;
+	}
+
+	struct mbuf *mb = mbuf_alloc(1024);
+	if (!mb)
+		return ENOMEM;
+
+	/* Forward msg */
+	struct sa dst = {0};
+	if (msg->req)
+		err = sip_req_forward(srv, msg, mb, &dst);
+	else
+		err = sip_reply_forward(srv, msg, mb, &dst);
+
+	struct hdr_handler_arg harg = {
+		.mb = mb,
+		.err = 0,
+	};
+
+	sip_msg_hdr_apply(msg, true, SIP_HDR_CONTACT, enc_handler, &harg);
+	sip_msg_hdr_apply(msg, true, SIP_HDR_FROM, enc_handler, &harg);
+	sip_msg_hdr_apply(msg, true, SIP_HDR_TO, enc_handler, &harg);
+	sip_msg_hdr_apply(msg, true, SIP_HDR_CALL_ID, enc_handler, &harg);
+	sip_msg_hdr_apply(msg, true, SIP_HDR_CSEQ, enc_handler, &harg);
+	sip_msg_hdr_apply(msg, true, SIP_HDR_USER_AGENT, enc_handler, &harg);
+	err |= sip_msg_hdr_encode_list(msg, SIP_HDR_ALLOW, mb);
+	err |= sip_msg_hdr_encode_list(msg, SIP_HDR_SUPPORTED, mb);
+	sip_msg_hdr_apply(msg, true, SIP_HDR_CONTENT_TYPE, enc_handler,	&harg);
+	sip_msg_hdr_apply(msg, true, SIP_HDR_CONTENT_LENGTH, enc_handler,
+			  &harg);
+	/* append the SIP message body */
+	const struct sip_hdr *hdr = sip_msg_hdr(msg, SIP_HDR_CONTENT_LENGTH);
+	err |= mbuf_printf(mb, "\r\n");
+	uint32_t clen = hdr ? pl_u32(&hdr->val) : 0;
+	if (clen) {
+		err |= mbuf_printf(mb, "%b", mbuf_buf(msg->mb),
+				   mbuf_get_left(msg->mb));
+	}
+
+	if (harg.err)
+		err = harg.err;
+
+	if (err)
+		goto out;
+
+	mbuf_set_pos(mb, 0);
+	err = sip_send_conn(srv->sip, NULL, msg->tp, &dst, NULL, mb, NULL,
+			    NULL);
+	if (err)
+		goto out;
+
+	DEBUG_INFO("successfully forwarded SIP message\n");
+out:
+	mem_deref(mb);
+	return err == 0;
+}
+
+
 static bool sip_msg_handler(const struct sip_msg *msg, void *arg)
 {
 	struct sip_server *srv = arg;
 	int err = 0;
 
 #if 0
-	DEBUG_NOTICE("[%u] recv %r via %s\n", srv->instance,
-		     &msg->met, sip_transp_name(msg->tp));
+	if (msg->req) {
+		DEBUG_NOTICE("[%u] recv %r via %s\n", srv->instance,
+			     &msg->met, sip_transp_name(msg->tp));
+	}
+	else {
+		DEBUG_NOTICE("[%u] recv %u %r via %s\n", srv->instance,
+			     msg->scode, &msg->reason,
+			     sip_transp_name(msg->tp));
+	}
 #endif
 
 	srv->tp_last = msg->tp;
@@ -203,7 +503,10 @@ static bool sip_msg_handler(const struct sip_msg *msg, void *arg)
 		sip_reply(srv->sip, msg, 503, "Server Error");
 	}
 	else {
-		DEBUG_NOTICE("method not handled (%r)\n", &msg->met);
+		if (forward_msg(srv, msg))
+			goto out;
+
+		sip_reply(srv->sip, msg, 503, "Server Error");
 		return false;
 	}
 
@@ -288,6 +591,10 @@ int sip_server_alloc(struct sip_server **srvp,
 		goto out;
 
 	err = sip_listen(&srv->lsnr, srv->sip, true, sip_msg_handler, srv);
+	if (err)
+		goto out;
+
+	err = sip_listen(&srv->lsnr, srv->sip, false, sip_msg_handler, srv);
 	if (err)
 		goto out;
 
