@@ -3894,7 +3894,7 @@ int test_call_uag_find_msg(void)
 
 	err = re_sdprintf(&curi, "sip:alice@%J", &sa2);
 	TEST_ERR(err);
-	err = ua_connect(f->c.ua, 0, NULL, curi, VIDMODE_OFF);
+	err = ua_connect(f->c.ua, NULL, NULL, curi, VIDMODE_OFF);
 	TEST_ERR(err);
 
 	err = re_main_timeout(5000);
@@ -3906,6 +3906,24 @@ int test_call_uag_find_msg(void)
 	ASSERT_EQ(0, fix.a.n_established);
 	ASSERT_EQ(1, fix.b.n_incoming);
 	ASSERT_EQ(1, fix.b.n_established);
+
+	/* 2nd test: peer-to-peer call to registered UAs should be rejected */
+	cancel_rule_pop();
+	curi = mem_deref(curi);
+	err = re_sdprintf(&curi, "sip:alice@127.0.0.1");
+	TEST_ERR(err);
+
+	f->a.n_closed = 0;
+	f->exp_closed = 1;
+	err = ua_connect(f->c.ua, NULL, NULL, curi, VIDMODE_OFF);
+	TEST_ERR(err);
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(0, fix.a.n_incoming);
+	ASSERT_EQ(0, fix.b.n_incoming);
+	ASSERT_EQ(0, fix.c.n_incoming);
 
  out:
 	mem_deref(aor);
