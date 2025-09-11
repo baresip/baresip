@@ -3851,9 +3851,9 @@ int test_call_uag_find_msg(void)
 	err = sip_transp_laddr(srv2->sip, &sa2, SIP_TRANSP_UDP, NULL);
 	TEST_ERR(err);
 
-	mem_deref(f->a.ua);
-	mem_deref(f->b.ua);
-	mem_deref(f->c.ua);
+	f->a.ua = mem_deref(f->a.ua);
+	f->b.ua = mem_deref(f->b.ua);
+	f->c.ua = mem_deref(f->c.ua);
 
 	err = re_sdprintf(&aor, "A <sip:alice@%J>;regint=60", &sa1);
 	TEST_ERR(err);
@@ -3894,10 +3894,11 @@ int test_call_uag_find_msg(void)
 
 	err = re_sdprintf(&curi, "sip:alice@%J", &sa2);
 	TEST_ERR(err);
-	err = ua_connect(f->c.ua, 0, NULL, curi, VIDMODE_OFF);
+	err = ua_connect(f->c.ua, NULL, NULL, curi, VIDMODE_OFF);
 	TEST_ERR(err);
 
 	err = re_main_timeout(5000);
+	cancel_rule_pop();
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
@@ -3906,6 +3907,40 @@ int test_call_uag_find_msg(void)
 	ASSERT_EQ(0, fix.a.n_established);
 	ASSERT_EQ(1, fix.b.n_incoming);
 	ASSERT_EQ(1, fix.b.n_established);
+
+	/* 2nd test: peer-to-peer call to registered UAs should be rejected */
+	f->a.ua = mem_deref(f->a.ua);
+	aor = mem_deref(aor);
+	err = re_sdprintf(&aor, "A <sip:alice@%J>;regint=60", &sa1);
+	TEST_ERR(err);
+	err = ua_alloc(&f->a.ua, aor);
+	TEST_ERR(err);
+	err = ua_register(f->a.ua);
+	TEST_ERR(err);
+	cancel_rule_new(BEVENT_REGISTER_OK, f->a.ua, 0, 0, 0);
+	err = re_main_timeout(5000);
+	cancel_rule_pop();
+	TEST_ERR(err);
+
+	curi = mem_deref(curi);
+	/* alice --> rejected. alice-<suffix> would be correct */
+	/* note: now both alice UAs have a suffix */
+	err = re_sdprintf(&curi, "sip:alice@%J", &f->laddr_udp);
+	TEST_ERR(err);
+
+	f->b.n_incoming = 0;
+	f->c.n_established = 0;
+	cancel_rule_new(BEVENT_CALL_CLOSED, f->c.ua, 0, 0, 0);
+	err = ua_connect(f->c.ua, NULL, NULL, curi, VIDMODE_OFF);
+	TEST_ERR(err);
+	err = re_main_timeout(5000);
+	cancel_rule_pop();
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(0, fix.a.n_incoming);
+	ASSERT_EQ(0, fix.b.n_incoming);
+	ASSERT_EQ(0, fix.c.n_incoming);
 
  out:
 	mem_deref(aor);
