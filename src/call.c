@@ -792,6 +792,12 @@ int call_streams_alloc(struct call *call)
 			return err;
 	}
 
+	if (call->cfg->audio.level && !call->got_offer) {
+		err = audio_enable_level(call->audio);
+		if (err)
+			return err;
+	}
+
 	return 0;
 }
 
