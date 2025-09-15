@@ -775,18 +775,6 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 	if (err)
 		goto out;
 
-	if (cfg->audio.level && offerer) {
-
-		a->extmap_aulevel = stream_generate_extmap_id(a->strm);
-		aurecv_set_extmap(a->aur, a->extmap_aulevel);
-
-		err = sdp_media_set_lattr(stream_sdpmedia(a->strm), true,
-					  "extmap",
-					  "%u %s",
-					  a->extmap_aulevel, uri_aulevel);
-		if (err)
-			goto out;
-	}
 
 	tx->mb = mbuf_alloc(STREAM_PRESZ + 4096);
 	tx->sampv = mem_zalloc(AUDIO_SAMPSZ * aufmt_sample_size(tx->enc_fmt),
@@ -859,6 +847,21 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 		*ap = a;
 
 	return err;
+}
+
+
+int audio_enable_level(struct audio *au)
+{
+	if (!au)
+		return EINVAL;
+
+	au->extmap_aulevel = stream_generate_extmap_id(au->strm);
+	aurecv_set_extmap(au->aur, au->extmap_aulevel);
+
+	return sdp_media_set_lattr(stream_sdpmedia(au->strm), false,
+				   "extmap",
+				   "%u %s",
+				   au->extmap_aulevel, uri_aulevel);
 }
 
 

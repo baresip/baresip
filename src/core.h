@@ -110,6 +110,7 @@ struct audio;
 
 int  audio_send_digit(struct audio *a, char key);
 void audio_sdp_attr_decode(struct audio *a);
+int  audio_enable_level(struct audio *au);
 
 
 /*
