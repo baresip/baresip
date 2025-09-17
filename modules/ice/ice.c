@@ -804,7 +804,7 @@ static int ice_start(struct mnat_sess *sess)
 			m->complete = false;
 
 			/* start ice if we have remote candidates */
-			if (!list_isempty(icem_rcandl(m->icem))) {
+			if (icem_rcand_ready(m->icem)) {
 
 				err = icem_conncheck_start(m->icem);
 				if (err)
