@@ -77,7 +77,6 @@ Distributed under BSD license
   - G.722
   - G.726
   - L16
-  - MPA
   - Opus
 
 * Audio-drivers:
@@ -292,7 +291,6 @@ l16           L16 audio codec
 menu          Interactive menu
 mixausrc      Mixes another audio source into audio stream
 mixminus      Mixes N-1 audio streams for conferencing
-mpa           MPA Speech and Audio Codec
 mqtt          MQTT (Message Queue Telemetry Transport) module
 mwi           Message Waiting Indication
 natpmp        NAT Port Mapping Protocol (NAT-PMP) module
@@ -335,7 +333,6 @@ x11           X11 video output driver
 
 ## IETF RFC/I-Ds:
 
-* RFC 2250  RTP Payload Format for the mpa Speech and Audio Codec
 * RFC 3016  RTP Payload Format for MPEG-4 Audio/Visual Streams
 * RFC 3262  Reliability of Provisional Responses for SIP
 * RFC 3311  SIP UPDATE Method

@@ -46,7 +46,6 @@ set(MODULES
   menu
   mixausrc
   mixminus
-  mpa
   mqtt
   mwi
   natpmp
