@@ -81,7 +81,6 @@ set(MODULES
   vumeter
   wasapi
   webrtc_aec
-  webrtc_aecm
   wincons
   x11
 
