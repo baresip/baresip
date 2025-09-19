@@ -50,7 +50,7 @@ jobs:
       - name: Install OpenSSL
         if: ${{ matrix.config.openssl }}
         run: |
-          choco install --no-progress ${{ matrix.config.choco }} openssl --version 3.5.2
+          choco install --no-progress ${{ matrix.config.choco }} openssl --version 3.5.3
 
       - uses: sreimers/pr-dependency-action@v1
         with:
