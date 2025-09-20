@@ -20,7 +20,6 @@ struct ausrc_st {
 	struct ausrc_prm prm;
 	int ch;
 	uint32_t sampsz;
-	int fmt;
 	double sampc_ratio;
 	AudioBufferList *abl;
 	ausrc_read_h *rh;
@@ -225,7 +224,6 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		err = ENOTSUP;
 		goto out;
 	}
-	st->fmt = prm->fmt;
 	st->prm = *prm;
 
 	framesz = st->sampsz * st->ch;
