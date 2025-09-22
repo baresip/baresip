@@ -969,3 +969,47 @@ int test_ua_refer(void)
  out:
 	return err;
 }
+
+
+int test_ua_cuser(void)
+{
+	int err;
+	struct ua *ua1, *ua2, *ua3, *ua4;
+	uint32_t n_uas = list_count(uag_list());
+
+	/* make sure we dont have that UA already */
+	ASSERT_TRUE(NULL == uag_find_aor("sip:alice@test.invalid"));
+	ASSERT_TRUE(NULL == uag_find_aor("sip:bob@test.invalid"));
+
+	err = ua_alloc(&ua1, "Alice <sip:alice@test.invalid>;regint=0");
+	TEST_ERR(err);
+
+	err = ua_alloc(&ua2, "Alice <sip:alice@test.invalid>;regint=0");
+	TEST_ERR(err);
+
+	err = ua_alloc(&ua3, "Bob <sip:bob@test.invalid>;regint=0");
+	TEST_ERR(err);
+
+	err = ua_alloc(&ua4, "Bob <sip:bob@test.invalid>;regint=0");
+	TEST_ERR(err);
+
+	ASSERT_STREQ("alice", ua_cuser(ua1));
+	ASSERT_STREQ("bob", ua_cuser(ua3));
+
+	ASSERT_TRUE(0 != str_cmp(ua_cuser(ua1), ua_cuser(ua2)));
+	ASSERT_TRUE(0 != str_cmp(ua_cuser(ua3), ua_cuser(ua4)));
+
+	/* verify global UA keeper */
+	ASSERT_EQ((n_uas + 4), list_count(uag_list()));
+	ASSERT_TRUE(ua1 == uag_find_aor("sip:alice@test.invalid"));
+
+	mem_deref(ua1);
+	mem_deref(ua2);
+	mem_deref(ua3);
+	mem_deref(ua4);
+
+	ASSERT_EQ(n_uas, list_count(uag_list()));
+
+ out:
+	return err;
+}
