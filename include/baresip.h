@@ -252,6 +252,7 @@ uint32_t      call_duration(const struct call *call);
 uint32_t      call_setup_duration(const struct call *call);
 const char   *call_id(const struct call *call);
 const char   *call_peeruri(const struct call *call);
+const char   *call_contacturi(const struct call *call);
 const char   *call_peername(const struct call *call);
 const char   *call_statename(const struct call *call);
 const char   *call_localuri(const struct call *call);

@@ -42,6 +42,7 @@ struct call {
 	char *aluri;              /**< Alert-Info URI                       */
 	char *local_uri;          /**< Local SIP uri                        */
 	char *local_name;         /**< Local display name                   */
+	char *contact_uri;        /**< Peer Contact SIP Address             */
 	char *peer_uri;           /**< Peer SIP Address                     */
 	char *peer_name;          /**< Peer display name                    */
 	struct sa msg_src;        /**< Peer message source address          */
@@ -346,6 +347,7 @@ static void call_destructor(void *arg)
 	mem_deref(call->id);
 	mem_deref(call->local_uri);
 	mem_deref(call->local_name);
+	mem_deref(call->contact_uri);
 	mem_deref(call->peer_uri);
 	mem_deref(call->peer_name);
 	mem_deref(call->replaces);
@@ -868,8 +870,14 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	if (local_name)
 		err |= str_dup(&call->local_name, local_name);
 
-	if (msg)
+	if (msg) {
+		struct sip_addr addr;
+		const struct sip_hdr *hdr = sip_msg_hdr(msg, SIP_HDR_CONTACT);
+		if (hdr && 0 == sip_addr_decode(&addr, &hdr->val))
+			err |= pl_strdup(&call->contact_uri, &addr.auri);
+
 		err |= pl_strdup(&call->peer_uri, &msg->from.auri);
+	}
 
 	if (err)
 		goto out;
@@ -1527,6 +1535,8 @@ const char *call_id(const struct call *call)
 /**
  * Get the URI of the peer
  *
+ * For incoming calls, this is the From header URI of the incoming INVITE.
+ *
  * @param call  Call object
  *
  * @return Peer URI
@@ -1534,6 +1544,25 @@ const char *call_id(const struct call *call)
 const char *call_peeruri(const struct call *call)
 {
 	return call ? call->peer_uri : NULL;
+}
+
+
+/**
+ * Get the Contact URI of the peer
+ *
+ * For outgoing calls, this is the same as call_peeruri.
+ * For incoming calls, this is the Contact header URI of the incoming INVITE.
+ *
+ * @param call  Call object
+ *
+ * @return Peer Contact URI
+ */
+const char *call_contacturi(const struct call *call)
+{
+	if (!call)
+		return NULL;
+
+	return call->outgoing ? call->peer_uri : call->contact_uri;
 }
 
 
