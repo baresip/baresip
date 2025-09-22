@@ -73,19 +73,6 @@ int webrtc_aec_encode_update(struct aufilt_enc_st **stp, void **ctx,
 }
 
 
-#if 0
-static AudioProcessing::ChannelLayout get_layout(uint8_t ch)
-{
-	switch (ch) {
-
-	case 1: return AudioProcessing::kMono;
-	case 2: return AudioProcessing::kStereo;
-	default: return (AudioProcessing::ChannelLayout)-1;
-	}
-}
-#endif
-
-
 static int encode_float(struct aec_enc *enc, float *sampv, size_t sampc)
 {
 	struct aec *aec = enc->aec;
