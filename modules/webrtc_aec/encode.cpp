@@ -73,6 +73,7 @@ int webrtc_aec_encode_update(struct aufilt_enc_st **stp, void **ctx,
 }
 
 
+#if 0
 static AudioProcessing::ChannelLayout get_layout(uint8_t ch)
 {
 	switch (ch) {
@@ -82,11 +83,13 @@ static AudioProcessing::ChannelLayout get_layout(uint8_t ch)
 	default: return (AudioProcessing::ChannelLayout)-1;
 	}
 }
+#endif
 
 
 static int encode_float(struct aec_enc *enc, float *sampv, size_t sampc)
 {
 	struct aec *aec = enc->aec;
+	StreamConfig config(aec->srate, aec->ch);
 	size_t i;
 	int r;
 	int err = 0;
@@ -98,20 +101,14 @@ static int encode_float(struct aec_enc *enc, float *sampv, size_t sampc)
 
 	for (i = 0; i < sampc; i += aec->blocksize) {
 
-		size_t samples_per_channel = aec->blocksize / aec->ch;
 		const float *src = &sampv[i];
 		float *dest = &sampv[i];
 
 		// NOTE: important
 		aec->inst->set_stream_delay_ms(SOUND_CARD_BUF);
 
-		r = aec->inst->ProcessStream(&src,
-					     samples_per_channel,
-					     aec->srate,
-					     get_layout(aec->ch),
-					     aec->srate,
-					     get_layout(aec->ch),
-					     &dest);
+		r = aec->inst->ProcessStream(&src, config,
+					     config, &dest);
 		if (r != 0) {
 			warning("webrtc_aec: encode:"
 				" ProcessStream error (%d)\n",
