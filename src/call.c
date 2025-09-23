@@ -727,6 +727,9 @@ static void call_decode_sip_autoanswer(struct call *call,
 
 int call_streams_alloc(struct call *call)
 {
+	if (!call)
+		return EINVAL;
+
 	struct account *acc = call->acc;
 	struct stream_param strm_prm;
 	struct le *le;
@@ -2667,6 +2670,9 @@ bool call_early_video_available(const struct call *call)
 	struct le *le;
 	struct sdp_media *v;
 
+	if (!call)
+		return false;
+
 	LIST_FOREACH(sdp_session_medial(call->sdp, false), le) {
 		v = le->data;
 		if (0 == str_cmp(sdp_media_name(v), "video") &&
@@ -2762,6 +2768,9 @@ int call_reset_transp(struct call *call, const struct sa *laddr)
 
 const struct sa *call_laddr(const struct call *call)
 {
+	if (!call)
+		return NULL;
+
 	return sdp_session_laddr(call->sdp);
 }
 
