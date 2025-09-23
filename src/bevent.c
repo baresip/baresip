@@ -296,6 +296,11 @@ static int odict_encode_call(struct odict *od, struct call *call)
 				       ODICT_STRING, call_peeruri(call));
 	}
 
+	if (call_contacturi(call)) {
+		err |= odict_entry_add(od, "contacturi",
+				       ODICT_STRING, call_contacturi(call));
+	}
+
 	if (call_localuri(call)) {
 		err |= odict_entry_add(od, "localuri",
 				       ODICT_STRING, call_localuri(call));
