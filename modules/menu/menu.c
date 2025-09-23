@@ -461,7 +461,7 @@ static void redial_handler(void *arg)
 
 	if (menu.current_attempts > menu.redial_attempts) {
 
-		info("menu: redial: too many attemptes -- giving up\n");
+		info("menu: redial: too many attempts -- giving up\n");
 		return;
 	}
 

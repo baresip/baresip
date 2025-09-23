@@ -19,7 +19,7 @@ struct menu{
 	struct call *xfer_call;       /**< Attended transfer call         */
 	struct call *xfer_targ;       /**< Transfer target call           */
 	struct call *curcall;         /**< Call-id of current call        */
-	bool ringback_disabled;       /**< no ringback on sip 180 respons */
+	bool ringback_disabled;       /**< no ringback on sip 180 response*/
 	bool ringback;                /**< Ringback played currently      */
 	struct tmr tmr_redial;        /**< Timer for auto-reconnect       */
 	struct tmr tmr_invite;        /**< Timer for follow up invite     */
@@ -64,7 +64,7 @@ int dial_menu_register(void);
 void dial_menu_unregister(void);
 
 
-/*Generic menu funtions*/
+/*Generic menu functions*/
 void menu_update_callstatus(bool incall);
 int  menu_param_decode(const char *prm, const char *name, struct pl *val);
 int menu_get_call_ua(struct re_printf *pf, const struct cmd_arg *carg,
