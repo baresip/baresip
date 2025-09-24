@@ -16,7 +16,7 @@ sip_verify_server	yes
 #sip_tls_resumption	all		# none, ids, tickets
 sip_tos			160 # See TOS fields!
 #filter_registrar   udp,tcp
-#cuser_random		no
+#sip_cuser_random	no
 
 ## TOS fields ##
 #    7     6     5     4     3     2     1     0
