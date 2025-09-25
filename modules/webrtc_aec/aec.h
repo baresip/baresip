@@ -5,8 +5,7 @@
  */
 
 #define WEBRTC_POSIX 1
-#include <webrtc/modules/audio_processing/include/audio_processing.h>
-#include <webrtc/system_wrappers/include/trace.h>
+#include <modules/audio_processing/include/audio_processing.h>
 
 
 #define MAX_CHANNELS         1

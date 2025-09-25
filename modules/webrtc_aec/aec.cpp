@@ -92,29 +92,11 @@ int webrtc_aec_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm)
 	     " [%u Hz, %u channels, blocksize %u samples]\n",
 	     prm->srate, prm->ch, aec->blocksize);
 
-	aec->inst = AudioProcessing::Create();
+	aec->inst = AudioProcessingBuilder().Create();
 	if (!aec->inst) {
 		err = ENODEV;
 		goto out;
 	}
-
-	// enable different filters here
-
-	aec->inst->echo_cancellation()->enable_drift_compensation(false);
-	aec->inst->echo_cancellation()->Enable(true);
-
-	aec->inst->echo_cancellation()->enable_metrics(true);
-	aec->inst->echo_cancellation()->enable_delay_logging(true);
-
-	aec->inst->gain_control()->Enable(true);
-
-	if (webrtc_aec_extended_filter) {
-		config.Set<webrtc::ExtendedFilter>(
-			new webrtc::ExtendedFilter(true)
-		);
-	}
-
-	aec->inst->SetExtraOptions(config);
 
  out:
 	if (err)

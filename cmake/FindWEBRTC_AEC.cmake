@@ -1,12 +1,12 @@
 find_path(WEBRTC_AEC_INCLUDE_DIR
-    NAMES webrtc/modules/audio_processing/include/audio_processing.h
+    NAMES modules/audio_processing/include/audio_processing.h
     HINTS
         "${WEBRTC_AEC_INCLUDE_DIRS}"
-    PATHS /usr/include/webrtc_audio_processing
+    PATHS /usr/include/webrtc-audio-processing-1
 )
 
 find_library(WEBRTC_AEC_LIBRARY
-    NAME webrtc_audio_processing
+    NAME webrtc-audio-processing-1
     HINTS
         "${WEBRTC_AEC_LIBRARY_DIRS}"
     PATHS /usr/lib/x86_64-linux-gnu
