@@ -2548,6 +2548,10 @@ static int sipsess_desc_handler(struct mbuf **descp, const struct sa *src,
 		call_set_mdir(call, call->estadir, call->estvdir);
 	}
 
+	err = bevent_call_emit(BEVENT_CALL_LOCAL_SDP, call, "offer");
+	if (err)
+		return err;
+
 	err = call_sdp_get(call, descp, true);
 	if (err)
 		return err;
@@ -2618,8 +2622,6 @@ static int send_invite(struct call *call)
 
 	/* save call setup timer */
 	call->time_conn = time(NULL);
-
-	bevent_call_emit(BEVENT_CALL_LOCAL_SDP, call, "offer");
 
 	return 0;
 }
