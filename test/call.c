@@ -9,6 +9,7 @@
 #include <rem.h>
 #include <baresip.h>
 #include "test.h"
+#include "sip/sipsrv.h"
 #include "../src/core.h"  /* NOTE: temp */
 
 
@@ -3815,3 +3816,157 @@ out:
 	return err;
 }
 #endif
+
+
+static void sip_server_exit_handler(void *arg)
+{
+	(void)arg;
+	re_cancel();
+}
+
+
+static bool ua_cuser_has_suffix(const struct ua *ua)
+{
+	const char *cuser = ua_cuser(ua);
+	size_t len = str_len(cuser);
+	if (len < 16)
+		return false;
+
+	const struct account *acc = ua_account(ua);
+	const struct pl *user = &account_luri(acc)->user;
+	if (!user || !user->l)
+		return false;
+
+	return cuser[len - 16] == '-';
+}
+
+
+int test_call_uag_find_msg(void)
+{
+	struct fixture fix, *f = &fix;
+	struct sip_server *srv1 = NULL;
+	struct sip_server *srv2 = NULL;
+	struct sa sa1;
+	struct sa sa2;
+	char *aor=NULL;
+	char *curi=NULL;
+	struct cancel_rule *cr;
+	int err = 0;
+
+	fixture_init(f);
+
+	err = sip_server_alloc(&srv1, sip_server_exit_handler, NULL);
+	TEST_ERR(err);
+
+	err = sip_server_alloc(&srv2, sip_server_exit_handler, NULL);
+	TEST_ERR(err);
+
+	err = sip_transp_laddr(srv1->sip, &sa1, SIP_TRANSP_UDP, NULL);
+	TEST_ERR(err);
+
+	err = sip_transp_laddr(srv2->sip, &sa2, SIP_TRANSP_UDP, NULL);
+	TEST_ERR(err);
+
+	f->a.ua = mem_deref(f->a.ua);
+	f->b.ua = mem_deref(f->b.ua);
+	f->c.ua = mem_deref(f->c.ua);
+
+	err = re_sdprintf(&aor, "A <sip:alice@%J>;regint=60", &sa1);
+	TEST_ERR(err);
+	err = ua_alloc(&f->a.ua, aor);
+	TEST_ERR(err);
+	aor = mem_deref(aor);
+	err = re_sdprintf(&aor, "B <sip:alice@%J>;regint=60", &sa2);
+	TEST_ERR(err);
+	err = ua_alloc(&f->b.ua, aor);
+	TEST_ERR(err);
+	aor = mem_deref(aor);
+	err = re_sdprintf(&aor, "C <sip:bob@%J>;regint=60", &sa2);
+	TEST_ERR(err);
+	err = ua_alloc(&f->c.ua, aor);
+	TEST_ERR(err);
+	ASSERT_TRUE(!ua_cuser_has_suffix(f->a.ua));
+	ASSERT_TRUE(ua_cuser_has_suffix(f->b.ua));
+
+	err = ua_register(f->a.ua);
+	TEST_ERR(err);
+	err = ua_register(f->b.ua);
+	TEST_ERR(err);
+	err = ua_register(f->c.ua);
+	TEST_ERR(err);
+
+	cancel_rule_new(BEVENT_REGISTER_OK, f->a.ua, 0, 0, 0);
+	cancel_rule_and(BEVENT_REGISTER_OK, f->b.ua, 0, 0, 0);
+	cancel_rule_and(BEVENT_REGISTER_OK, f->c.ua, 0, 0, 0);
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+
+	cancel_rule_pop();
+
+	f->b.peer = &f->c;
+	f->c.peer = &f->b;
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+	cancel_rule_new(BEVENT_CALL_ESTABLISHED, f->c.ua, 0, 0, 1);
+	cancel_rule_and(BEVENT_CALL_ESTABLISHED, f->b.ua, 1, 0, 1);
+
+	err = re_sdprintf(&curi, "sip:alice@%J", &sa2);
+	TEST_ERR(err);
+	err = ua_connect(f->c.ua, NULL, NULL, curi, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	err = re_main_timeout(5000);
+	cancel_rule_pop();
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	/* verify that the right UA was selected and got established call */
+	ASSERT_EQ(0, fix.a.n_incoming);
+	ASSERT_EQ(0, fix.a.n_established);
+	ASSERT_EQ(1, fix.b.n_incoming);
+	ASSERT_EQ(1, fix.b.n_established);
+
+	/* 2nd test: peer-to-peer call to registered UAs should be rejected */
+	f->a.ua = mem_deref(f->a.ua);
+	aor = mem_deref(aor);
+	err = re_sdprintf(&aor, "A <sip:alice@%J>;regint=60", &sa1);
+	TEST_ERR(err);
+	err = ua_alloc(&f->a.ua, aor);
+	TEST_ERR(err);
+	err = ua_register(f->a.ua);
+	TEST_ERR(err);
+	cancel_rule_new(BEVENT_REGISTER_OK, f->a.ua, 0, 0, 0);
+	err = re_main_timeout(5000);
+	cancel_rule_pop();
+	TEST_ERR(err);
+
+	curi = mem_deref(curi);
+	ASSERT_TRUE(ua_cuser_has_suffix(f->a.ua));
+	ASSERT_TRUE(ua_cuser_has_suffix(f->b.ua));
+	/* alice --> rejected. alice-<suffix> would be correct */
+	err = re_sdprintf(&curi, "sip:alice@%J", &f->laddr_udp);
+	TEST_ERR(err);
+
+	f->b.n_incoming = 0;
+	f->c.n_established = 0;
+	cancel_rule_new(BEVENT_CALL_CLOSED, f->c.ua, 0, 0, 0);
+	err = ua_connect(f->c.ua, NULL, NULL, curi, VIDMODE_OFF);
+	TEST_ERR(err);
+	err = re_main_timeout(5000);
+	cancel_rule_pop();
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(0, fix.a.n_incoming);
+	ASSERT_EQ(0, fix.b.n_incoming);
+	ASSERT_EQ(0, fix.c.n_incoming);
+
+ out:
+	mem_deref(aor);
+	mem_deref(srv1);
+	mem_deref(srv2);
+	fixture_close(f);
+	mem_deref(curi);
+
+	return err;
+}
