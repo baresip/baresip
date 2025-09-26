@@ -1107,15 +1107,17 @@ int call_modify(struct call *call)
 	debug("call: modify\n");
 
 	if (call_refresh_allowed(call)) {
-		err = call_sdp_get(call, &desc, true);
-		if (!err) {
-			bevent_call_emit(BEVENT_CALL_LOCAL_SDP, call,
-					 "offer");
+		err = bevent_call_emit(BEVENT_CALL_LOCAL_SDP, call, "offer");
+		if (err)
+			return err;
 
-			err = sipsess_modify(call->sess, desc);
-			if (err)
-				goto out;
-		}
+		err = call_sdp_get(call, &desc, true);
+		if (err)
+			return err;
+
+		err = sipsess_modify(call->sess, desc);
+		if (err)
+			goto out;
 	}
 
 	err = call_update_media(call);
