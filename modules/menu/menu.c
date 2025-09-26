@@ -768,8 +768,8 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 		if (!call_has_video(call))
 			vrdir = SDP_INACTIVE;
 
-		info("menu: %s: Incoming call from: %s %s - audio-video: %s-%s -"
-		     " (press 'a' to accept)\n",
+		info("menu: %s: Incoming call from: %s %s - audio-video: %s-%s"
+		     " - (press 'a' to accept)\n",
 		     account_aor(acc), call_peername(call), call_peeruri(call),
 		     sdp_dir_name(ardir), sdp_dir_name(vrdir));
 
