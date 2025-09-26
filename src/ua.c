@@ -1180,7 +1180,7 @@ static int ua_cuser_gen(struct ua *ua)
 	bool suffix = false;
 	int err;
 
-	conf_get_bool(conf_cur(), "cuser_random", &suffix);
+	conf_get_bool(conf_cur(), "sip_cuser_random", &suffix);
 
 	suffix |= list_apply(uag_list(), true, user_cmp_handler,
 			     &ua->acc->luri.user) != NULL;
