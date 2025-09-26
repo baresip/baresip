@@ -3825,6 +3825,22 @@ static void sip_server_exit_handler(void *arg)
 }
 
 
+static bool ua_cuser_has_suffix(const struct ua *ua)
+{
+	const char *cuser = ua_cuser(ua);
+	size_t len = str_len(cuser);
+	if (len < 16)
+		return false;
+
+	const struct account *acc = ua_account(ua);
+	const struct pl *user = &account_luri(acc)->user;
+	if (!user || !user->l)
+		return false;
+
+	return cuser[len - 16] == '-';
+}
+
+
 int test_call_uag_find_msg(void)
 {
 	struct fixture fix, *f = &fix;
@@ -3869,6 +3885,8 @@ int test_call_uag_find_msg(void)
 	TEST_ERR(err);
 	err = ua_alloc(&f->c.ua, aor);
 	TEST_ERR(err);
+	ASSERT_TRUE(!ua_cuser_has_suffix(f->a.ua));
+	ASSERT_TRUE(ua_cuser_has_suffix(f->b.ua));
 
 	err = ua_register(f->a.ua);
 	TEST_ERR(err);
@@ -3923,8 +3941,9 @@ int test_call_uag_find_msg(void)
 	TEST_ERR(err);
 
 	curi = mem_deref(curi);
+	ASSERT_TRUE(ua_cuser_has_suffix(f->a.ua));
+	ASSERT_TRUE(ua_cuser_has_suffix(f->b.ua));
 	/* alice --> rejected. alice-<suffix> would be correct */
-	/* note: now both alice UAs have a suffix */
 	err = re_sdprintf(&curi, "sip:alice@%J", &f->laddr_udp);
 	TEST_ERR(err);
 
