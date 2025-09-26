@@ -455,7 +455,7 @@ static void redial_handler(void *arg)
 	int err;
 	(void)arg;
 
-	info("now: redialing now. current_attempts=%u, max_attempts=%u\n",
+	info("menu: redialing now. current_attempts=%u, max_attempts=%u\n",
 	     menu.current_attempts,
 	     menu.redial_attempts);
 
@@ -768,7 +768,7 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 		if (!call_has_video(call))
 			vrdir = SDP_INACTIVE;
 
-		info("%s: Incoming call from: %s %s - audio-video: %s-%s -"
+		info("menu: %s: Incoming call from: %s %s - audio-video: %s-%s -"
 		     " (press 'a' to accept)\n",
 		     account_aor(acc), call_peername(call), call_peeruri(call),
 		     sdp_dir_name(ardir), sdp_dir_name(vrdir));
@@ -820,8 +820,7 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 		/* stop any ringtones */
 		menu_stop_play();
 
-		/* We must stop the re-dialing if the call was
-		   established */
+		/* We must stop the re-dialing if the call was established */
 		redial_reset();
 		uag_hold_others(call);
 		break;
@@ -918,7 +917,7 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 
 			err = call_connect(call2, &pl);
 			if (err) {
-				warning("ua: transfer: connect error: %m\n",
+				warning("menu: transfer: connect error: %m\n",
 					err);
 			}
 			else {
@@ -976,7 +975,7 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 		return;
 
 	case BEVENT_MWI_NOTIFY:
-		info("----- MWI for %s -----\n", account_aor(acc));
+		info("menu: ----- MWI for %s -----\n", account_aor(acc));
 		info("%s\n", prm);
 		break;
 
@@ -1154,7 +1153,7 @@ struct ua   *menu_ua_carg(struct re_printf *pf, const struct cmd_arg *carg,
 
 	if (le) {
 		ua = le->data;
-		info("%s: selected for request\n",
+		info("menu: %s: selected for request\n",
 				account_aor(ua_account(ua)));
 	}
 	else {

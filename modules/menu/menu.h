@@ -64,7 +64,7 @@ int dial_menu_register(void);
 void dial_menu_unregister(void);
 
 
-/*Generic menu functions*/
+/* Generic menu functions */
 void menu_update_callstatus(bool incall);
 int  menu_param_decode(const char *prm, const char *name, struct pl *val);
 int menu_get_call_ua(struct re_printf *pf, const struct cmd_arg *carg,
