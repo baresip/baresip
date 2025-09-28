@@ -243,6 +243,10 @@ static int open_encoder(struct videnc_state *st,
 		av_opt_set(st->ctx->priv_data, "tune", "zerolatency", 0);
 	}
 
+	if (0 == str_cmp(st->codec->name, "h264_mediacodec") || 0 == str_cmp(st->codec->name, "hevc_mediacodec")) {
+		av_opt_set(st->ctx->priv_data, "bitrate_mode", "cbr", 0);
+	}
+
 	if (avcodec_hw_type == AV_HWDEVICE_TYPE_VAAPI) {
 
 		/* set hw_frames_ctx for encoder's AVCodecContext */
@@ -485,44 +489,50 @@ int avcodec_encode(struct videnc_state *st, bool update,
 	}
 
 	ret = avcodec_send_frame(st->ctx, hw_frame ? hw_frame : pict);
-	if (ret < 0) {
+	if (ret < 0 && ret != AVERROR(EAGAIN)) {
 		err = EBADMSG;
 		goto out;
 	}
 
-	ret = avcodec_receive_packet(st->ctx, pkt);
-	if (ret < 0) {
-		err = 0;
-		goto out;
-	}
+	while (1)
+	{
+		ret = avcodec_receive_packet(st->ctx, pkt);
+		if (ret < 0) {
+			err = 0;
+			goto out;
+		}
 
-	ts = video_calc_rtp_timestamp_fix(pkt->pts);
+		ts = video_calc_rtp_timestamp_fix(pkt->pts);
 
-	switch (st->codec_id) {
+		switch (st->codec_id) {
 
-	case AV_CODEC_ID_H264:
-		err = h264_packetize(
-			ts, pkt->data, pkt->size, st->encprm.pktsize,
-			(h264_packet_h *)st->pkth, (void *)st->vid);
-		break;
+		case AV_CODEC_ID_H264:
+			err = h264_packetize(
+				ts, pkt->data, pkt->size, st->encprm.pktsize,
+				(h264_packet_h *)st->pkth, (void *)st->vid);
+			break;
 
-	case AV_CODEC_ID_H265:
-		err = h265_packetize(
-			ts, pkt->data, pkt->size, st->encprm.pktsize,
-			(h265_packet_h *)st->pkth, (void *)st->vid);
-		break;
+		case AV_CODEC_ID_H265:
+			err = h265_packetize(
+				ts, pkt->data, pkt->size, st->encprm.pktsize,
+				(h265_packet_h *)st->pkth, (void *)st->vid);
+			break;
 
-	default:
-		err = EPROTO;
-		break;
-	}
+		default:
+			err = EPROTO;
+			break;
+		}
+
+		av_packet_unref(pkt);
+	}	
 
  out:
 	if (pict)
 		av_free(pict);
 	if (pkt)
 		av_packet_free(&pkt);
-	av_frame_free(&hw_frame);
+	if (hw_frame)
+		av_frame_free(&hw_frame);
 
 	return err;
 }
