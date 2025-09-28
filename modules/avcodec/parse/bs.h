@@ -4,5 +4,5 @@
 int u(int length, uint8_t *nalData, int *nalBitIndex);
 int ue(uint8_t *nalData, int len, int *nalBitIndex);
 int se(uint8_t *nalData, int len, int *nalBitIndex);
-void de_emulation_prevention(uint8_t *buf, uint32_t *buf_size);
+void de_emulation_prevention(uint8_t *buf, int *buf_size);
 #endif

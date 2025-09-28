@@ -475,7 +475,7 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 		int sps_len;
 		uint8_t pps_data[256]; 
 		int pps_len;
-		int ret = h264_get_sps_pps(st->mb->buf, st->mb->pos, sps_data, &sps_len, pps_data, &pps_len);
+		int ret = h264_get_sps_pps(st->mb->buf, (int)st->mb->pos, sps_data, &sps_len, pps_data, &pps_len);
 		if (ret) {
 			warning("avcodec: decode: h264_get_sps_pps error %d\n", ret);
 			goto out;
@@ -693,7 +693,7 @@ int avcodec_decode_h265(struct viddec_state *vds, struct vidframe *frame,
 		int sps_len;
 		uint8_t pps_data[256]; 
 		int pps_len;
-		int ret = h265_get_vps_sps_pps(vds->mb->buf, vds->mb->pos,vps_data, &vps_len, sps_data, &sps_len, pps_data, &pps_len);
+		int ret = h265_get_vps_sps_pps(vds->mb->buf, (int)vds->mb->pos,vps_data, &vps_len, sps_data, &sps_len, pps_data, &pps_len);
 		if (ret) {
 			warning("avcodec: decode: h265_get_vps_sps_pps error %d\n", ret);
 			goto out;

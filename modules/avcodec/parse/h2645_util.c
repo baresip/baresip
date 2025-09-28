@@ -1,6 +1,7 @@
 
 #include "h2645_util.h"
 #include <stdio.h>
+#include <string.h>
 
 uint32_t remove_emulation_bytes(uint8_t* to, uint32_t toMaxSize, const uint8_t* from, uint32_t fromSize) 
 {
@@ -40,7 +41,9 @@ static uint8_t * avc_find_startcode_internal(uint8_t *p, uint8_t *end)
 
     for (end -= 3; p < end; p += 4) 
     {
-        uint32_t x = *(const uint32_t*)p;
+        // uint32_t x = *(const uint32_t*)p;
+        uint32_t x;
+        memcpy(&x, p, sizeof(x));
         
         if ((x - 0x01010101) & (~x) & 0x80808080) 
         { // generic

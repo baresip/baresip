@@ -3,34 +3,35 @@
 #include <stdlib.h>
 #include "h2645_util.h"
 #include "bs.h"
+#include "h2645_parse.h"
 
-void get_profile(int profile_idc, char* profile_str){
-    switch(profile_idc){
-        case 66:
-            strcpy(profile_str, "Baseline");
-            break;
-        case 77:
-            strcpy(profile_str, "Main");
-            break;
-        case 88:
-            strcpy(profile_str, "Extended");
-            break;
-        case 100:
-            strcpy(profile_str, "High(FRExt)");
-            break;
-        case 110:
-            strcpy(profile_str, "High10(FRExt)");
-            break;
-        case 122:
-            strcpy(profile_str, "High4:2:2(FRExt)");
-            break;
-        case 144:
-            strcpy(profile_str, "High4:4:4(FRExt)");
-            break;
-        default:
-            strcpy(profile_str, "Unknown");
-    }
-}
+// static void get_profile(int profile_idc, char* profile_str){
+//     switch(profile_idc){
+//         case 66:
+//             strcpy(profile_str, "Baseline");
+//             break;
+//         case 77:
+//             strcpy(profile_str, "Main");
+//             break;
+//         case 88:
+//             strcpy(profile_str, "Extended");
+//             break;
+//         case 100:
+//             strcpy(profile_str, "High(FRExt)");
+//             break;
+//         case 110:
+//             strcpy(profile_str, "High10(FRExt)");
+//             break;
+//         case 122:
+//             strcpy(profile_str, "High4:2:2(FRExt)");
+//             break;
+//         case 144:
+//             strcpy(profile_str, "High4:4:4(FRExt)");
+//             break;
+//         default:
+//             strcpy(profile_str, "Unknown");
+//     }
+// }
 
 int h264_decode_sps_with_width_and_height(uint8_t *buf, int nLen, int *width, int *height)
 {
@@ -95,11 +96,11 @@ int h264_decode_sps_with_width_and_height(uint8_t *buf, int nLen, int *width, in
         *width = (pic_width_in_mbs_minus1 + 1) * 16;
         *height = (pic_height_in_map_units_minus1 + 1) * 16;
         // Get the width and height to terminate the parsing
-        return 1; // true
+        return 0;
     }
     else
     {
-        return 0; // false
+        return 1;
     }
 }
 

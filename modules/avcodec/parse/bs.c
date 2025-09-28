@@ -1,4 +1,5 @@
 #include "bs.h"
+#include <math.h>
 
 typedef unsigned int UINT;
 typedef unsigned char BYTE;
@@ -35,7 +36,7 @@ int se(uint8_t *pBuff, int nLen, int *nStartBit)
 {
     int UeVal = ue(pBuff, nLen, nStartBit);
     double k = UeVal;
-    int nValue = (int)ceil(k / 2);
+    int nValue = (int)(ceil(k / 2.0));
     if (UeVal % 2 == 0)
         nValue = -nValue;
     return nValue;
@@ -56,7 +57,7 @@ int u(int BitCount, uint8_t *buf, int *nStartBit)
     return dwRet;
 }
 
-void de_emulation_prevention(uint8_t *buf, unsigned int *buf_size)
+void de_emulation_prevention(uint8_t *buf, int *buf_size)
 {
     unsigned int i = 0, j = 0;
     uint8_t *tmp_ptr = NULL;
