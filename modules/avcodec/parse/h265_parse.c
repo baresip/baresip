@@ -1,6 +1,7 @@
 #include "h2645_util.h"
 #include "h2645_parse.h"
 #include <re.h>
+#include <stdlib.h>
 
 int h265_get_vps_sps_pps(uint8_t *data, int len,
 	uint8_t *vps,int *vps_len,
@@ -104,7 +105,7 @@ int h265_decode_sps_with_width_and_height(uint8_t *buf, int nLen,
 	struct getbit gb;
 	uint8_t* web = NULL;
 	uint32_t webSize;
-	web = malloc(nLen);
+	web = (uint8_t *)malloc(nLen);
 	if (!web) {
 		ret = ENOMEM;
 		goto fail;

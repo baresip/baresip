@@ -1,6 +1,7 @@
 #include "h2645_parse.h"
 #include "h2645_util.h"
 #include <re.h>
+#include <stdlib.h>
 
 int h264_get_sps_pps(uint8_t *data, int len,
 	uint8_t *sps, int *sps_len,
@@ -83,7 +84,7 @@ int h264_decode_sps_with_width_and_height(uint8_t *buf, int len,
 	struct h264_sps sps;
 	uint8_t* web = NULL;
 	uint32_t webSize;
-	web = malloc(len);
+	web = (uint8_t *)malloc(len);
 	if (!web)
 		goto fail;
 	webSize = remove_emulation_bytes(web, len, buf, len);
