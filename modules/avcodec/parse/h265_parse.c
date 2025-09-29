@@ -1,6 +1,7 @@
 #include "h2645_util.h"
 #include "h2645_parse.h"
 #include <re.h>
+#include <re_h265.h>
 #include <stdlib.h>
 
 int h265_get_vps_sps_pps(uint8_t *data, int len,
@@ -22,17 +23,17 @@ int h265_get_vps_sps_pps(uint8_t *data, int len,
 		r1 = (uint8_t *)h264_find_startcode(r, end);
 		nalu_t = (r[0] >> 1) & 0x3f;
 		nalu_len = (int)(r1 - r);
-		if (nalu_t == 32)
+		if (nalu_t == H265_NAL_VPS_NUT)
 		{
 		    memcpy(vps, r, nalu_len);
 		    *vps_len = nalu_len;
 		}
-		else if (nalu_t == 33)
+		else if (nalu_t == H265_NAL_SPS_NUT)
 		{
 		    memcpy(sps, r, nalu_len);
 		    *sps_len = nalu_len;
 		}
-		else if (nalu_t == 34)
+		else if (nalu_t == H265_NAL_PPS_NUT)
 		{
 		    memcpy(pps, r, nalu_len);
 		    *pps_len = nalu_len;
@@ -44,64 +45,11 @@ int h265_get_vps_sps_pps(uint8_t *data, int len,
 	return (*vps_len > 0 && *sps_len > 0 && *pps_len > 0) ? 0 : -1;
 }
 
-int h265_get_vps_sps_pps_sei(uint8_t *data, int len,
-	uint8_t *vps, int *vps_len,
-	uint8_t *sps, int *sps_len,
-	uint8_t *pps, int *pps_len,
-	uint8_t *sei, int *sei_len)
-{
-	uint8_t nalu_t;
-	int nalu_len;
-	uint8_t *r, *end = data + len;
-	*vps_len = 0, *sps_len = 0;
-	*pps_len = 0;
-	r = (uint8_t *)h264_find_startcode(data, end);
-	while (r < end)
-	{
-		uint8_t *r1;
-		while (!*(r++))
-		    ;
-		r1 = (uint8_t *)h264_find_startcode(r, end);
-		nalu_t = (r[0] >> 1) & 0x3f;
-		nalu_len = (int)(r1 - r);
-		if (nalu_t == 32)
-		{
-		    memcpy(vps, r, nalu_len);
-		    *vps_len = nalu_len;
-		}
-		else if (nalu_t == 33)
-		{
-		    memcpy(sps, r, nalu_len);
-		    *sps_len = nalu_len;
-		}
-		else if (nalu_t == 34)
-		{
-		    memcpy(pps, r, nalu_len);
-		    *pps_len = nalu_len;
-		}
-		else if (nalu_t == 35)
-		{
-		    memcpy(sei, r, nalu_len);
-		    *sei_len = nalu_len;
-		}
-		if (*vps_len > 0 &&
-			*sps_len > 0 &&
-			*pps_len > 0 &&
-			*sei_len > 0)
-		    break;
-		r = r1;
-	}
-	return (*vps_len > 0 &&
-		*sps_len > 0 &&
-		*pps_len > 0 &&
-		*sei_len > 0) ? 0 : -1;
-}
-
 int h265_decode_sps_with_width_and_height(uint8_t *buf, int nLen,
 	int *width,
 	int *height)
 {
-	int ret=0;
+	int ret = 0;
 	struct getbit gb;
 	uint8_t* web = NULL;
 	uint32_t webSize;
@@ -111,6 +59,10 @@ int h265_decode_sps_with_width_and_height(uint8_t *buf, int nLen,
 		goto fail;
 	}
 	webSize = remove_emulation_bytes(web, nLen, buf, nLen);
+	if (webSize == 0) {
+		ret = ENOMEM;
+		goto fail;
+	}
 	getbit_init(&gb, web, (webSize) * 8);
 	get_bits(&gb, 4); /*sps_video_parameter_set_id*/
 	int sps_max_sub_layers_minus1 = get_bits(&gb, 3);

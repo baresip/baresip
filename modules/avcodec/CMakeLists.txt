@@ -10,9 +10,9 @@ endif()
 list(APPEND MODULES_DETECTED ${PROJECT_NAME})
 set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
 
-set(SRCS avcodec.c encode.c decode.c sdp.c 
-	parse/h264_parse.c parse/h265_parse.c 
-	parse/h2645_util.c)
+set(SRCS avcodec.c encode.c decode.c sdp.c
+    parse/h264_parse.c parse/h265_parse.c
+    parse/h2645_util.c)
 
 if(STATIC)
   add_library(${PROJECT_NAME} OBJECT ${SRCS})
