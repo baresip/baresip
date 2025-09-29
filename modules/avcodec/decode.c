@@ -15,7 +15,6 @@
 #include "avcodec.h"
 #include "parse/h2645_parse.h"
 
-
 #ifndef AV_INPUT_BUFFER_PADDING_SIZE
 #define AV_INPUT_BUFFER_PADDING_SIZE 64
 #endif
@@ -127,7 +126,9 @@ static int init_decoder(struct viddec_state *st, const char *name)
 		if (!st->codec)
 			return ENOENT;
 	}
-	if ((0 == str_cmp(st->codec->name, "h264_mediacodec") || 0 == str_cmp(st->codec->name, "hevc_mediacodec")) && !st->mc) {
+	if ((0 == str_cmp(st->codec->name,"h264_mediacodec")
+			|| 0 == str_cmp(st->codec->name,"hevc_mediacodec"))
+			&& !st->mc) {
 		st->mc = true;
 		st->open = false;
 	}
@@ -243,8 +244,10 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 		if (ret < 0) {
 			if (ret == AVERROR(EAGAIN)) {
 				ret = 0;
-			} else {
-				warning("avcodec: decode: avcodec_send_packet error,"
+			}
+			else {
+				warning("avcodec: decode: "
+				"avcodec_send_packet error,"
 				" packet=%zu bytes, ret=%d (%s)\n",
 				st->mb->end, ret, av_err2str(ret));
 				err = EBADMSG;
@@ -271,13 +274,17 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 			av_frame_unref(st->pict); /* cleanup old frame */
 			if (hw_frame->format == avcodec_hw_pix_fmt) {
 				/* retrieve data from GPU to CPU */
-				ret = av_hwframe_transfer_data(st->pict, hw_frame, 0);
+				ret = av_hwframe_transfer_data(st->pict,
+					hw_frame, 0);
 				if (ret < 0) {
-					warning("avcodec: decode: Error transferring"
-						" the data to system memory\n");
+					warning("avcodec: decode: "
+						"Error transferring"
+						" the data to "
+						"system memory\n");
 					goto out;
 				}
-			} else {
+			}
+			else {
 				av_frame_ref(st->pict, hw_frame);
 			}
 
@@ -317,7 +324,7 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 	}
 
  out:
-	if (hw_frame) 
+	if (hw_frame)
 		av_frame_free(&hw_frame);
 	if (avpkt)
 		av_packet_free(&avpkt);
@@ -453,7 +460,9 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 			err = ENOMEM;
 			goto out;
 		}
-		// You need to decode the cache of the previous frame as soon as possible to avoid accumulation Especially when using mediacodec
+		/* You need to decode the cache of the previous
+		frame as soon as possible to avoid
+		accumulation Especially when using mediacodec */
 		if (st->open) {
 			ffdecode(st, frame, pkt,false);
 		}
@@ -466,27 +475,49 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 		goto out;
 	}
 
-	/*  When using MediaCodec hardware decoding, you must set width, height, and SPS/PPS parameters before decoding the first frame,otherwise decoding will fail.
-	 	Here, width, height, and extradata are set by parsing the SPS/PPS.
-	 	This is only required when using MediaCodec hardware decoding—other software decoders do not need this.
-	 	Additionally, the extradata format must be: 0x00 0x00 0x01 sps 0x00 0x00 0x01 pps */
+	/*	When using MediaCodec hardware decoding,
+		you must set width, height,
+		and SPS/PPS parameters before decoding the first frame,
+		otherwise decoding will fail.
+	 	Here, width, height, and extradata are set
+		by parsing the SPS/PPS.
+	 	This is only required when using MediaCodec hardware
+		decoding—other software decoders do not need this.
+	 	Additionally, the extradata format must be:
+		0x00 0x00 0x01 sps 0x00 0x00 0x01 pps */
 	if (st->mc && !st->open) {
-		uint8_t sps_data[256]; 
+		uint8_t sps_data[256];
 		int sps_len;
-		uint8_t pps_data[256]; 
+		uint8_t pps_data[256];
 		int pps_len;
-		int ret = h264_get_sps_pps(st->mb->buf, (int)st->mb->pos, sps_data, &sps_len, pps_data, &pps_len);
+		int ret = h264_get_sps_pps(
+			st->mb->buf,(int)st->mb->pos,
+			sps_data, &sps_len,
+			pps_data, &pps_len);
 		if (ret) {
-			warning("avcodec: decode: h264_get_sps_pps error %d\n", ret);
+			warning("avcodec: decode: "
+				"h264_get_sps_pps error %d\n",
+				ret);
 			goto out;
 		}
-		ret = h264_decode_sps_with_width_and_height(sps_data, sps_len, &st->ctx->width, &st->ctx->height);
+		ret = h264_decode_sps_with_width_and_height(
+			sps_data,sps_len,
+			&st->ctx->width,
+			&st->ctx->height);
 		if (ret) {
-			warning("avcodec: decode: h264_decode_sps_with_width_and_height error %d\n", ret);
+			warning("avcodec: decode: "
+				"h264_decode_sps_"
+				"with_width_and_height error %d\n",
+				ret);
 			goto out;
 		}
+		warning("avcodec: decode: "
+			"h264_sps_decode width=%d height=%d\n",
+			st->ctx->width, st->ctx->height);
 		st->ctx->extradata_size = sps_len + pps_len + 6;
-		st->ctx->extradata = av_malloc(st->ctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
+		st->ctx->extradata = av_malloc(
+			st->ctx->extradata_size +
+			AV_INPUT_BUFFER_PADDING_SIZE);
 		if (!st->ctx->extradata)
 			goto out;
 		int offset = 0;
@@ -500,7 +531,7 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 		offset+=pps_len;
 		st->open = true;
 		debug("avcodec: decode: init decoder H264\n");
-		// Call the initialization encoder
+		/* Call the initialization encoder */
 		init_decoder(st, "H264");
 	}
 
@@ -669,7 +700,9 @@ int avcodec_decode_h265(struct viddec_state *vds, struct vidframe *frame,
 			err = ENOMEM;
 			goto out;
 		}
-		// You need to decode the cache of the previous frame as soon as possible to avoid accumulation Especially when using mediacodec
+		/* You need to decode the cache of the previous
+		frame as soon as possible to avoid
+		accumulation Especially when using mediacodec*/
 		if (vds->open) {
 			ffdecode(vds, frame, pkt,false);
 		}
@@ -682,29 +715,46 @@ int avcodec_decode_h265(struct viddec_state *vds, struct vidframe *frame,
 		goto out;
 	}
 
-	/* When using MediaCodec hardware decoding, you must set width, height, and SPS/PPS parameters before decoding the first frame,otherwise decoding will fail.
-	   Here, width, height, and extradata are set by parsing the SPS/PPS.
-	   This is only required when using MediaCodec hardware decoding—other software decoders do not need this.
-	   Additionally, the extradata format must be: 0x00 0x00 0x01 vps 0x00 0x00 0x01 sps 0x00 0x00 0x01 pps */
+	/* When using MediaCodec hardware decoding, you must set width, height,
+		and SPS/PPS parameters before decoding the first frame,
+		otherwise decoding will fail.
+		Here, width, height, and extradata are set
+		by parsing the SPS/PPS.
+		This is only required when using MediaCodec hardware
+		decoding—other software decoders do not need this.
+		Additionally, the extradata format must be:
+		0x00 0x00 0x01 vps 0x00 0x00 0x01 sps 0x00 0x00 0x01 pps */
 	if (vds->mc && !vds->open) {
-		uint8_t vps_data[256]; 
+		uint8_t vps_data[256];
 		int vps_len;
-		uint8_t sps_data[256]; 
+		uint8_t sps_data[256];
 		int sps_len;
-		uint8_t pps_data[256]; 
+		uint8_t pps_data[256];
 		int pps_len;
-		int ret = h265_get_vps_sps_pps(vds->mb->buf, (int)vds->mb->pos,vps_data, &vps_len, sps_data, &sps_len, pps_data, &pps_len);
+		int ret = h265_get_vps_sps_pps(vds->mb->buf, (int)vds->mb->pos
+			,vps_data, &vps_len
+			,sps_data, &sps_len
+			,pps_data, &pps_len);
 		if (ret) {
-			warning("avcodec: decode: h265_get_vps_sps_pps error %d\n", ret);
+			warning("avcodec: decode: "
+				"h265_get_vps_sps_pps error %d\n", ret);
 			goto out;
 		}
-		ret = h265_decode_sps_with_width_and_height(sps_data, sps_len, &vds->ctx->width, &vds->ctx->height);
+		ret = h265_decode_sps_with_width_and_height(sps_data, sps_len,
+			&vds->ctx->width, &vds->ctx->height);
 		if (ret) {
-			warning("avcodec: decode: h265_decode_sps_with_width_and_height error %d\n", ret);
+			warning("avcodec: decode: "
+				"h265_decode_sps_"
+				"with_width_and_height error %d\n", ret);
 			goto out;
 		}
+		/* warning("avcodec: decode:
+		h265_sps_decode width=%d height=%d\n",
+		vds->ctx->width, vds->ctx->height); */
 		vds->ctx->extradata_size =vps_len + sps_len + pps_len + 9;
-		vds->ctx->extradata = av_malloc(vds->ctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
+		vds->ctx->extradata = av_malloc(
+			vds->ctx->extradata_size
+			+ AV_INPUT_BUFFER_PADDING_SIZE);
 		if (!vds->ctx->extradata)
 			goto out;
 		int offset = 0;

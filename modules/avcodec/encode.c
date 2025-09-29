@@ -243,7 +243,8 @@ static int open_encoder(struct videnc_state *st,
 		av_opt_set(st->ctx->priv_data, "tune", "zerolatency", 0);
 	}
 
-	if (0 == str_cmp(st->codec->name, "h264_mediacodec") || 0 == str_cmp(st->codec->name, "hevc_mediacodec")) {
+	if (0 == str_cmp(st->codec->name, "h264_mediacodec")
+			|| 0 == str_cmp(st->codec->name, "hevc_mediacodec")) {
 		av_opt_set(st->ctx->priv_data, "bitrate_mode", "cbr", 0);
 	}
 
@@ -522,9 +523,8 @@ int avcodec_encode(struct videnc_state *st, bool update,
 			err = EPROTO;
 			break;
 		}
-
 		av_packet_unref(pkt);
-	}	
+	}
 
  out:
 	if (pict)
