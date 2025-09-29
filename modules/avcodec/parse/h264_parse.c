@@ -2,6 +2,7 @@
 #include "h2645_util.h"
 #include <re.h>
 #include <stdlib.h>
+#include <string.h>
 
 int h264_get_sps_pps(uint8_t *data, int len,
 	uint8_t *sps, int *sps_len,

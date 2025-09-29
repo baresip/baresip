@@ -3,6 +3,7 @@
 #include <re.h>
 #include <re_h265.h>
 #include <stdlib.h>
+#include <string.h>
 
 int h265_get_vps_sps_pps(uint8_t *data, int len,
 	uint8_t *vps,int *vps_len,
