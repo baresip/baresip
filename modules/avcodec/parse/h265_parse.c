@@ -21,7 +21,9 @@ int h265_get_vps_sps_pps(uint8_t *data, int len,
 		while (!*(r++))
 		    ;
 		r1 = (uint8_t *)h264_find_startcode(r, end);
-		nalu_t = (r[0] >> 1) & 0x3f;
+		struct h265_nal nal;
+		h265_nal_decode(&nal,r);
+		nalu_t = nal.nal_unit_type;
 		nalu_len = (int)(r1 - r);
 		if (nalu_t == H265_NAL_VPS_NUT)
 		{
