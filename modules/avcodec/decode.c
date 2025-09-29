@@ -242,10 +242,7 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 
 		ret = avcodec_send_packet(st->ctx, avpkt);
 		if (ret < 0) {
-			if (ret == AVERROR(EAGAIN)) {
-				ret = 0;
-			}
-			else {
+			if (ret != AVERROR(EAGAIN)) {
 				warning("avcodec: decode: "
 				"avcodec_send_packet error,"
 				" packet=%zu bytes, ret=%d (%s)\n",
@@ -254,6 +251,7 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 				goto out;
 			}
 		}
+		(void) ret;
 	}
 
 	ret = avcodec_receive_frame(st->ctx, hw_frame ? hw_frame : st->pict);
@@ -525,7 +523,6 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 		memcpy(st->ctx->extradata+offset, nal_seq, 3);
 		offset+=3;
 		memcpy(st->ctx->extradata+offset, pps_data, pps_len);
-		offset+=pps_len;
 		st->open = true;
 		debug("avcodec: decode: init decoder H264\n");
 		/* Call the initialization encoder */
@@ -763,7 +760,6 @@ int avcodec_decode_h265(struct viddec_state *vds, struct vidframe *frame,
 		memcpy(vds->ctx->extradata+offset, nal_seq, 3);
 		offset+=3;
 		memcpy(vds->ctx->extradata+offset, pps_data, pps_len);
-		offset+=pps_len;
 		vds->open = true;
 		debug("avcodec: decode: init decoder H265\n");
 		init_decoder(vds, "H265");
