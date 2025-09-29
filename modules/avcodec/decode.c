@@ -511,9 +511,6 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 				ret);
 			goto out;
 		}
-		warning("avcodec: decode: "
-			"h264_sps_decode width=%d height=%d\n",
-			st->ctx->width, st->ctx->height);
 		st->ctx->extradata_size = sps_len + pps_len + 6;
 		st->ctx->extradata = av_malloc(
 			st->ctx->extradata_size +
@@ -748,9 +745,6 @@ int avcodec_decode_h265(struct viddec_state *vds, struct vidframe *frame,
 				"with_width_and_height error %d\n", ret);
 			goto out;
 		}
-		/* warning("avcodec: decode:
-		h265_sps_decode width=%d height=%d\n",
-		vds->ctx->width, vds->ctx->height); */
 		vds->ctx->extradata_size =vps_len + sps_len + pps_len + 9;
 		vds->ctx->extradata = av_malloc(
 			vds->ctx->extradata_size
