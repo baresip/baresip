@@ -525,7 +525,6 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 		memcpy(st->ctx->extradata+offset, pps_data, pps_len);
 		st->open = true;
 		debug("avcodec: decode: init decoder H264\n");
-		/* Call the initialization encoder */
 		init_decoder(st, "H264");
 	}
 
