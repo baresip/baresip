@@ -524,7 +524,7 @@ static int vtx_thread(void *arg)
 	if (vtx->video->cfg.send_bitrate)
 		bitrate = vtx->video->cfg.send_bitrate;
 	else
-		bitrate = vtx->video->cfg.bitrate * 1.1;
+		bitrate = (uint32_t)(vtx->video->cfg.bitrate * 1.1);
 
 	if (vtx->video->cfg.burst_bits)
 		burst_bits = vtx->video->cfg.burst_bits;
