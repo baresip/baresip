@@ -519,15 +519,20 @@ static int vtx_thread(void *arg)
 	uint64_t start_jfs  = tmr_jiffies_usec();
 	uint64_t target_jfs = tmr_jiffies_usec();
 	uint32_t bitrate;
+	uint32_t burst_bits;
 
 	if (vtx->video->cfg.send_bitrate)
 		bitrate = vtx->video->cfg.send_bitrate;
 	else
-		bitrate = vtx->video->cfg.bitrate;
+		bitrate = vtx->video->cfg.bitrate * 1.1;
+
+	if (vtx->video->cfg.burst_bits)
+		burst_bits = vtx->video->cfg.burst_bits;
+	else
+		burst_bits = bitrate / 10;
 
 	const uint64_t max_delay = PKT_SIZE * 8 * 1000000LL / bitrate + 1;
-	const uint64_t max_burst =
-		vtx->video->cfg.burst_bits * 1000000LL / bitrate;
+	const uint64_t max_burst = burst_bits * 1000000LL / bitrate;
 
 	struct vidqent *qent = NULL;
 	struct mbuf *mbd;
