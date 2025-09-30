@@ -45,7 +45,7 @@ int h264_decode_sps_with_width_and_height(uint8_t *buf, int len,
 	struct h264_sps sps;
 	uint8_t* web = NULL;
 	uint32_t webSize;
-	web = (uint8_t *)malloc(len);
+	web = (uint8_t *)mem_alloc(len,NULL);
 	if (!web)
 		goto fail;
 	webSize = remove_emulation_bytes(web, len, buf, len);
@@ -60,8 +60,7 @@ int h264_decode_sps_with_width_and_height(uint8_t *buf, int len,
 	h264_sps_resolution(&sps, (unsigned *)width, (unsigned *)height);
 
 fail:
-	if (web)
-		free(web);
+	mem_deref(web);
 	return ret;
 }
 

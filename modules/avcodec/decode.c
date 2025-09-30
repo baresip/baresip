@@ -241,15 +241,13 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 		avpkt->size = (int)st->mb->end;
 
 		ret = avcodec_send_packet(st->ctx, avpkt);
-		if (ret < 0) {
-			if (ret != AVERROR(EAGAIN)) {
-				warning("avcodec: decode: "
-				"avcodec_send_packet error,"
-				" packet=%zu bytes, ret=%d (%s)\n",
-				st->mb->end, ret, av_err2str(ret));
-				err = EBADMSG;
-				goto out;
-			}
+		if (ret < 0 && ret != AVERROR(EAGAIN)) {
+			warning("avcodec: decode: "
+			"avcodec_send_packet error,"
+			" packet=%zu bytes, ret=%d (%s)\n",
+			st->mb->end, ret, av_err2str(ret));
+			err = EBADMSG;
+			goto out;
 		}
 		(void) ret;
 	}
