@@ -727,6 +727,9 @@ static void call_decode_sip_autoanswer(struct call *call,
 
 int call_streams_alloc(struct call *call)
 {
+	if (!call)
+		return EINVAL;
+
 	struct account *acc = call->acc;
 	struct stream_param strm_prm;
 	struct le *le;
@@ -1107,15 +1110,17 @@ int call_modify(struct call *call)
 	debug("call: modify\n");
 
 	if (call_refresh_allowed(call)) {
-		err = call_sdp_get(call, &desc, true);
-		if (!err) {
-			bevent_call_emit(BEVENT_CALL_LOCAL_SDP, call,
-					 "offer");
+		err = bevent_call_emit(BEVENT_CALL_LOCAL_SDP, call, "offer");
+		if (err)
+			return err;
 
-			err = sipsess_modify(call->sess, desc);
-			if (err)
-				goto out;
-		}
+		err = call_sdp_get(call, &desc, true);
+		if (err)
+			return err;
+
+		err = sipsess_modify(call->sess, desc);
+		if (err)
+			goto out;
 	}
 
 	err = call_update_media(call);
@@ -2546,6 +2551,9 @@ static int sipsess_desc_handler(struct mbuf **descp, const struct sa *src,
 			return err;
 
 		call_set_mdir(call, call->estadir, call->estvdir);
+		err = bevent_call_emit(BEVENT_CALL_LOCAL_SDP, call, "offer");
+		if (err)
+			return err;
 	}
 
 	err = call_sdp_get(call, descp, true);
@@ -2558,7 +2566,7 @@ static int sipsess_desc_handler(struct mbuf **descp, const struct sa *src,
 	     (*descp)->buf, (*descp)->end);
 #endif
 
-	return err;
+	return 0;
 }
 
 
@@ -2580,6 +2588,12 @@ static int send_invite(struct call *call)
 	int err;
 
 	routev[0] = account_outbound(call->acc, 0);
+
+	if (!list_isempty(&call->streaml)) {
+		err = bevent_call_emit(BEVENT_CALL_LOCAL_SDP, call, "offer");
+		if (err)
+			return err;
+	}
 
 	err = sipsess_connect(&call->sess, uag_sipsess_sock(),
 			      call->peer_uri,
@@ -2618,8 +2632,6 @@ static int send_invite(struct call *call)
 
 	/* save call setup timer */
 	call->time_conn = time(NULL);
-
-	bevent_call_emit(BEVENT_CALL_LOCAL_SDP, call, "offer");
 
 	return 0;
 }
@@ -2666,6 +2678,9 @@ bool call_early_video_available(const struct call *call)
 {
 	struct le *le;
 	struct sdp_media *v;
+
+	if (!call)
+		return false;
 
 	LIST_FOREACH(sdp_session_medial(call->sdp, false), le) {
 		v = le->data;
@@ -2762,6 +2777,9 @@ int call_reset_transp(struct call *call, const struct sa *laddr)
 
 const struct sa *call_laddr(const struct call *call)
 {
+	if (!call)
+		return NULL;
+
 	return sdp_session_laddr(call->sdp);
 }
 
