@@ -1123,7 +1123,6 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#module\t\t\t" "g726" MOD_EXT "\n");
 	(void)re_fprintf(f, "module\t\t\t" "g711" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "l16" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" "mpa" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "codec2" MOD_EXT "\n");
 
 	(void)re_fprintf(f, "\n# Audio filter Modules (in encoding order)\n");
