@@ -482,10 +482,10 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 	 	Additionally, the extradata format must be:
 		0x00 0x00 0x01 sps 0x00 0x00 0x01 pps */
 	if (st->mc && !st->open) {
-		uint8_t sps_data[256];
-		int sps_len;
-		uint8_t pps_data[256];
-		int pps_len;
+		uint8_t sps_data[MAX_SPS];
+		size_t sps_len;
+		uint8_t pps_data[MAX_PPS];
+		size_t pps_len;
 		int ret = h264_get_sps_pps(
 			st->mb->buf,(int)st->mb->pos,
 			sps_data, &sps_len,
@@ -507,7 +507,7 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 				ret);
 			goto out;
 		}
-		st->ctx->extradata_size = sps_len + pps_len + 6;
+		st->ctx->extradata_size = (int)(sps_len + pps_len + 6);
 		st->ctx->extradata = av_malloc(
 			st->ctx->extradata_size +
 			AV_INPUT_BUFFER_PADDING_SIZE);
@@ -716,12 +716,12 @@ int avcodec_decode_h265(struct viddec_state *vds, struct vidframe *frame,
 		Additionally, the extradata format must be:
 		0x00 0x00 0x01 vps 0x00 0x00 0x01 sps 0x00 0x00 0x01 pps */
 	if (vds->mc && !vds->open) {
-		uint8_t vps_data[256];
-		int vps_len;
-		uint8_t sps_data[256];
-		int sps_len;
-		uint8_t pps_data[256];
-		int pps_len;
+		uint8_t vps_data[MAX_VPS];
+		size_t vps_len;
+		uint8_t sps_data[MAX_SPS];
+		size_t sps_len;
+		uint8_t pps_data[MAX_PPS];
+		size_t pps_len;
 		int ret = h265_get_vps_sps_pps(vds->mb->buf, (int)vds->mb->pos
 			,vps_data, &vps_len
 			,sps_data, &sps_len
@@ -739,7 +739,8 @@ int avcodec_decode_h265(struct viddec_state *vds, struct vidframe *frame,
 				"with_width_and_height error %d\n", ret);
 			goto out;
 		}
-		vds->ctx->extradata_size =vps_len + sps_len + pps_len + 9;
+		vds->ctx->extradata_size =(int)
+			(vps_len + sps_len + pps_len + 9);
 		vds->ctx->extradata = av_malloc(
 			vds->ctx->extradata_size
 			+ AV_INPUT_BUFFER_PADDING_SIZE);

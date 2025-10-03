@@ -5,14 +5,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-int h265_get_vps_sps_pps(uint8_t *data, int len,
-	uint8_t *vps,int *vps_len,
-	uint8_t *sps, int *sps_len,
-	uint8_t *pps, int *pps_len)
+int h265_get_vps_sps_pps(const uint8_t *data, size_t len,
+	uint8_t *vps,size_t *vps_len,
+	uint8_t *sps, size_t *sps_len,
+	uint8_t *pps, size_t *pps_len)
 {
 	uint8_t nalu_t;
 	int nalu_len;
-	uint8_t *r, *end = data + len;
+	const uint8_t *r, *end = data + len;
 	*vps_len = 0, *sps_len = 0;
 	*pps_len = 0;
 	r = (uint8_t *)h264_find_startcode(data, end);
@@ -28,16 +28,25 @@ int h265_get_vps_sps_pps(uint8_t *data, int len,
 		nalu_len = (int)(r1 - r);
 		if (nalu_t == H265_NAL_VPS_NUT)
 		{
+			if (MAX_VPS < nalu_len) {
+				continue;
+			}
 		    memcpy(vps, r, nalu_len);
 		    *vps_len = nalu_len;
 		}
 		else if (nalu_t == H265_NAL_SPS_NUT)
 		{
+			if (MAX_SPS < nalu_len) {
+				continue;
+			}
 		    memcpy(sps, r, nalu_len);
 		    *sps_len = nalu_len;
 		}
 		else if (nalu_t == H265_NAL_PPS_NUT)
 		{
+			if (MAX_PPS < nalu_len) {
+				continue;
+			}
 		    memcpy(pps, r, nalu_len);
 		    *pps_len = nalu_len;
 		}
@@ -48,7 +57,7 @@ int h265_get_vps_sps_pps(uint8_t *data, int len,
 	return (*vps_len > 0 && *sps_len > 0 && *pps_len > 0) ? 0 : -1;
 }
 
-int h265_decode_sps_with_width_and_height(uint8_t *buf, int nLen,
+int h265_decode_sps_with_width_and_height(const uint8_t *buf, size_t nLen,
 	int *width,
 	int *height)
 {
@@ -61,7 +70,8 @@ int h265_decode_sps_with_width_and_height(uint8_t *buf, int nLen,
 		ret = ENOMEM;
 		goto fail;
 	}
-	webSize = remove_emulation_bytes(web, nLen, buf, nLen);
+	webSize = remove_emulation_bytes(web, (uint32_t)nLen,
+		buf, (uint32_t)nLen);
 	if (webSize == 0) {
 		ret = ENOMEM;
 		goto fail;

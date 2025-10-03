@@ -4,13 +4,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-int h264_get_sps_pps(uint8_t *data, int len,
-	uint8_t *sps, int *sps_len,
-	uint8_t *pps, int *pps_len)
+int h264_get_sps_pps(const uint8_t *data, size_t len,
+	uint8_t *sps, size_t *sps_len,
+	uint8_t *pps, size_t *pps_len)
 {
 	uint8_t nalu_t;
 	int nalu_len;
-	uint8_t *r, *end = data + len;
+	const uint8_t *r, *end = data + len;
 	*sps_len = 0;
 	*pps_len = 0;
 	r = (uint8_t *)h264_find_startcode(data, end);
@@ -24,11 +24,17 @@ int h264_get_sps_pps(uint8_t *data, int len,
 		nalu_len = (int)(r1 - r);
 		if (nalu_t == H264_NALU_SPS)
 		{
+			if (MAX_SPS < nalu_len) {
+				continue;
+			}
 		    memcpy(sps, r, nalu_len);
 		    *sps_len = nalu_len;
 		}
 		else if (nalu_t == H264_NALU_PPS)
 		{
+			if (MAX_PPS < nalu_len) {
+				continue;
+			}
 		    memcpy(pps, r, nalu_len);
 		    *pps_len = nalu_len;
 		}
@@ -39,7 +45,7 @@ int h264_get_sps_pps(uint8_t *data, int len,
 	return (*sps_len > 0 && *pps_len > 0) ? 0 : -1;
 }
 
-int h264_decode_sps_with_width_and_height(uint8_t *buf, int len,
+int h264_decode_sps_with_width_and_height(const uint8_t *buf, size_t len,
 	int *width, int *height) {
 	int ret = 0;
 	struct h264_sps sps;
@@ -48,7 +54,8 @@ int h264_decode_sps_with_width_and_height(uint8_t *buf, int len,
 	web = (uint8_t *)mem_alloc(len,NULL);
 	if (!web)
 		goto fail;
-	webSize = remove_emulation_bytes(web, len, buf, len);
+	webSize = remove_emulation_bytes(web, (uint32_t)len,
+		buf, (uint32_t)len);
 	if (webSize == 0) {
 		ret = ENOMEM;
 		goto fail;
