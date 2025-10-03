@@ -18,7 +18,7 @@
  * Fake video source and display module
  *
  * This module can be used to generate fake video input frames, and to
- * send output video frames to a fake non-existant display.
+ * send output video frames to a fake non-existent display.
  *
  * Example config:
  \verbatim

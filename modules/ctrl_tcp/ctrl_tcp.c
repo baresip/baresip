@@ -61,7 +61,7 @@
  * - type      : Event ID.
  * - param     : Specific event information.
  *
- * Apart from the above, events may contain aditional parameters.
+ * Apart from the above, events may contain additional parameters.
  *
  * Event message example:
  *

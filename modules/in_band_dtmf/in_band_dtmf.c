@@ -271,7 +271,7 @@ static struct aufilt in_band_dtmf = {
  * \struct cmdv
  * The commands for this module.
  * in_band_dtmf_send expects a single parameter.
- *	- A string that will be splitted into single characters.
+ *	- A string that will be split into single characters.
  *	  Each valid DTMF character will be sent as in-band DTMF tone.
  *
  *	E.g. "1234"

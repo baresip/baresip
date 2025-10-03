@@ -441,7 +441,7 @@ static int config_pin(struct vidsrc_st *st, IPin *pin)
 	rh = vih->bmiHeader.biHeight;
 
 	if (w != rw || h != rh) {
-		warning("dshow: config_pin: picture size missmatch: "
+		warning("dshow: config_pin: picture size mismatch: "
 			      "wanted %d x %d, got %d x %d\n",
 			      w, h, rw, rh);
 	}
