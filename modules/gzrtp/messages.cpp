@@ -97,7 +97,7 @@ static const char *warning_msg(int32_t subcode)
 		msg = "Dropping packet because SRTP replay check failed!";
 		break;
 	case WarningNoExpectedRSMatch:
-		msg = "Valid retained shared secrets availabe but no matches "
+		msg = "Valid retained shared secrets available but no matches "
 		      "found - must verify SAS";
 		break;
 	case WarningNoExpectedAuxMatch:
@@ -134,7 +134,7 @@ static const char *severe_msg(int32_t subcode)
 		msg = "Cannot send data - connection or peer down?";
 		break;
 	case SevereProtocolError:
-		msg = "Internal protocol error occured!";
+		msg = "Internal protocol error occurred!";
 		break;
 	case SevereNoTimer:
 		msg = "Cannot start a timer - internal resources exhausted?";
