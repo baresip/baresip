@@ -1,6 +1,7 @@
 #ifndef H2645_PARSE_H
 #define H2645_PARSE_H
 #include <stdint.h>
+#include <stddef.h>
 
 #define MAX_VPS 256
 #define MAX_SPS 256
