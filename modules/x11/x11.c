@@ -125,7 +125,7 @@ static int create_window(struct vidisp_st *st, const struct vidsz *sz)
 
 #ifdef DO_REDIRECT
 	/*
-	 * set override rediect to avoid the "kill window" button
+	 * set override redirect to avoid the "kill window" button
 	 *  we need to set masks to allow for mouse tracking, etc.
 	 *  to control the window - making us the window manager
 	 */
