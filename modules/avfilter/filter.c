@@ -22,7 +22,6 @@ int filter_init(struct avfilter_st *st, const char *filter_descr,
 	const AVFilter *buffersrc, *buffersink;
 	AVFilterInOut *outputs, *inputs;
 	enum AVPixelFormat src_format = vidfmt_to_avpixfmt(frame->fmt);
-	enum AVPixelFormat pix_fmts[] = { src_format, AV_PIX_FMT_NONE };
 	char args[512];
 	int err = 0;
 
@@ -68,9 +67,9 @@ int filter_init(struct avfilter_st *st, const char *filter_descr,
 		goto end;
 	}
 
-	err = av_opt_set_int_list(
-		st->buffersink_ctx, "pix_fmts", pix_fmts, AV_PIX_FMT_NONE,
-		AV_OPT_SEARCH_CHILDREN);
+	err = av_opt_set_bin(st->buffersink_ctx, "pix_fmts",
+			     (uint8_t *)&src_format, sizeof(src_format),
+			     AV_OPT_SEARCH_CHILDREN);
 	if (err < 0) {
 		warning("avfilter: cannot set output pixel format\n");
 		goto end;
