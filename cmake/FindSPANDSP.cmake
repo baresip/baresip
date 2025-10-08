@@ -1,8 +1,13 @@
+if(SPANDSP_HINTS)
+  set(SPANDSP_INCLUDE_HINTS ${SPANDSP_HINTS}/include)
+  set(SPANDSP_LIBRARY_HINTS ${SPANDSP_HINTS}/lib)
+endif()
+
 find_path(SPANDSP_INCLUDE_DIR
   NAME spandsp/g722.h
   HINTS
     "${SPANDSP_INCLUDE_DIRS}"
-    "${SPANDSP_HINTS}/include"
+    "${SPANDSP_INCLUDE_HINTS}"
   PATHS /usr/local/include /usr/include
 )
 
@@ -10,7 +15,7 @@ find_library(SPANDSP_LIBRARY
   NAME spandsp
   HINTS
     "${SPANDSP_LIBRARY_DIRS}"
-    "${SPANDSP_HINTS}/lib"
+    "${SPANDSP_LIBRARY_HINTS}"
   PATHS /usr/local/lib /usr/lib
 )
 
