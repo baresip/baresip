@@ -1593,7 +1593,7 @@ int video_encoder_set(struct video *v, struct vidcodec *vc,
 		vcd = (struct vidcodec *)vidcodec_find_encoder(vidcodecl,
 							       vc->name);
 		if (!vcd) {
-			warning("video: could not find decoder (%s)\n",
+			warning("video: could not find encoder (%s)\n",
 				vc->name);
 			return ENOENT;
 		}
