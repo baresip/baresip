@@ -1585,8 +1585,20 @@ int video_encoder_set(struct video *v, struct vidcodec *vc,
 	vtx = &v->vtx;
 
 	if (!vc->encupdh) {
+		struct list *vidcodecl = vc->le.list;
+		struct vidcodec *vcd;
+
 		info("video: vidcodec '%s' has no encoder\n", vc->name);
-		return ENOENT;
+
+		vcd = (struct vidcodec *)vidcodec_find_encoder(vidcodecl,
+							       vc->name);
+		if (!vcd) {
+			warning("video: could not find decoder (%s)\n",
+				vc->name);
+			return ENOENT;
+		}
+
+		vc = vcd;
 	}
 
 	mtx_lock(vtx->lock_enc);
