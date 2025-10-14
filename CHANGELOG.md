@@ -5,6 +5,41 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v4.2.0 - 2025-10-15
+
+## What's Changed
+* menu: check return value from str_dup() by @alfredh in https://github.com/baresip/baresip/pull/3495
+* ctrl_dbus: check return value of str_dup() by @alfredh in https://github.com/baresip/baresip/pull/3493
+* core: set bundle rtpext before aulevel by @alfredh in https://github.com/baresip/baresip/pull/3497
+* ice: use icem_rcand_ready by @sreimers in https://github.com/baresip/baresip/pull/3498
+* mpa: move MPA audio codec to baresip-apps by @alfredh in https://github.com/baresip/baresip/pull/3499
+* webrtc_aecm: removed module by @juha-h in https://github.com/baresip/baresip/pull/3500
+* ci-windows: bump choco openssl version to 3.5.3 by @alfredh in https://github.com/baresip/baresip/pull/3503
+* audiounit: remove unused member 'int fmt' by @alfredh in https://github.com/baresip/baresip/pull/3505
+* audiounit: remove 'int ch' already present in struct ausrc_prm by @alfredh in https://github.com/baresip/baresip/pull/3508
+* call,bevent: add call contacturi by @maximilianfridrich in https://github.com/baresip/baresip/pull/3510
+* test/ua: add test_ua_cuser by @maximilianfridrich in https://github.com/baresip/baresip/pull/3511
+* ua: rename setting to sip_cuser_random by @cspiel1 in https://github.com/baresip/baresip/pull/3515
+* menu: fix some typos by @alfredh in https://github.com/baresip/baresip/pull/3512
+* call: send local SDP event not too early by @cspiel1 in https://github.com/baresip/baresip/pull/3516
+* call: call_modify() - local SDP event before SDP encode by @cspiel1 in https://github.com/baresip/baresip/pull/3519
+* test: add test_uag_find_msg() by @cspiel1 in https://github.com/baresip/baresip/pull/3518
+* video: better sendrate and burst_bits defaults by @sreimers in https://github.com/baresip/baresip/pull/3522
+* webrtc_aec: update module to Debian Trixie compatibility by @juha-h in https://github.com/baresip/baresip/pull/3509
+* call: add missing input argument checking (struct call pointer) by @alfredh in https://github.com/baresip/baresip/pull/3513
+* ci,windows: bump Choco to OpenSSL version 3.5.4 by @alfredh in https://github.com/baresip/baresip/pull/3523
+* modules: fix minor typos by @alfredh in https://github.com/baresip/baresip/pull/3525
+* config: remove mpa module from template by @alfredh in https://github.com/baresip/baresip/pull/3524
+* avfilter: fix av_opt_set_int_list deprecation warning by @sreimers in https://github.com/baresip/baresip/pull/3527
+* ci/macos: use default ffmpeg (currently 8.0) by @sreimers in https://github.com/baresip/baresip/pull/3528
+* cmake: fix usage of SPANDSP_HINTS by @cspiel1 in https://github.com/baresip/baresip/pull/3531
+* ci/coverage: increase min. coverage by @sreimers in https://github.com/baresip/baresip/pull/3529
+* bump version number to 4.2.0 by @alfredh in https://github.com/baresip/baresip/pull/3534
+
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v4.1.0...v4.2.0
+
+
 ## v4.1.0 - 2025-09-10
 
 ### What's Changed
