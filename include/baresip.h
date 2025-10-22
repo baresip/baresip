@@ -948,12 +948,13 @@ enum ua_event {
 	UA_EVENT_CALL_ENDED_LOCAL,
 	UA_EVENT_CALL_ENDED_REMOTE,
 	UA_EVENT_CALL_STAT,
+	
 	UA_EVENT_OPENAI_RESPONSE,
-
-	UA_EVENT_MAX,
 
 	UA_EVENT_AUDIO_LATENCY_INCOMING, /**< click detection on decoder side*/
 	UA_EVENT_AUDIO_LATENCY_OUTGOING, /**< click detection on encoder side*/
+
+	UA_EVENT_MAX,
 };
 
 /* Define function pointer for event callback */

@@ -136,11 +136,11 @@ static const char *ua_event_class_name(enum ua_event ev)
 	case UA_EVENT_CALL_ENDED_LOCAL:
 	case UA_EVENT_CALL_ENDED_REMOTE:
 	case UA_EVENT_CALL_STAT:
-	case UA_EVENT_OPENAI_RESPONSE:
 	case UA_EVENT_CALL_LOCAL_SDP:
 	case UA_EVENT_CALL_REMOTE_SDP:
 	case UA_EVENT_CALL_HOLD:
 	case UA_EVENT_CALL_RESUME:
+	case UA_EVENT_OPENAI_RESPONSE:
 		return "call";
 	case UA_EVENT_VU_RX:
 	case UA_EVENT_VU_TX:
@@ -425,7 +425,7 @@ int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 	if (!od)
 		return EINVAL;
 
-	debug("event: emitting event [%s]\n", event_str);
+	debug("event: emitting event [%s] (%d)\n", event_str, (int)ev);
 
 	gettimeofday(&now, NULL);
 

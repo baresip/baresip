@@ -2,7 +2,11 @@
  * @file calls.c  OpenAI Realtime API - Call management
  */
 
+ #include <re.h>
+ #include <rem.h>
+#include <baresip.h>
 #include "openai_rt.h"
+
 
 /* Message queue events */
 enum call_mq_events {
@@ -63,6 +67,7 @@ static void mqueue_handler(int id, void *data, void *arg)
 			char *response_json = (char *)data;
 			DEBUG_INFO("mqueue_handler: Processing OpenAI response\n");
 			if (g_oairt.current_call) {
+				warning("openai_rt: emit OPENAI_RESPONSE (%d)\n", UA_EVENT_OPENAI_RESPONSE);
 				bevent_call_emit(UA_EVENT_OPENAI_RESPONSE, g_oairt.current_call,
 				                "%s", response_json);
 			}
