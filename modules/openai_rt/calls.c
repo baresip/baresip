@@ -4,6 +4,39 @@
 
 #include "openai_rt.h"
 
+/* Message queue events */
+enum call_mq_events {
+	MQ_HANGUP = 0,
+};
+
+/* Static module state */
+static struct {
+	struct mqueue *mq;  /* Message queue for thread-safe call operations */
+} calls_state;
+
+/* Message queue handler - executes in RE main thread */
+static void mqueue_handler(int id, void *data, void *arg)
+{
+	(void)arg;
+	(void)data;
+	
+	switch ((enum call_mq_events)id) {
+	case MQ_HANGUP:
+		DEBUG_INFO("mqueue_handler: Processing hangup request\n");
+		if (g_oairt.current_call) {
+			call_hangup(g_oairt.current_call, 0, NULL);
+		}
+		else {
+			DEBUG_INFO("mqueue_handler: No active call to hangup\n");
+		}
+		break;
+		
+	default:
+		warning("openai_rt: Unknown mqueue event: %d\n", id);
+		break;
+	}
+}
+
 /* Event handler for UA events */
 static void event_handler(struct ua *ua, enum ua_event ev,
                          struct call *call, const char *prm, void *arg)
@@ -70,10 +103,18 @@ int calls_init(void)
 {
 	int err;
 
+	/* Initialize message queue for thread-safe call operations */
+	err = mqueue_alloc(&calls_state.mq, mqueue_handler, NULL);
+	if (err) {
+		warning("openai_rt: Failed to allocate mqueue: %m\n", err);
+		return err;
+	}
+
 	/* Register UA event handler */
 	err = uag_event_register(event_handler, NULL);
 	if (err) {
 		DEBUG_INFO("Failed to register event handler: %m\n", err);
+		mem_deref(calls_state.mq);
 		return err;
 	}
 
@@ -83,9 +124,11 @@ int calls_init(void)
 
 void calls_close(void)
 {
-
 	/* Unregister event handler */
 	uag_event_unregister(event_handler);
+
+	/* Clean up message queue */
+	calls_state.mq = mem_deref(calls_state.mq);
 
 	/* Clear call state */
 	g_oairt.call_active = false;
@@ -94,9 +137,23 @@ void calls_close(void)
 	DEBUG_INFO("Call management closed\n");
 }
 
+/**
+ * Request call hangup - thread-safe
+ * This function can be called from any thread. The actual hangup
+ * will be executed in the RE main event loop thread via mqueue.
+ */
 void calls_hangup(void)
 {
-	if (g_oairt.current_call) {
-		call_hangup(g_oairt.current_call, 0, NULL);
+	int err;
+	
+	if (!calls_state.mq) {
+		warning("openai_rt: calls_hangup: mqueue not initialized\n");
+		return;
+	}
+	
+	DEBUG_INFO("calls_hangup: Queuing hangup request\n");
+	err = mqueue_push(calls_state.mq, MQ_HANGUP, NULL);
+	if (err) {
+		warning("openai_rt: Failed to queue hangup: %m\n", err);
 	}
 }
