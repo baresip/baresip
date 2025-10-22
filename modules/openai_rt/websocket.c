@@ -437,6 +437,30 @@ static void handle_openai_handle_event(const char *json_str)
             }
             handle_openai_function_call(call_id, name, arguments);
         }
+    } else if (strcmp(type, "response.done") == 0) {
+        DEBUG_INFO("openai_rt: response.done received\n");
+        
+        /* Extract the 'response' field */
+        struct json_object *response_obj = NULL;
+        if (!json_object_object_get_ex(root, "response", &response_obj)) {
+            warning("openai_rt: JSON message missing 'response' field\n");
+            json_object_put(root);
+            return;
+        }
+        
+        /* Serialize the response object back to JSON string */
+        const char *response_json = json_object_to_json_string(response_obj);
+        if (!response_json) {
+            warning("openai_rt: Failed to serialize response object\n");
+            json_object_put(root);
+            return;
+        }
+        
+        /* Queue the response for event emission in the main thread */
+        int err = calls_queue_openai_response(response_json);
+        if (err) {
+            warning("openai_rt: Failed to queue OpenAI response: %m\n", err);
+        }
     }
     else {
         DEBUG_INFO("openai_rt: Unhandled message type: %s\n", type);

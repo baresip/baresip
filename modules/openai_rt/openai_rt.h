@@ -211,5 +211,6 @@ void audio_free_frame(struct audio_frame *frame);
 void calls_hangup(void);
 void calls_send_digit(char key);
 int calls_send_dtmf(const char *digits);
+int calls_queue_openai_response(const char *response_json);
 
 #endif /* OPENAI_RT_H */

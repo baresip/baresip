@@ -8,6 +8,7 @@
 enum call_mq_events {
 	MQ_HANGUP = 0,
 	MQ_SEND_DIGIT,
+	MQ_OPENAI_RESPONSE,
 };
 
 /* Static module state */
@@ -28,7 +29,7 @@ static void mqueue_handler(int id, void *data, void *arg)
 	}
 	
 	/* Validate event ID to detect corruption */
-	if (id < 0 || id > MQ_SEND_DIGIT) {
+	if (id < 0 || id > MQ_OPENAI_RESPONSE) {
 		warning("openai_rt: Invalid mqueue event ID: %d (possible corruption)\n", id);
 		return;
 	}
@@ -54,6 +55,22 @@ static void mqueue_handler(int id, void *data, void *arg)
 			else {
 				DEBUG_INFO("mqueue_handler: No active call to send digit\n");
 			}
+		}
+		break;
+		
+	case MQ_OPENAI_RESPONSE:
+		{
+			char *response_json = (char *)data;
+			DEBUG_INFO("mqueue_handler: Processing OpenAI response\n");
+			if (g_oairt.current_call) {
+				bevent_call_emit(UA_EVENT_OPENAI_RESPONSE, g_oairt.current_call,
+				                "%s", response_json);
+			}
+			else {
+				DEBUG_INFO("mqueue_handler: No active call for OpenAI response\n");
+			}
+			/* Free the allocated response string */
+			mem_deref(response_json);
 		}
 		break;
 		
@@ -281,5 +298,52 @@ int calls_send_dtmf(const char *digits)
 	}
 	
 	DEBUG_INFO("calls_send_dtmf: DTMF string '%s' sent successfully\n", digits);
+	return 0;
+}
+
+
+/**
+ * Queue OpenAI response for event emission - thread-safe
+ * This function can be called from any thread. The actual bevent emission
+ * will be executed in the RE main event loop thread via mqueue.
+ *
+ * @param response_json  JSON string of the response (will be copied)
+ * @return 0 if success, error code otherwise
+ */
+int calls_queue_openai_response(const char *response_json)
+{
+	char *json_copy = NULL;
+	int err;
+	
+	if (calls_state.shutting_down) {
+		DEBUG_INFO("calls_queue_openai_response: Ignoring during shutdown\n");
+		return EINTR;
+	}
+	
+	if (!calls_state.mq) {
+		warning("openai_rt: calls_queue_openai_response: mqueue not initialized\n");
+		return EINVAL;
+	}
+	
+	if (!response_json) {
+		warning("openai_rt: calls_queue_openai_response: NULL response\n");
+		return EINVAL;
+	}
+	
+	/* Allocate memory for the JSON string (will be freed in mqueue handler) */
+	err = str_dup(&json_copy, response_json);
+	if (err) {
+		warning("openai_rt: Failed to duplicate response JSON: %m\n", err);
+		return err;
+	}
+	
+	DEBUG_INFO("calls_queue_openai_response: Queuing OpenAI response\n");
+	err = mqueue_push(calls_state.mq, MQ_OPENAI_RESPONSE, json_copy);
+	if (err) {
+		warning("openai_rt: Failed to queue OpenAI response: %m\n", err);
+		mem_deref(json_copy);
+		return err;
+	}
+	
 	return 0;
 }
