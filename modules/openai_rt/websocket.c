@@ -222,8 +222,8 @@ static void handle_openai_function_call(const char *call_id, const char *name, c
             mem_deref(json_msg);
         }
 
-    } else if (strcmp(name, "send_dtmf_digit") == 0) {
-        DEBUG_INFO("openai_rt: Executing send_dtmf_digit function\n");
+    } else if (strcmp(name, "send_dtmf") == 0) {
+        DEBUG_INFO("openai_rt: Executing send_dtmf function\n");
         
         /* Parse the arguments JSON string */
         struct json_object *arguments_obj = json_tokener_parse(arguments);
@@ -232,50 +232,47 @@ static void handle_openai_function_call(const char *call_id, const char *name, c
             return;
         }
         
-        /* Extract the 'digit' field */
-        struct json_object *digit_obj = NULL;
-        if (!json_object_object_get_ex(arguments_obj, "digit", &digit_obj)) {
-            warning("openai_rt: JSON message missing 'digit' field\n");
+        /* Extract the 'digits' field */
+        struct json_object *digits_obj = NULL;
+        if (!json_object_object_get_ex(arguments_obj, "digits", &digits_obj)) {
+            warning("openai_rt: JSON message missing 'digits' field\n");
             json_object_put(arguments_obj);
             return;
         }
         
-        if (!json_object_is_type(digit_obj, json_type_string)) {
-            warning("openai_rt: JSON 'digit' field is not a string\n");
+        if (!json_object_is_type(digits_obj, json_type_string)) {
+            warning("openai_rt: JSON 'digits' field is not a string\n");
             json_object_put(arguments_obj);
             return;
         }
         
-        const char *digit = json_object_get_string(digit_obj);
-        if (!digit) {
-            warning("openai_rt: Failed to get string value from 'digit' field\n");
+        const char *digits = json_object_get_string(digits_obj);
+        if (!digits || !*digits) {
+            warning("openai_rt: 'digits' field is empty\n");
             json_object_put(arguments_obj);
             return;
         }
         
-        if (strlen(digit) != 1) {
-            warning("openai_rt: 'digit' field is not a single character\n");
+        /* Send the DTMF string (validation and sending handled in calls.c) */
+        int err = calls_send_dtmf(digits);
+        if (err) {
+            warning("openai_rt: Failed to send DTMF string '%s': %m\n", digits, err);
             json_object_put(arguments_obj);
             return;
         }
-        
-        calls_send_digit(digit[0]);
-        
-        DEBUG_INFO("openai_rt: DTMF digit '%c' sent\n", digit[0]);
         
         /* Send function call output response */
         char *json_msg = NULL;
-        int err;
         re_sdprintf(&json_msg,
             "{"
                 "\"type\": \"conversation.item.create\","
                 "\"item\": {"
                     "\"type\":\"function_call_output\","
                     "\"call_id\": \"%s\","
-                    "\"output\": \"DTMF digit sent: %s\""
+                    "\"output\": \"DTMF tones sent: %s\""
                 "}"
             "}",
-            call_id, digit
+            call_id, digits
         );
         
         info("openai_rt: function_call_output: %s\n", json_msg);
@@ -799,18 +796,18 @@ static void handle_openai_handle_event(const char *json_str)
                     "},"
                     "{"
                         "\"type\": \"function\","
-                        "\"name\": \"send_dtmf_digit\","
-                        "\"description\": \"Send a DTMF digit to the call\","
+                        "\"name\": \"send_dtmf\","
+                        "\"description\": \"Send DTMF tones to the call\","
                         "\"parameters\": {"
                             "\"type\": \"object\","
                             "\"properties\": {"
-                                "\"digit\": {"
+                                "\"digits\": {"
                                     "\"type\": \"string\","
-                                    "\"description\": \"The DTMF digit to send\","
-                                    "\"enum\": [\"0\", \"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"*\", \"#\", \"A\", \"B\", \"C\", \"D\"]"
+                                    "\"description\": \"String of DTMF digits to send (e.g., '123', '*9#', '1234*'). Valid characters: 0-9, *, #, A-D\","
+                                    "\"pattern\": \"^[0-9*#A-D]+$\""
                                 "}"
                             "},"
-                            "\"required\": [\"digit\"]"
+                            "\"required\": [\"digits\"]"
                         "}"
                     "}"
                 "]"

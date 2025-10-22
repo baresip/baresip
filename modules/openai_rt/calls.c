@@ -12,13 +12,26 @@ enum call_mq_events {
 
 /* Static module state */
 static struct {
-	struct mqueue *mq;  /* Message queue for thread-safe call operations */
+	struct mqueue *mq;      /* Message queue for thread-safe call operations */
+	bool shutting_down;     /* Flag to prevent operations during shutdown */
 } calls_state;
 
 /* Message queue handler - executes in RE main thread */
 static void mqueue_handler(int id, void *data, void *arg)
 {
 	(void)arg;
+	
+	/* Ignore events during shutdown to prevent crashes */
+	if (calls_state.shutting_down) {
+		DEBUG_INFO("mqueue_handler: Ignoring event %d during shutdown\n", id);
+		return;
+	}
+	
+	/* Validate event ID to detect corruption */
+	if (id < 0 || id > MQ_SEND_DIGIT) {
+		warning("openai_rt: Invalid mqueue event ID: %d (possible corruption)\n", id);
+		return;
+	}
 	
 	switch ((enum call_mq_events)id) {
 	case MQ_HANGUP:
@@ -116,6 +129,9 @@ int calls_init(void)
 {
 	int err;
 
+	/* Initialize state */
+	calls_state.shutting_down = false;
+
 	/* Initialize message queue for thread-safe call operations */
 	err = mqueue_alloc(&calls_state.mq, mqueue_handler, NULL);
 	if (err) {
@@ -128,6 +144,7 @@ int calls_init(void)
 	if (err) {
 		DEBUG_INFO("Failed to register event handler: %m\n", err);
 		mem_deref(calls_state.mq);
+		calls_state.mq = NULL;
 		return err;
 	}
 
@@ -137,7 +154,12 @@ int calls_init(void)
 
 void calls_close(void)
 {
-	/* Unregister event handler */
+	DEBUG_INFO("Call management closing\n");
+	
+	/* Set shutdown flag to prevent new mqueue operations */
+	calls_state.shutting_down = true;
+
+	/* Unregister event handler first to stop receiving new events */
 	uag_event_unregister(event_handler);
 
 	/* Clean up message queue */
@@ -158,6 +180,11 @@ void calls_close(void)
 void calls_hangup(void)
 {
 	int err;
+	
+	if (calls_state.shutting_down) {
+		DEBUG_INFO("calls_hangup: Ignoring hangup during shutdown\n");
+		return;
+	}
 	
 	if (!calls_state.mq) {
 		warning("openai_rt: calls_hangup: mqueue not initialized\n");
@@ -183,6 +210,11 @@ void calls_send_digit(char key)
 {
 	int err;
 	
+	if (calls_state.shutting_down) {
+		DEBUG_INFO("calls_send_digit: Ignoring digit send during shutdown\n");
+		return;
+	}
+	
 	if (!calls_state.mq) {
 		warning("openai_rt: calls_send_digit: mqueue not initialized\n");
 		return;
@@ -193,4 +225,61 @@ void calls_send_digit(char key)
 	if (err) {
 		warning("openai_rt: Failed to queue digit send: %m\n", err);
 	}
+}
+
+
+/**
+ * Send DTMF string - thread-safe
+ * This function can be called from any thread. It validates and sends
+ * each digit in the string sequentially.
+ *
+ * @param digits  String of DTMF digits to send (0-9, *, #, A-D)
+ * @return 0 if success, error code otherwise
+ */
+int calls_send_dtmf(const char *digits)
+{
+	const char *p;
+	
+	if (calls_state.shutting_down) {
+		DEBUG_INFO("calls_send_dtmf: Ignoring DTMF send during shutdown\n");
+		return EINTR;
+	}
+	
+	if (!digits || !*digits) {
+		warning("openai_rt: calls_send_dtmf: Empty or NULL digits string\n");
+		return EINVAL;
+	}
+	
+	/* Validate that all characters are valid DTMF digits */
+	for (p = digits; *p; p++) {
+		char c = *p;
+		bool valid = (c >= '0' && c <= '9') || c == '*' || c == '#' ||
+		            (c >= 'A' && c <= 'D') || (c >= 'a' && c <= 'd');
+		if (!valid) {
+			warning("openai_rt: Invalid DTMF character '%c' in string '%s'\n", 
+			        c, digits);
+			return EINVAL;
+		}
+	}
+	
+	DEBUG_INFO("calls_send_dtmf: Sending DTMF string: '%s' (%zu digits)\n", 
+	           digits, strlen(digits));
+	
+	/* Send each digit sequentially with inter-digit pause */
+	for (p = digits; *p; p++) {
+		char c = *p;
+		/* Convert to uppercase for consistency */
+		if (c >= 'a' && c <= 'd') {
+			c = c - 'a' + 'A';
+		}
+		calls_send_digit(c);
+		
+		/* Add inter-digit pause (except after the last digit) */
+		if (*(p + 1)) {
+			sys_msleep(150);  /* 150ms pause between digits */
+		}
+	}
+	
+	DEBUG_INFO("calls_send_dtmf: DTMF string '%s' sent successfully\n", digits);
+	return 0;
 }

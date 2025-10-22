@@ -210,5 +210,6 @@ void audio_free_frame(struct audio_frame *frame);
 /* Call management functions accessible via tools */
 void calls_hangup(void);
 void calls_send_digit(char key);
+int calls_send_dtmf(const char *digits);
 
 #endif /* OPENAI_RT_H */
