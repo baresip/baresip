@@ -7,6 +7,7 @@
 /* Message queue events */
 enum call_mq_events {
 	MQ_HANGUP = 0,
+	MQ_SEND_DIGIT,
 };
 
 /* Static module state */
@@ -18,7 +19,6 @@ static struct {
 static void mqueue_handler(int id, void *data, void *arg)
 {
 	(void)arg;
-	(void)data;
 	
 	switch ((enum call_mq_events)id) {
 	case MQ_HANGUP:
@@ -28,6 +28,19 @@ static void mqueue_handler(int id, void *data, void *arg)
 		}
 		else {
 			DEBUG_INFO("mqueue_handler: No active call to hangup\n");
+		}
+		break;
+		
+	case MQ_SEND_DIGIT:
+		{
+			char key = (char)(uintptr_t)data;
+			DEBUG_INFO("mqueue_handler: Sending DTMF digit '%c'\n", key);
+			if (g_oairt.current_call) {
+				call_send_digit(g_oairt.current_call, key);
+			}
+			else {
+				DEBUG_INFO("mqueue_handler: No active call to send digit\n");
+			}
 		}
 		break;
 		
@@ -155,5 +168,29 @@ void calls_hangup(void)
 	err = mqueue_push(calls_state.mq, MQ_HANGUP, NULL);
 	if (err) {
 		warning("openai_rt: Failed to queue hangup: %m\n", err);
+	}
+}
+
+
+/**
+ * Send DTMF digit - thread-safe
+ * This function can be called from any thread. The actual digit send
+ * will be executed in the RE main event loop thread via mqueue.
+ *
+ * @param key  DTMF digit to send (0-9, *, #, A-D)
+ */
+void calls_send_digit(char key)
+{
+	int err;
+	
+	if (!calls_state.mq) {
+		warning("openai_rt: calls_send_digit: mqueue not initialized\n");
+		return;
+	}
+	
+	DEBUG_INFO("calls_send_digit: Queuing digit '%c'\n", key);
+	err = mqueue_push(calls_state.mq, MQ_SEND_DIGIT, (void *)(uintptr_t)key);
+	if (err) {
+		warning("openai_rt: Failed to queue digit send: %m\n", err);
 	}
 }

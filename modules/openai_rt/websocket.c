@@ -192,8 +192,6 @@ static void handle_openai_audio_delta(const char *json_str)
 /* websocket.c */
 static void handle_openai_function_call(const char *call_id, const char *name, const char *arguments)
 {
-    (void)arguments; /* Suppress unused parameter warning */
-
     if (strcmp(name, "hangup_call") == 0) {
         DEBUG_INFO("openai_rt: Executing hangup_call function\n");
 
@@ -224,6 +222,74 @@ static void handle_openai_function_call(const char *call_id, const char *name, c
             mem_deref(json_msg);
         }
 
+    } else if (strcmp(name, "send_dtmf_digit") == 0) {
+        DEBUG_INFO("openai_rt: Executing send_dtmf_digit function\n");
+        
+        /* Parse the arguments JSON string */
+        struct json_object *arguments_obj = json_tokener_parse(arguments);
+        if (!arguments_obj) {
+            warning("openai_rt: Failed to parse arguments JSON\n");
+            return;
+        }
+        
+        /* Extract the 'digit' field */
+        struct json_object *digit_obj = NULL;
+        if (!json_object_object_get_ex(arguments_obj, "digit", &digit_obj)) {
+            warning("openai_rt: JSON message missing 'digit' field\n");
+            json_object_put(arguments_obj);
+            return;
+        }
+        
+        if (!json_object_is_type(digit_obj, json_type_string)) {
+            warning("openai_rt: JSON 'digit' field is not a string\n");
+            json_object_put(arguments_obj);
+            return;
+        }
+        
+        const char *digit = json_object_get_string(digit_obj);
+        if (!digit) {
+            warning("openai_rt: Failed to get string value from 'digit' field\n");
+            json_object_put(arguments_obj);
+            return;
+        }
+        
+        if (strlen(digit) != 1) {
+            warning("openai_rt: 'digit' field is not a single character\n");
+            json_object_put(arguments_obj);
+            return;
+        }
+        
+        calls_send_digit(digit[0]);
+        
+        DEBUG_INFO("openai_rt: DTMF digit '%c' sent\n", digit[0]);
+        
+        /* Send function call output response */
+        char *json_msg = NULL;
+        int err;
+        re_sdprintf(&json_msg,
+            "{"
+                "\"type\": \"conversation.item.create\","
+                "\"item\": {"
+                    "\"type\":\"function_call_output\","
+                    "\"call_id\": \"%s\","
+                    "\"output\": \"DTMF digit sent: %s\""
+                "}"
+            "}",
+            call_id, digit
+        );
+        
+        info("openai_rt: function_call_output: %s\n", json_msg);
+        
+        if (json_msg) {
+            err = queue_message_to_openai(json_msg, str_len(json_msg), NULL, NULL);
+            if (err) {
+                warning("openai_rt: Failed to queue function_call_output: %m\n", err);
+            }
+            mem_deref(json_msg);
+        }
+        
+        /* Clean up parsed JSON object */
+        json_object_put(arguments_obj);
     }
     else {
         warning("openai_rt: Unknown function call: %s\n", name);
@@ -717,24 +783,41 @@ static void handle_openai_handle_event(const char *json_str)
     }
     *dst = '\0';
 
-    re_sdprintf(&json_msg,
-       "{"
-           "\"type\":\"session.update\","
-           "\"session\":{"
-               "\"type\":\"realtime\","
-               "\"instructions\": \"%s\","
-               "\"tool_choice\": \"auto\","
-               "\"tools\": ["
-                   "{"
-                       "\"type\": \"function\","
-                       "\"name\": \"hangup_call\","
-                       "\"description\": \"Hang up the call\""
-                   "}"
-               "]"            
-           "}"
-       "}",
-        escaped_prompt
-    );
+    /* Build session update JSON with tools */
+    static const char *session_update_template = 
+        "{"
+            "\"type\": \"session.update\","
+            "\"session\": {"
+                "\"type\": \"realtime\","
+                "\"instructions\": \"%s\","
+                "\"tool_choice\": \"auto\","
+                "\"tools\": ["
+                    "{"
+                        "\"type\": \"function\","
+                        "\"name\": \"hangup_call\","
+                        "\"description\": \"Hang up the call\""
+                    "},"
+                    "{"
+                        "\"type\": \"function\","
+                        "\"name\": \"send_dtmf_digit\","
+                        "\"description\": \"Send a DTMF digit to the call\","
+                        "\"parameters\": {"
+                            "\"type\": \"object\","
+                            "\"properties\": {"
+                                "\"digit\": {"
+                                    "\"type\": \"string\","
+                                    "\"description\": \"The DTMF digit to send\","
+                                    "\"enum\": [\"0\", \"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\", \"8\", \"9\", \"*\", \"#\", \"A\", \"B\", \"C\", \"D\"]"
+                                "}"
+                            "},"
+                            "\"required\": [\"digit\"]"
+                        "}"
+                    "}"
+                "]"
+            "}"
+        "}";
+    
+    re_sdprintf(&json_msg, session_update_template, escaped_prompt);
 
      info("openai_rt: Session update: %s\n", json_msg);
 
