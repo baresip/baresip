@@ -228,8 +228,22 @@ static void handle_openai_function_call(const char *call_id, const char *name, c
     else {
         warning("openai_rt: Unknown function call: %s\n", name);
     }
-
 }
+
+static void handle_speech_started(const char *json_str)
+{
+    (void)json_str;
+
+    DEBUG_INFO("openai_rt: speech.started received, interrupt ongoing audion output\n");
+    // clear the injection buffer
+    mtx_lock(&g_audio.injection_buffer_mutex);
+    g_audio.injection_read_pos = 0;
+    g_audio.injection_write_pos = 0;
+    g_audio.injection_available = 0;
+    mtx_unlock(&g_audio.injection_buffer_mutex);
+    DEBUG_INFO("openai_rt: injection buffer cleared\n");
+}
+
 static void handle_openai_handle_event(const char *json_str)
 {
     /* Parse JSON and ensure it's a valid message */
@@ -263,6 +277,8 @@ static void handle_openai_handle_event(const char *json_str)
         handle_openai_audio_delta(json_str);
     } else if (strcmp(type, "session.updated") == 0) {
         handle_session_updated(json_str);
+    } else if (strcmp(type, "input_audio_buffer.speech_started") == 0) {
+        handle_speech_started(json_str);        
     } else if (strcmp(type, "response.output_item.done") == 0) {
 
         /*
