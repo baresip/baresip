@@ -69,6 +69,7 @@ set(MODULES
   serreg
   snapshot
   sndfile
+  sndfile-rt-start
   sndio
   srtp
   stdio
