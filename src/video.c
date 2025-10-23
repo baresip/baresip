@@ -1584,14 +1584,13 @@ int video_encoder_set(struct video *v, struct vidcodec *vc,
 
 	vtx = &v->vtx;
 
-	if (!vc->encupdh) {
+	if (!vc->encupdh || !vc->ench) {
 		info("video: vidcodec '%s' has no encoder\n", vc->name);
 
 		struct list *vidcodecl = vc->le.list;
 
-		struct vidcodec *vcd =
-			(struct vidcodec *)vidcodec_find_encoder(vidcodecl,
-							       vc->name);
+		struct vidcodec *vcd = (struct vidcodec *)
+			vidcodec_find_encoder(vidcodecl, vc->name);
 		if (!vcd) {
 			warning("video: could not find encoder (%s)\n",
 				vc->name);
@@ -1645,14 +1644,13 @@ int video_decoder_set(struct video *v, struct vidcodec *vc, int pt_rx,
 		return EINVAL;
 
 	/* handle vidcodecs without a decoder */
-	if (!vc->decupdh) {
+	if (!vc->decupdh || !vc->dech) {
 		struct list *vidcodecl = vc->le.list;
-		struct vidcodec *vcd;
 
 		info("video: vidcodec '%s' has no decoder\n", vc->name);
 
-		vcd = (struct vidcodec *)vidcodec_find_decoder(vidcodecl,
-							       vc->name);
+		struct vidcodec *vcd = (struct vidcodec *)
+			vidcodec_find_decoder(vidcodecl, vc->name);
 		if (!vcd) {
 			warning("video: could not find decoder (%s)\n",
 				vc->name);

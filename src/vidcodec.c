@@ -90,7 +90,7 @@ const struct vidcodec *vidcodec_find_encoder(const struct list *vidcodecl,
 		if (name && 0 != str_casecmp(name, vc->name))
 			continue;
 
-		if (vc->ench)
+		if (vc->ench && vc->encupdh)
 			return vc;
 	}
 
@@ -118,7 +118,7 @@ const struct vidcodec *vidcodec_find_decoder(const struct list *vidcodecl,
 		if (name && 0 != str_casecmp(name, vc->name))
 			continue;
 
-		if (vc->dech)
+		if (vc->dech && vc->decupdh)
 			return vc;
 	}
 
