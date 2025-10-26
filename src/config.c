@@ -1119,6 +1119,7 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#module\t\t\t" "opus" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "amr" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "g7221" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" "libg722" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "g722" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "g726" MOD_EXT "\n");
 	(void)re_fprintf(f, "module\t\t\t" "g711" MOD_EXT "\n");

@@ -1,0 +1,49 @@
+# Honour the paths provided by contrib.mk if present
+if(DEFINED G722_INCLUDE_DIR AND NOT LIBG722_INCLUDE_DIR)
+  set(LIBG722_INCLUDE_DIR "${G722_INCLUDE_DIR}")
+endif()
+
+if(DEFINED G722_LIBRARY AND NOT LIBG722_LIBRARY)
+  set(LIBG722_LIBRARY "${G722_LIBRARY}")
+endif()
+
+if(NOT LIBG722_INCLUDE_DIR)
+  find_path(LIBG722_INCLUDE_DIR
+    NAME g722_codec.h
+    HINTS
+      "${LIBG722_INCLUDE_DIRS}"
+      "${LIBG722_HINTS}/include"
+    PATHS /usr/local/include /usr/include
+  )
+endif()
+
+if(NOT LIBG722_LIBRARY)
+  find_library(LIBG722_LIBRARY
+    NAME g722
+    HINTS
+      "${LIBG722_LIBRARY_DIRS}"
+      "${LIBG722_HINTS}/lib"
+    PATHS /usr/local/lib /usr/lib
+  )
+endif()
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(LIBG722 DEFAULT_MSG LIBG722_LIBRARY
+    LIBG722_INCLUDE_DIR)
+
+if(LIBG722_FOUND)
+  set(LIBG722_INCLUDE_DIRS ${LIBG722_INCLUDE_DIR})
+  set(LIBG722_LIBRARIES ${LIBG722_LIBRARY})
+
+  if(NOT TARGET LIBG722::LIBG722)
+    add_library(LIBG722::LIBG722 UNKNOWN IMPORTED)
+    set_target_properties(LIBG722::LIBG722 PROPERTIES
+      IMPORTED_LOCATION "${LIBG722_LIBRARY}"
+      INTERFACE_INCLUDE_DIRECTORIES "${LIBG722_INCLUDE_DIR}")
+  endif()
+else()
+  set(LIBG722_INCLUDE_DIRS)
+  set(LIBG722_LIBRARIES)
+endif()
+
+mark_as_advanced(LIBG722_LIBRARIES LIBG722_INCLUDE_DIRS)

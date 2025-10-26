@@ -32,6 +32,7 @@ set(MODULES
   fakevideo
   g711
   g722
+  libg722
   g7221
   g726
   gst

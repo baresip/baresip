@@ -379,16 +379,21 @@ static int audio_codecs_decode(struct account *acc, const struct pl *prm)
 		while (0 == csl_parse(&acs, cname, sizeof(cname))) {
 			struct aucodec *ac;
 			struct pl pl_cname, pl_srate, pl_ch = PL_INIT;
-			uint32_t srate = 8000;
-			uint8_t ch = 1;
+		uint32_t srate = 8000;
+		uint8_t ch = 1;
 
-			/* Format: "codec/srate/ch" */
+		if (0 == str_casecmp(cname, "libg722"))
+			str_ncpy(cname, "G722", sizeof(cname));
+
+		/* Format: "codec/srate/ch" */
 			if (0 == re_regex(cname, str_len(cname),
 					  "[^/]+/[0-9]+[/]*[0-9]*",
 					  &pl_cname, &pl_srate,
 					  NULL, &pl_ch)) {
 				(void)pl_strcpy(&pl_cname, cname,
 						sizeof(cname));
+				if (0 == str_casecmp(cname, "libg722"))
+					str_ncpy(cname, "G722", sizeof(cname));
 				srate = pl_u32(&pl_srate);
 				if (pl_isset(&pl_ch))
 					ch = pl_u32(&pl_ch);
