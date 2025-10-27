@@ -1,9 +1,9 @@
 project(libg722)
 
 if(G722_MODULE_SELECTED AND
-   NOT G722_MODULE_SELECTED STREQUAL "${PROJECT_NAME}")
+  NOT G722_MODULE_SELECTED STREQUAL "${PROJECT_NAME}")
     message(STATUS "${PROJECT_NAME}: skipping, "
-                   "using ${G722_MODULE_SELECTED} implementation")
+    "using ${G722_MODULE_SELECTED} implementation")
     return()
 endif()
 
