@@ -10,8 +10,6 @@ endif()
 find_package(LIBG722)
 
 if(NOT LIBG722_FOUND)
-  message(WARNING
-      "libg722: libg722 not found - module will not be built")
   return()
 endif()
 
