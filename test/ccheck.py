@@ -218,6 +218,9 @@ class ccheck:
             if '->next' in line:
                 self.listfor_next = True
                 return
+            if '->prev' in line:
+                self.listfor_next = True
+                return
             if not self.listfor_next and 'list_unlink' in line:
                 self.error("Use list_unlink() only after le->next "
                            "(and use a while loop) OR use LIST_FOREACH_SAFE")
