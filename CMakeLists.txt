@@ -211,6 +211,9 @@ set(HEADERS
 
 include(modules)
 
+set(G722_MODULE_SELECTED ""
+    CACHE INTERNAL "Selected G722 implementation" FORCE)
+
 set(MODULES_DETECTED "")
 
 foreach(mod IN LISTS MODULES)

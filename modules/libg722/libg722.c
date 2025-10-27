@@ -9,11 +9,6 @@
 #include <re.h>
 #include <rem_au.h>
 #include <baresip.h>
-
-#ifndef USE_LIBG722
-#error "The libg722 module requires libg722"
-#endif
-
 #include <g722_codec.h>
 
 /* Forward declarations */

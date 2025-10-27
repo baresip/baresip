@@ -1,11 +1,22 @@
 project(libg722)
 
+if(G722_MODULE_SELECTED AND
+   NOT G722_MODULE_SELECTED STREQUAL "${PROJECT_NAME}")
+    message(STATUS "${PROJECT_NAME}: skipping, "
+                   "using ${G722_MODULE_SELECTED} implementation")
+    return()
+endif()
+
 find_package(LIBG722)
 
 if(NOT LIBG722_FOUND)
-  message(WARNING "libg722: libg722 not found - module will not be built")
+  message(WARNING
+      "libg722: libg722 not found - module will not be built")
   return()
 endif()
+
+set(G722_MODULE_SELECTED ${PROJECT_NAME}
+    CACHE INTERNAL "Selected G722 implementation" FORCE)
 
 list(APPEND MODULES_DETECTED ${PROJECT_NAME})
 set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
