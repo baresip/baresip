@@ -107,6 +107,7 @@ module			stdio.so
 #module			opus.so
 #module			amr.so
 #module			g7221.so
+#module			libg722.so
 #module			g722.so
 #module			g726.so
 module			g711.so

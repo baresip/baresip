@@ -115,20 +115,29 @@ jobs:
       if: ${{ runner.os == 'Linux' }}
       run: sudo ldconfig
 
-    - name: make baresip linux
-      if: ${{ runner.os == 'Linux' }}
+    - name: build baresip (g722)
       run: |
-        cmake -B build -DCMAKE_C_FLAGS="-Werror" && cmake --build build -j
+        cmake -B build-g722 -DCMAKE_C_FLAGS="-Werror"
+        cmake --build build-g722 -j
 
-    - name: make baresip macOS
-      if: ${{ runner.os == 'macOS' }}
+    - name: install libg722
       run: |
-        cmake -B build -DCMAKE_C_FLAGS="-Werror" && cmake --build build -j
+        git clone https://github.com/sippy/libg722.git
+        cmake -B libg722/build -S libg722 -DCMAKE_INSTALL_PREFIX="$HOME/libg722/install"
+        cmake --build libg722/build -j
+        ctest --test-dir libg722/build --output-on-failure
+        cmake --install libg722/build
+
+    - name: make baresip (libg722)
+      run: |
+        cmake -B build-libg722 -DCMAKE_C_FLAGS="-Werror" -DLIBG722_HINTS="$HOME/libg722/install"
+        cmake --build build-libg722 -j
 
     - name: baresip static
       run: |
-        rm -Rf build
-        cmake -B build -DSTATIC=1 -DCMAKE_C_FLAGS="-Werror" -DMODULES="g711;ausine;fakevideo;auconv;auresamp;dtls_srtp;srtp;aufile" && cmake --build build -j
+        rm -Rf build-static
+        cmake -B build-static -DSTATIC=1 -DCMAKE_C_FLAGS="-Werror" -DMODULES="g711;ausine;fakevideo;auconv;auresamp;dtls_srtp;srtp;aufile"
+        cmake --build build-static -j
 
     - name: selftest
-      run: ./build/test/selftest
+      run: ./build-static/test/selftest
