@@ -1583,7 +1583,6 @@ int  jbuf_drain(struct jbuf *jb, struct rtp_header *hdr, void **mem);
 void jbuf_flush(struct jbuf *jb);
 int  jbuf_stats(const struct jbuf *jb, struct jbuf_stat *jstat);
 int  jbuf_debug(struct re_printf *pf, const struct jbuf *jb);
-uint32_t jbuf_frames(const struct jbuf *jb);
 uint32_t jbuf_packets(const struct jbuf *jb);
 int32_t jbuf_next_play(const struct jbuf *jb);
 void jbuf_set_next_play_h(struct jbuf *jb, jbuf_next_play_h *p);
