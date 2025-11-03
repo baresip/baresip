@@ -652,7 +652,7 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 		return;
 
 	if (new_source)
-		aurecv_reset_on_source_change(a->aur);
+		aurecv_reset(a->aur);
 
 	aurecv_receive(a->aur, hdr, extv, extc, mb, lostc, ignore);
 }

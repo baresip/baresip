@@ -271,7 +271,7 @@ static int aurecv_stream_decode(struct audio_recv *ar,
 }
 
 
-void aurecv_reset_on_source_change(struct audio_recv *ar)
+void aurecv_reset(struct audio_recv *ar)
 {
 	if (!ar)
 		return;
