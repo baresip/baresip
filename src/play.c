@@ -248,6 +248,10 @@ static int aufile_load(struct mbuf *mb, const char *filename,
 		*channels = prm.channels;
 	}
 
+	if (err)
+		warning("play: could not load %s (%m)\n",
+			filename ? filename : "null", err);
+
 	return err;
 }
 
@@ -302,8 +306,12 @@ int play_tone(struct play **playp, struct player *player,
 	err = auplay_alloc(&play->auplay, baresip_auplayl(),
 			   play_mod, &wprm,
 			   play_dev, write_handler, play);
-	if (err)
+	if (err) {
+		warning("play: could not start auplay %s/%s (%m)\n",
+			play_mod ? play_mod : "-", play_dev ? play_dev : "-",
+			err);
 		goto out;
+       }
 
 	list_append(&player->playl, &play->le, play);
 	tmr_start(&play->tmr, PTIME,  tmr_polling, play);
@@ -332,7 +340,7 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 
 	err = aubuf_write_auframe(play->aubuf, af);
 	if (err)
-		warning("play: aubuf_write: %m \n", err);
+		warning("play: aubuf_write (%m)\n", err);
 }
 
 
@@ -380,7 +388,8 @@ static int start_ausrc(struct play *play)
 			play->filename,
 			ausrc_read_handler, ausrc_error_handler, play);
 	if (err)
-		warning("play: could not start ausrc (%m)\n", err);
+		warning("play: could not start ausrc for %s (%m)\n",
+			play->filename ? play->filename : "-", err);
 
 	return err;
 }
@@ -400,7 +409,9 @@ static int start_auplay(struct play *play)
 			   play->mod, &wprm,
 			   play->dev, aubuf_write_handler, play);
 	if (err)
-		warning("play: could not start auplay (%m)\n", err);
+		warning("play: could not start auplay %s/%s (%m)\n",
+			play->mod ? play->mod : "-",
+			play->dev ? play->dev : "-", err);
 
 	return err;
 }
@@ -602,7 +613,6 @@ int play_file(struct play **playp, struct player *player,
 		play->delay = delay;
 
 	if (err) {
-		warning("play: %s (%m)\n", filename, err);
 		mem_deref(play);
 	}
 	else if (play && playp) {
