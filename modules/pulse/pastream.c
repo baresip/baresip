@@ -204,6 +204,7 @@ int pastream_start(struct pastream_st* st, void *arg)
 		warning("pulse: stream %s unsupported stream "
 			"direction %d\n",
 			st->sname, (int)st->direction);
+		err = EINVAL;
 	}
 
 out:
