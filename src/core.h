@@ -138,6 +138,7 @@ int  aurecv_set_device(struct audio_recv *ar, const char *device);
 void aurecv_receive(struct audio_recv *ar, const struct rtp_header *hdr,
 		    struct rtpext *extv, size_t extc,
 		    struct mbuf *mb, unsigned lostc, bool *ignore);
+void aurecv_reset(struct audio_recv *ar);
 int  aurecv_start_player(struct audio_recv *ar, struct list *auplayl);
 bool aurecv_player_started(const struct audio_recv *ar);
 void aurecv_stop(struct audio_recv *ar);
@@ -310,7 +311,8 @@ enum {STREAM_PRESZ = 4+12}; /* same as RTP_HEADER_SIZE */
 
 typedef void (stream_rtp_h)(const struct rtp_header *hdr,
 			    struct rtpext *extv, size_t extc,
-			    struct mbuf *mb, unsigned lostc, bool *ignore,
+			    struct mbuf *mb, unsigned lostc, bool new_source,
+			    bool *ignore,
 			    void *arg);
 typedef int (stream_pt_h)(uint8_t pt, struct mbuf *mb, void *arg);
 

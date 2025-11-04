@@ -887,12 +887,15 @@ static int stream_pt_handler(uint8_t pt, struct mbuf *mb, void *arg)
 /* Handle incoming stream data from the network */
 static void stream_recv_handler(const struct rtp_header *hdr,
 				struct rtpext *extv, size_t extc,
-				struct mbuf *mb, unsigned lostc, bool *ignore,
+				struct mbuf *mb, unsigned lostc,
+				bool new_source,
+				bool *ignore,
 				void *arg)
 {
 	struct video *v = arg;
 	(void)extv;
 	(void)extc;
+	(void)new_source;
 	(void)ignore;
 
 	MAGIC_CHECK(v);

@@ -4,7 +4,7 @@
  * This is an adaptive jitter buffer implementation. See doc/jbuf for further
  * details!
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 
 #undef RE_TRACE_ENABLED
