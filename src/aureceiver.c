@@ -220,13 +220,10 @@ static int aurecv_stream_decode(struct audio_recv *ar,
 	bool marker = hdr->m;
 	int err = 0;
 	const struct aucodec *ac = ar->ac;
-	bool flush = ar->ssrc != hdr->ssrc;
 
 	/* No decoder set */
 	if (!ac)
 		return 0;
-
-	ar->ssrc = hdr->ssrc;
 
 	/* TODO: PLC */
 	if (lostc && ac->plch) {
@@ -264,9 +261,6 @@ static int aurecv_stream_decode(struct audio_recv *ar,
 		goto out;
 	}
 
-	if (flush)
-		aubuf_flush(ar->aubuf);
-
 	err = aurecv_process_decfilt(ar, &af);
 	if (err)
 		goto out;
@@ -276,6 +270,18 @@ static int aurecv_stream_decode(struct audio_recv *ar,
 	return err;
 }
 
+
+void aurecv_reset(struct audio_recv *ar)
+{
+	if (!ar)
+		return;
+
+	mtx_lock(ar->mtx);
+	ar->ts_recv.is_set = false;
+	ar->ts_recv.num_wraps = 0;
+	aubuf_flush(ar->aubuf);
+	mtx_unlock(ar->mtx);
+}
 
 /* Handle incoming stream data from the network */
 void aurecv_receive(struct audio_recv *ar, const struct rtp_header *hdr,
