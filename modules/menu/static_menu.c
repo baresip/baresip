@@ -596,58 +596,70 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	const struct cmd_arg *carg = arg;
 	struct menu *menu = menu_get();
 	enum sdp_dir adir, vdir;
-	struct pl argdir[2] = {PL_INIT, PL_INIT};
+	struct pl pladir = PL_INIT;
+	struct pl plvdir = PL_INIT;
 	struct pl dname = PL_INIT;
 	struct pl pluri;
 	struct call *call;
 	char *uri = NULL;
 	struct ua *ua = carg->data;
 	int err = 0;
+	bool full = false;
 
 	const char *usage = "usage: /dialdir <address/number>"
-			" audio=<inactive, sendonly, recvonly, sendrecv>"
-			" video=<inactive, sendonly, recvonly, sendrecv>\n"
+			" [audio=<inactive, sendonly, recvonly, sendrecv>]"
+			" [video=<inactive, sendonly, recvonly, sendrecv>]\n"
 			"/dialdir <address/number>"
 			" <sendonly, recvonly, sendrecv>\n"
 			"Audio & video must not be"
 			" inactive at the same time\n";
 
-	/* full form with display name */
-	err = re_regex(carg->prm, str_len(carg->prm),
-		"[~ \t\r\n<]*[ \t\r\n]*<[^>]+>[ \t\r\n]*"
-		"audio=[^ \t\r\n]*[ \t\r\n]*video=[^ \t\r\n]*",
-		&dname, NULL, &pluri, NULL, &argdir[0], NULL, &argdir[1]);
-	if (err) {
-		dname = pl_null;
-		err = re_regex(carg->prm, str_len(carg->prm),
-			       "[^ ]+ audio=[^ ]* video=[^ ]*",
-			       &pluri, &argdir[0], &argdir[1]);
-	}
-
 	/* short form with display name */
+	err = re_regex(carg->prm, str_len(carg->prm),
+		       "[~ \t\r\n<]*[ \t\r\n]*<[^>]+>[ \t\r\n]+"
+		       "[^ =\t\r\n]*",
+		       &dname, NULL, &pluri, NULL, &pladir);
 	if (err) {
+		/* short form without display name */
+		dname = pl_null;
 		err = re_regex(carg->prm, str_len(carg->prm),
-			       "[~ \t\r\n<]*[ \t\r\n]*<[^>]+>[ \t\r\n]+"
-			       "[^ \t\r\n]*",
-			       &dname, NULL, &pluri, NULL, &argdir[0]);
+			       "[^ ]* [^ =]*",&pluri, &pladir);
 	}
 
+	if (!err && (pl_strcmp(&pladir, "sendonly")  ||
+		     pl_strcmp(&pladir, "recvonly")  ||
+		     pl_strcmp(&pladir, "sendrecv"))) {
+		err = EINVAL;
+	}
+
+	plvdir = pladir;
+
+	/* full form with display name */
+	if (err) {
+		full = true;
+		err = re_regex(carg->prm, str_len(carg->prm),
+			       "[~ \t\r\n<]*[ \t\r\n]*<[^>]+>[ \t\r\n]*",
+			       &dname, NULL, &pluri, NULL);
+	}
 	if (err) {
 		dname = pl_null;
 		err = re_regex(carg->prm, str_len(carg->prm),
-			       "[^ ]* [^ ]*",&pluri, &argdir[0]);
+			       "[^ ]+",
+			       &pluri);
 	}
 
-	if (err || !re_regex(argdir[0].p, argdir[0].l, "=")) {
+	if (full && !err) {
+		menu_param_decode(carg->prm, "audio", &pladir);
+		menu_param_decode(carg->prm, "video", &plvdir);
+	}
+
+	if (err) {
 		(void)re_hprintf(pf, "%s", usage);
 		return EINVAL;
 	}
 
-	if (!pl_isset(&argdir[1]))
-		argdir[1] = argdir[0];
-
-	adir = sdp_dir_decode(&argdir[0]);
-	vdir = sdp_dir_decode(&argdir[1]);
+	adir = sdp_dir_decode(&pladir);
+	vdir = sdp_dir_decode(&plvdir);
 
 	if (adir == SDP_INACTIVE && vdir == SDP_INACTIVE) {
 		(void)re_hprintf(pf, "%s", usage);
@@ -682,7 +694,8 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 				auto_answer_method(pf));
 	}
 
-	re_hprintf(pf, "call uri: %s\n", uri);
+	re_hprintf(pf, "call uri: %s audio=%s video=%s\n", uri,
+		   sdp_dir_name(adir), sdp_dir_name(vdir));
 
 	err = ua_connect_dir(ua, &call, NULL, uri, VIDMODE_ON, adir, vdir);
 
