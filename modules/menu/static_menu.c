@@ -604,56 +604,35 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	char *uri = NULL;
 	struct ua *ua = carg->data;
 	int err = 0;
-	bool full = false;
 
 	const char *usage = "usage: /dialdir <address/number>"
-			" [audio=<inactive, sendonly, recvonly, sendrecv>]"
-			" [video=<inactive, sendonly, recvonly, sendrecv>]\n"
-			"/dialdir <address/number>"
-			" <sendonly, recvonly, sendrecv>\n"
+			" [audio=<inactive|sendonly|recvonly|sendrecv>]"
+			" [video=<inactive|sendonly|recvonly|sendrecv>]\n"
 			"Audio & video must not be"
 			" inactive at the same time\n";
 
-	/* short form with display name */
+	/* first try with display name */
 	err = re_regex(carg->prm, str_len(carg->prm),
-		       "[~ \t\r\n<]*[ \t\r\n]*<[^>]+>[ \t\r\n]+"
-		       "[^ =\t\r\n]*",
-		       &dname, NULL, &pluri, NULL, &pladir);
+		       "[~ \t\r\n<]*[ \t\r\n]*<[^>]+>[ \t\r\n]*",
+		       &dname, NULL, &pluri, NULL);
 	if (err) {
-		/* short form without display name */
-		dname = pl_null;
-		err = re_regex(carg->prm, str_len(carg->prm),
-			       "[^ ]* [^ =]*",&pluri, &pladir);
-	}
-
-	if (!err && (pl_strcmp(&pladir, "sendonly")  ||
-		     pl_strcmp(&pladir, "recvonly")  ||
-		     pl_strcmp(&pladir, "sendrecv"))) {
-		err = EINVAL;
-	}
-
-	plvdir = pladir;
-
-	/* full form with display name */
-	if (err) {
-		full = true;
-		err = re_regex(carg->prm, str_len(carg->prm),
-			       "[~ \t\r\n<]*[ \t\r\n]*<[^>]+>[ \t\r\n]*",
-			       &dname, NULL, &pluri, NULL);
-	}
-	if (err) {
+		/* try without display name */
 		dname = pl_null;
 		err = re_regex(carg->prm, str_len(carg->prm),
 			       "[^ ]+",
 			       &pluri);
 	}
 
-	if (full && !err) {
-		menu_param_decode(carg->prm, "audio", &pladir);
-		menu_param_decode(carg->prm, "video", &plvdir);
+	if (err) {
+		(void)re_hprintf(pf, "%s", usage);
+		return EINVAL;
 	}
 
-	if (err) {
+	menu_param_decode(carg->prm, "audio", &pladir);
+	menu_param_decode(carg->prm, "video", &plvdir);
+
+	if (str_len(carg->prm) > pluri.l &&
+	    !pl_isset(&pladir) && !pl_isset(&plvdir)) {
 		(void)re_hprintf(pf, "%s", usage);
 		return EINVAL;
 	}
