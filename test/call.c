@@ -3998,7 +3998,8 @@ int test_call_menu_dialdir(void)
 	TEST_ERR(err);							\
 
 	struct re_printf pf = {print_handler, mb};
-	err = re_sdprintf(&cmd, "dialdir %s", f->buri);
+	err = re_sdprintf(&cmd, "dialdir %s audio=sendrecv video=sendrecv",
+			  f->buri);
 	TEST_ERR(err);
 	err = cmd_process_long(baresip_commands(), cmd, strlen(cmd),
 			       &pf, NULL);
