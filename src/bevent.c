@@ -392,6 +392,8 @@ int odict_encode_bevent(struct odict *od, struct bevent *event)
 		err |= odict_entry_add(od, "accountaor",
 				       ODICT_STRING,
 				       account_aor(ua_account(ua)));
+		err |= odict_entry_add(od, "cuser",
+				       ODICT_STRING, ua_cuser(ua));
 	}
 
 	if (call)
