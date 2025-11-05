@@ -34,6 +34,7 @@ static const struct test tests[] = {
 	TEST(test_call_max),
 	TEST(test_call_mediaenc),
 	TEST(test_call_medianat),
+	TEST(test_call_menu_dialdir),
 	TEST(test_call_multiple),
 	TEST(test_call_progress),
 	TEST(test_call_reject),

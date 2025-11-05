@@ -208,6 +208,7 @@ int test_call_format_float(void);
 int test_call_max(void);
 int test_call_mediaenc(void);
 int test_call_medianat(void);
+int test_call_menu_dialdir(void);
 int test_call_multiple(void);
 int test_call_progress(void);
 int test_call_reject(void);

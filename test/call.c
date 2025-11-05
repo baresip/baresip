@@ -3970,3 +3970,58 @@ int test_call_uag_find_msg(void)
 
 	return err;
 }
+
+
+static int print_handler(const char *p, size_t size, void *arg)
+{
+	struct mbuf *mb = arg;
+
+	return mbuf_write_mem(mb, (uint8_t *)p, size);
+}
+
+
+int test_call_menu_dialdir(void)
+{
+	struct fixture fix, *f = &fix;
+	int err = 0;
+	char *cmd = NULL;
+	struct mbuf *mb = mbuf_alloc(32);
+	if (!mb)
+		err = ENOMEM;
+
+	TEST_ERR(err);
+	fixture_init(f);
+	f->behaviour = BEHAVIOUR_ANSWER;
+
+	conf_config()->call.accept = true;
+	err = module_load(".", "menu");					\
+	TEST_ERR(err);							\
+
+	struct re_printf pf = {print_handler, mb};
+	err = re_sdprintf(&cmd, "dialdir %s", f->buri);
+	TEST_ERR(err);
+	err = cmd_process_long(baresip_commands(), cmd, strlen(cmd),
+			       &pf, NULL);
+	TEST_ERR(err);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(0, fix.a.n_incoming);
+	ASSERT_EQ(1, fix.a.n_established);
+	ASSERT_EQ(0, fix.a.n_closed);
+	ASSERT_EQ(0, fix.a.close_scode);
+
+	ASSERT_EQ(1, fix.b.n_incoming);
+	ASSERT_EQ(1, fix.b.n_established);
+	ASSERT_EQ(0, fix.b.n_closed);
+
+out:
+	mem_deref(cmd);
+	mem_deref(mb);
+	module_unload("menu");
+	fixture_close(f);
+	return err;
+}
