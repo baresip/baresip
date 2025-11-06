@@ -7,7 +7,6 @@
 #include <re.h>
 #include <baresip.h>
 #include "test.h"
-#include "../modules/menu/menu.h"
 #include "string.h"
 
 
