@@ -104,50 +104,33 @@ static int cmd_answer(struct re_printf *pf, void *arg)
 static int cmd_answerdir(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
-	enum sdp_dir adir, vdir;
-	struct pl argdir[2] = {PL_INIT, PL_INIT};
-	struct pl callid = PL_INIT;
 	char *cid = NULL;
 	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	struct call *call;
 	int err = 0;
-	bool ok = false;
 
 	const char *usage = "usage: /acceptdir"
-			" audio=<inactive, sendonly, recvonly, sendrecv>"
-			" video=<inactive, sendonly, recvonly, sendrecv>"
+			" [audio=<inactive,sendonly,recvonly,sendrecv>]"
+			" [video=<inactive,sendonly,recvonly,sendrecv>]"
 			" [callid=id]\n"
-			"/acceptdir <sendonly, recvonly, sendrecv> [id]\n"
+			"/acceptdir [sendonly,recvonly,sendrecv] [id]\n"
 			"Audio & video must not be"
 			" inactive at the same time\n";
 
-	ok |= 0 == menu_param_decode(carg->prm, "audio", &argdir[0]);
-	ok |= 0 == menu_param_decode(carg->prm, "video", &argdir[1]);
-	ok |= 0 == menu_param_decode(carg->prm, "callid", &callid);
-	if (!ok) {
-		ok = 0 == re_regex(carg->prm, str_len(carg->prm),
-			"[^ ]*[ \t\r\n]*[^ ]*", &argdir[0], NULL, &callid);
-	}
+	struct call_params *cp;
+	err = menu_call_params_alloc(&cp);
+	if (err)
+		return err;
 
-	if (!ok) {
-		(void) re_hprintf(pf, "%s", usage);
-		return EINVAL;
-	}
-
-	if (!pl_isset(&argdir[1]))
-		argdir[1] = argdir[0];
-
-	adir = sdp_dir_decode(&argdir[0]);
-	vdir = sdp_dir_decode(&argdir[1]);
-
-	if (adir == SDP_INACTIVE && vdir == SDP_INACTIVE) {
+	err = menu_call_params_decode(cp, carg->prm, pf);
+	if (err) {
 		(void) re_hprintf(pf, "%s", usage);
 		return EINVAL;
 	}
 
 	call = ua_call(ua);
 
-	(void)pl_strdup(&cid, &callid);
+	(void)pl_strdup(&cid, &cp->callid);
 	if (str_isset(cid)) {
 		call = uag_call_find(cid);
 		cid = mem_deref(cid);
@@ -158,9 +141,9 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 		ua = call_get_ua(call);
 	}
 
-	call_set_media_estdir(call, adir, vdir);
+	call_set_media_estdir(call, cp->adir, cp->vdir);
 	if (call_sdp_change_allowed(call))
-		call_set_mdir(call, adir, vdir);
+		call_set_mdir(call, cp->adir, cp->vdir);
 
 	err = answer_call(ua, call);
 	if (err)

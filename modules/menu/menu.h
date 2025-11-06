@@ -85,6 +85,7 @@ int menu_get_call_ua(struct re_printf *pf, const struct cmd_arg *carg,
 struct call *menu_find_call(call_match_h *matchh, const struct call *exclude);
 struct call *menu_find_call_state(enum call_state st);
 
+int menu_call_params_alloc(struct call_params **cparp);
 int menu_call_params_decode(struct call_params *cp, const char *prm,
 			    struct re_printf *pf);
 int menu_decode_dial_params(struct call_params **cparp,
