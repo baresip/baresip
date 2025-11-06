@@ -3351,19 +3351,20 @@ const char *call_user_data(const struct call *call)
  * Set the user data of the call
  *
  * @param call Call object
- * @param user_data User data to be set
+ * @param pl User data to be set
  * @return int
  */
 
-int call_set_user_data(struct call *call, const char *user_data)
+int call_set_user_data(struct call *call, const struct pl *pl)
 {
 	if (!call)
 		return EINVAL;
 
 	call->user_data = mem_deref(call->user_data);
+	if (!pl_isset(pl))
+		return 0;
 
-	int err = str_dup(&call->user_data, user_data);
-
+	int err = pl_strdup(&call->user_data, pl);
 	if (err)
 		return err;
 

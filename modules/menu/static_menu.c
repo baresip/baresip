@@ -572,15 +572,10 @@ static int dial_handler(struct re_printf *pf, void *arg)
 		goto out;
 	}
 
-	const char ud_sentinel[] = "userdata=";
-	char *ud_pos = NULL;
-	if (carg->prm != NULL)
-		ud_pos = strstr(carg->prm, ud_sentinel);
-	char *user_data = NULL;
-	if (ud_pos != NULL) {
-		user_data = ud_pos + strlen(ud_sentinel);
-		call_set_user_data(call, user_data);
-	}
+	struct pl pl = PL_INIT;
+	menu_param_decode(carg->prm, "userdata", &pl);
+	if (pl_isset(&pl))
+		call_set_user_data(call, &pl);
 
 	re_hprintf(pf, "call id: %s\n", call_id(call));
 
@@ -607,7 +602,8 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 
 	const char *usage = "usage: /dialdir <address/number>"
 			" [audio=<inactive|sendonly|recvonly|sendrecv>]"
-			" [video=<inactive|sendonly|recvonly|sendrecv>]\n"
+			" [video=<inactive|sendonly|recvonly|sendrecv>]"
+			" [userdata=<string>]\n"
 			"Audio & video must not be"
 			" inactive at the same time\n";
 
@@ -683,13 +679,10 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	if (err)
 		goto out;
 
-	const char ud_sentinel[] = "userdata=";
-	char *ud_pos = strstr(carg->prm, ud_sentinel);
-	char *user_data = NULL;
-	if (ud_pos != NULL) {
-		user_data = ud_pos + strlen(ud_sentinel);
-		call_set_user_data(call, user_data);
-	}
+	struct pl pl = PL_INIT;
+	menu_param_decode(carg->prm, "userdata", &pl);
+	if (pl_isset(&pl))
+		call_set_user_data(call, &pl);
 
 	re_hprintf(pf, "call id: %s\n", call_id(call));
 

@@ -283,7 +283,7 @@ void call_get_media_estdir(struct call *call,
 void call_start_answtmr(struct call *call, uint32_t ms);
 bool          call_supported(struct call *call, uint16_t tags);
 const char   *call_user_data(const struct call *call);
-int call_set_user_data(struct call *call, const char *user_data);
+int call_set_user_data(struct call *call, const struct pl *pl);
 int call_msg_src(const struct call *call, struct sa *sa);
 enum sip_transp call_transp(const struct call *call);
 enum sdp_neg_state call_sdp_neg_state(const struct call *call);

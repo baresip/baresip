@@ -282,7 +282,9 @@ static int attended_xfer(struct re_printf *pf, void *arg)
 	if (err)
 		goto out;
 
-	call_set_user_data(menu->xfer_targ, call_user_data(menu->xfer_call));
+	struct pl pl  = PL_INIT;
+	pl_set_str(&pl, call_user_data(menu->xfer_call));
+	call_set_user_data(menu->xfer_targ, &pl);
  out:
 	return err;
 
