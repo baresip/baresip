@@ -19,6 +19,7 @@ add_executable(${PROJECT_NAME}
   menu.c
   message.c
   net.c
+  parse.c
   play.c
   stunuri.c
   ua.c
