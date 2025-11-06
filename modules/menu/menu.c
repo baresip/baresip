@@ -1373,18 +1373,36 @@ const struct mod_export DECL_EXPORTS(menu) = {
 };
 
 
+static int menu_check_mdir(struct pl *pl)
+{
+	if (!pl_strcmp(pl, "sendrecv"))
+		return 0;
+
+	if (!pl_strcmp(pl, "sendonly"))
+		return 0;
+
+	if (!pl_strcmp(pl, "recvonly"))
+		return 0;
+
+	if (!pl_strcmp(pl, "inactive"))
+		return 0;
+
+	return EINVAL;
+}
+
+
 static int menu_decode_media_dir(struct pl *pl, enum sdp_dir *dirp,
 				 struct re_printf *pf)
 {
 	if (!pl_isset(pl))
 		return 0;
 
-	enum sdp_dir dir = sdp_dir_decode(pl);
-	if (dir == SDP_SENDRECV && pl_strcmp(pl, "sendrecv") != 0) {
+	if (menu_check_mdir(pl)) {
 		re_hprintf(pf, "unknown audio/video direction '%r'\n", pl);
 		return EINVAL;
 	}
 
+	enum sdp_dir dir = sdp_dir_decode(pl);
 	*dirp = dir;
 	return 0;
 }
@@ -1394,7 +1412,8 @@ int menu_call_params_decode(struct call_params *cp, const char *prm,
 			    struct re_printf *pf)
 {
 	bool set;
-	int err;
+	bool one = false;
+	int err = 0;
 
 	/* audio/video direction */
 	struct pl pla = PL_INIT;
@@ -1415,14 +1434,23 @@ int menu_call_params_decode(struct call_params *cp, const char *prm,
 	}
 
 	if (!set) {
-		/* only audio direction */
+		/* only one argument */
 		pl_set_str(&pla, prm);
-		set = pl_isset(&pla);
-		plv = pla;
+		one = pl_isset(&pla);
 	}
 
-	if (!set)
-		return 0;
+	if (one) {
+		err  = menu_check_mdir(&pla);
+		if (err)
+			cp->callid = pla;
+		else
+			plv = pla;
+	}
+	else {
+		cp->adir = SDP_SENDRECV;
+		cp->vdir = SDP_SENDRECV;
+		goto out;
+	}
 
 	err  = menu_decode_media_dir(&pla, &cp->adir, pf);
 	err |= menu_decode_media_dir(&plv, &cp->vdir, pf);
