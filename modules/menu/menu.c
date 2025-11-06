@@ -1393,16 +1393,39 @@ static int menu_decode_media_dir(struct pl *pl, enum sdp_dir *dirp,
 int menu_call_params_decode(struct call_params *cp, const char *prm,
 			    struct re_printf *pf)
 {
+	bool set;
 	int err;
 
 	/* audio/video direction */
-	struct pl pl = PL_INIT;
+	struct pl pla = PL_INIT;
+	struct pl plv = PL_INIT;
 
-	menu_param_decode(prm, "audio", &pl);
-	err  = menu_decode_media_dir(&pl, &cp->adir, pf);
+	if (!cp)
+		return EINVAL;
 
-	menu_param_decode(prm, "video", &pl);
-	err |= menu_decode_media_dir(&pl, &cp->vdir, pf);
+	/* long form */
+	set  = menu_param_decode(prm, "audio", &pla) == 0;
+	set |= menu_param_decode(prm, "video", &plv) == 0;
+	set |= menu_param_decode(prm, "callid", &cp->callid) == 0;
+	if (!set) {
+		/* short form */
+		set = re_regex(prm, str_len(prm),
+			"[^ ]*[ \t\r\n]*[^ ]*", &pla, NULL, &cp->callid);
+		plv = pla;
+	}
+
+	if (!set) {
+		/* only audio direction */
+		pl_set_str(&pla, prm);
+		set = pl_isset(&pla);
+		plv = pla;
+	}
+
+	if (!set)
+		return 0;
+
+	err  = menu_decode_media_dir(&pla, &cp->adir, pf);
+	err |= menu_decode_media_dir(&plv, &cp->vdir, pf);
 	if (err)
 		goto out;
 
@@ -1420,6 +1443,19 @@ static void call_params_destructor(void *arg)
 	struct call_params *cp = arg;
 
 	mem_deref(cp->req_uri);
+}
+
+
+int menu_call_params_alloc(struct call_params **cparp)
+{
+	struct call_params *cp;
+
+	cp = mem_zalloc(sizeof(*cp), call_params_destructor);
+	if (!cp)
+		return ENOMEM;
+
+	*cparp = cp;
+	return 0;
 }
 
 
