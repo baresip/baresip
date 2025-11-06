@@ -1371,3 +1371,117 @@ const struct mod_export DECL_EXPORTS(menu) = {
 	module_init,
 	module_close
 };
+
+
+static int menu_decode_media_dir(struct pl *pl, enum sdp_dir *dirp,
+				 struct re_printf *pf)
+{
+	if (!pl_isset(pl))
+		return 0;
+
+	enum sdp_dir dir = sdp_dir_decode(pl);
+	if (dir == SDP_SENDRECV && pl_strcmp(pl, "sendrecv") != 0) {
+		re_hprintf(pf, "unknown audio/video direction '%r'\n", pl);
+		return EINVAL;
+	}
+
+	*dirp = dir;
+	return 0;
+}
+
+
+int menu_call_params_decode(struct call_params *cp, const char *prm,
+			    struct re_printf *pf)
+{
+	int err;
+
+	/* audio/video direction */
+	struct pl pl = PL_INIT;
+
+	menu_param_decode(prm, "audio", &pl);
+	err  = menu_decode_media_dir(&pl, &cp->adir, pf);
+
+	menu_param_decode(prm, "video", &pl);
+	err |= menu_decode_media_dir(&pl, &cp->vdir, pf);
+	if (err)
+		goto out;
+
+	if (cp->adir == SDP_INACTIVE && cp->vdir == SDP_INACTIVE) {
+		re_hprintf(pf, "both media directions inactive\n");
+		err = EINVAL;
+	}
+out:
+	return err;
+}
+
+
+static void call_params_destructor(void *arg)
+{
+	struct call_params *cp = arg;
+
+	mem_deref(cp->req_uri);
+}
+
+
+int menu_decode_dial_params(struct call_params **cparp,
+			    const struct cmd_arg *carg, struct re_printf *pf)
+{
+	struct call_params *cp;
+	const char *prm = carg->prm;
+	int err;
+
+	cp = mem_zalloc(sizeof(*cp), call_params_destructor);
+	if (cp)
+		return ENOMEM;
+
+	/* with display name */
+	err = re_regex(prm, str_len(prm),
+		       "[~ \t\r\n<]*[ \t\r\n]*<[^>]+>[ \t\r\n]*",
+		       &cp->dname, NULL, &cp->uri, NULL);
+	if (err) {
+		/* without display name */
+		err = re_regex(prm, str_len(prm), "[^ ]+", &cp->uri);
+	}
+
+	if (err) {
+		re_hprintf(pf, "dial URI missing\n");
+		goto out;
+	}
+
+	err = menu_call_params_decode(cp, cp->uri.p + cp->uri.l, pf);
+	if (err)
+		goto out;
+
+	cp->ua = carg->data;
+	if (!cp->ua)
+		cp->ua = uag_find_requri_pl(&cp->uri);
+
+	if (!cp->ua) {
+		re_hprintf(pf, "no User-Agent found for request URI %r\n",
+			   &cp->uri);
+		err = EINVAL;
+		goto out;
+	}
+
+	if (pl_isset(&cp->dname)) {
+		err = re_sdprintf(&cp->req_uri, "\"%r\" <%r>",
+				  &cp->dname, &cp->uri);
+	}
+	else {
+		err = account_uri_complete_strdup(ua_account(cp->ua),
+						  &cp->req_uri, &cp->uri);
+	}
+
+	if (err) {
+		(void)re_hprintf(pf, "failed to complete dial uri\n");
+		goto out;
+	}
+
+out:
+	if (err)
+		mem_deref(cp);
+	else
+		*cparp = cp;
+
+	return err;
+}

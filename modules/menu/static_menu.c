@@ -590,14 +590,6 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 	struct menu *menu = menu_get();
-	enum sdp_dir adir, vdir;
-	struct pl pladir = PL_INIT;
-	struct pl plvdir = PL_INIT;
-	struct pl dname = PL_INIT;
-	struct pl pluri;
-	struct call *call;
-	char *uri = NULL;
-	struct ua *ua = carg->data;
 	int err = 0;
 
 	const char *usage = "usage: /dialdir <address/number>"
@@ -607,77 +599,31 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 			"Audio & video must not be"
 			" inactive at the same time\n";
 
-	/* first try with display name */
-	err = re_regex(carg->prm, str_len(carg->prm),
-		       "[~ \t\r\n<]*[ \t\r\n]*<[^>]+>[ \t\r\n]*",
-		       &dname, NULL, &pluri, NULL);
-	if (err) {
-		/* try without display name */
-		dname = pl_null;
-		err = re_regex(carg->prm, str_len(carg->prm),
-			       "[^ ]+",
-			       &pluri);
-	}
-
+	struct call_params *cp;
+	err = menu_decode_dial_params(&cp, carg, pf);
 	if (err) {
 		(void)re_hprintf(pf, "%s", usage);
 		return EINVAL;
-	}
-
-	menu_param_decode(carg->prm, "audio", &pladir);
-	menu_param_decode(carg->prm, "video", &plvdir);
-
-	if (str_len(carg->prm) > pluri.l &&
-	    !pl_isset(&pladir) && !pl_isset(&plvdir)) {
-		(void)re_hprintf(pf, "%s", usage);
-		return EINVAL;
-	}
-
-	adir = sdp_dir_decode(&pladir);
-	vdir = sdp_dir_decode(&plvdir);
-
-	if (adir == SDP_INACTIVE && vdir == SDP_INACTIVE) {
-		(void)re_hprintf(pf, "%s", usage);
-		return EINVAL;
-	}
-
-	if (!ua)
-		ua = uag_find_requri_pl(&pluri);
-
-	if (!ua) {
-		(void)re_hprintf(pf, "could not find UA for %s\n", carg->prm);
-		err = EINVAL;
-		goto out;
-	}
-
-	if (pl_isset(&dname)) {
-		err = re_sdprintf(&uri, "\"%r\" <%r>", &dname, &pluri);
-	}
-	else {
-		err = account_uri_complete_strdup(ua_account(ua), &uri,
-						  &pluri);
-	}
-
-	if (err) {
-		(void)re_hprintf(pf, "ua_connect failed to complete uri\n");
-		goto out;
 	}
 
 	if (menu->adelay >= 0) {
-		ua_set_autoanswer_value(ua, menu->ansval);
-		(void)ua_enable_autoanswer(ua, menu->adelay,
+		ua_set_autoanswer_value(cp->ua, menu->ansval);
+		(void)ua_enable_autoanswer(cp->ua, menu->adelay,
 				auto_answer_method(pf));
 	}
 
-	re_hprintf(pf, "call uri: %s audio=%s video=%s\n", uri,
-		   sdp_dir_name(adir), sdp_dir_name(vdir));
+	re_hprintf(pf, "call uri: %s\n", cp->req_uri);
 
-	err = ua_connect_dir(ua, &call, NULL, uri, VIDMODE_ON, adir, vdir);
+	struct call *call;
+	err = ua_connect_dir(cp->ua, &call, NULL, cp->req_uri,
+			     VIDMODE_ON, cp->adir, cp->vdir);
 
 	if (menu->adelay >= 0)
-		(void)ua_disable_autoanswer(ua, auto_answer_method(pf));
-	if (err)
+		(void)ua_disable_autoanswer(cp->ua, auto_answer_method(pf));
+	if (err) {
+		re_hprintf(pf, "call failed (%m)\n", err);
 		goto out;
+	}
 
 	struct pl pl = PL_INIT;
 	menu_param_decode(carg->prm, "userdata", &pl);
@@ -687,7 +633,7 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	re_hprintf(pf, "call id: %s\n", call_id(call));
 
  out:
-	mem_deref(uri);
+	mem_deref(cp);
 
 	return err;
 }
