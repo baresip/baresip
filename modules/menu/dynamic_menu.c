@@ -347,52 +347,35 @@ static int set_media_ldir(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 	struct call *call = menu_callcur();
-	struct pl argdir[2] = {PL_INIT, PL_INIT};
-	enum sdp_dir adir, vdir;
-	struct pl callid = PL_INIT;
 	char *cid = NULL;
-	bool ok = false;
+	int err = 0;
 
 	const char *usage = "usage: /medialdir"
-			" audio=<inactive, sendonly, recvonly, sendrecv>"
-			" video=<inactive, sendonly, recvonly, sendrecv>"
+			" [audio=<inactive, sendonly, recvonly, sendrecv>]"
+			" [video=<inactive, sendonly, recvonly, sendrecv>]"
 			" [callid=id]\n"
 			"/medialdir <sendonly, recvonly, sendrecv> [id]\n"
 			"Audio & video must not be"
 			" inactive at the same time\n";
 
-	ok |= 0 == menu_param_decode(carg->prm, "audio", &argdir[0]);
-	ok |= 0 == menu_param_decode(carg->prm, "video", &argdir[1]);
-	ok |= 0 == menu_param_decode(carg->prm, "callid", &callid);
-	if (!ok) {
-		ok = 0 == re_regex(carg->prm, str_len(carg->prm),
-			"[^ ]*[ \t\r\n]*[^ ]*", &argdir[0], NULL, &callid);
-	}
-
-	if (!ok) {
+	struct call_cmd_prm *cp;
+	err = call_cmd_prm_decode(&cp, carg->prm, pf);
+	if (err || !cp->mdir) {
 		(void) re_hprintf(pf, "%s", usage);
 		return EINVAL;
 	}
 
-	if (!pl_isset(&argdir[1]))
-		argdir[1] = argdir[0];
-
-	adir = sdp_dir_decode(&argdir[0]);
-	vdir = sdp_dir_decode(&argdir[1]);
-	if (adir == SDP_INACTIVE && vdir == SDP_INACTIVE) {
-		(void) re_hprintf(pf, "%s", usage);
-		return EINVAL;
-	}
-
-	(void)pl_strdup(&cid, &callid);
+	(void)pl_strdup(&cid, &cp->callid);
 	if (str_isset(cid))
 		call = uag_call_find(cid);
 
-	cid = mem_deref(cid);
+	mem_deref(cid);
 	if (!call)
-		return EINVAL;
+		goto out;
 
-	call_set_media_direction(call, adir, vdir);
+	call_set_media_direction(call, cp->adir, cp->vdir);
+out:
+	mem_deref(cp);
 	return 0;
 }
 

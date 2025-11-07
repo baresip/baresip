@@ -289,6 +289,44 @@ enum sip_transp call_transp(const struct call *call);
 enum sdp_neg_state call_sdp_neg_state(const struct call *call);
 bool call_sdp_change_allowed(const struct call *call);
 
+/**
+ * Command parse helpers
+ */
+
+int cmd_prm_decode(const char *prm, const char *name, struct pl *val);
+
+struct media_dirs {
+	enum sdp_dir a;
+	enum sdp_dir v;
+};
+
+int media_dirs_decode(const char *prm, struct media_dirs *mdir,
+		      struct re_printf *pf);
+
+
+/** UA command parameters */
+struct ua_cmd_prm {
+	struct pl dname;              /**< Display name                   */
+	struct pl uri;	              /**< SIP URI                        */
+	enum sdp_dir adir;	      /**< Audio direction                */
+	enum sdp_dir vdir;	      /**< Video direction                */
+	struct pl userdata;	      /**< User data                      */
+};
+
+int ua_cmd_prm_decode(struct ua_cmd_prm **prmp,
+		      const char *prm, struct re_printf *pf);
+
+/** Call command parameters */
+struct call_cmd_prm {
+	struct pl callid;             /**< Call-ID                        */
+	enum sdp_dir adir;	      /**< Audio direction                */
+	enum sdp_dir vdir;	      /**< Video direction                */
+	bool mdir;		      /**< Media direction flag           */
+};
+
+int call_cmd_prm_decode(struct call_cmd_prm **prmp,
+			const char *prm, struct re_printf *pf);
+
 /*
  * Custom headers
  */
