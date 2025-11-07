@@ -40,19 +40,6 @@ struct menu{
 	bool message_tone;            /**< Play tone for SIP MESSAGE      */
 };
 
-struct call_params {
-	struct ua *ua;	              /**< User-Agent                     */
-	struct pl callid;             /**< Call-ID                        */
-	struct pl dname;              /**< Display name                   */
-	struct pl uri;	              /**< SIP URI                        */
-	enum sdp_dir adir;	      /**< Audio media direction          */
-	enum sdp_dir vdir;	      /**< Video media direction          */
-	struct pl from;		      /**< From URI                       */
-	struct pl userdata;	      /**< User data                      */
-
-	char *req_uri;	              /**< Request URI                    */
-};
-
 /*Get menu object*/
 struct menu *menu_get(void);
 
@@ -79,14 +66,7 @@ void dial_menu_unregister(void);
 
 /* Generic menu functions */
 void menu_update_callstatus(bool incall);
-int  menu_param_decode(const char *prm, const char *name, struct pl *val);
 int menu_get_call_ua(struct re_printf *pf, const struct cmd_arg *carg,
 		     struct ua **uap, struct call **callp);
 struct call *menu_find_call(call_match_h *matchh, const struct call *exclude);
 struct call *menu_find_call_state(enum call_state st);
-
-int menu_call_params_alloc(struct call_params **cparp);
-int menu_call_params_decode(struct call_params *cp, const char *prm,
-			    struct re_printf *pf);
-int menu_decode_dial_params(struct call_params **cparp,
-			    const struct cmd_arg *carg, struct re_printf *pf);
