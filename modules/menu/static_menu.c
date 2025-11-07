@@ -577,6 +577,8 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 			" [audio=<inactive|sendonly|recvonly|sendrecv>]"
 			" [video=<inactive|sendonly|recvonly|sendrecv>]"
 			" [userdata=<string>]\n"
+			"/dialdir <address/number>"
+			" [sendonly|recvonly|sendrecv]\n"
 			"Audio & video must not be"
 			" inactive at the same time\n";
 
