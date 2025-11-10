@@ -613,7 +613,6 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 		goto out;
 	}
 
-
 	if (menu->adelay >= 0) {
 		ua_set_autoanswer_value(ua, menu->ansval);
 		(void)ua_enable_autoanswer(ua, menu->adelay,
@@ -628,6 +627,7 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 
 	if (menu->adelay >= 0)
 		(void)ua_disable_autoanswer(ua, auto_answer_method(pf));
+
 	if (err) {
 		re_hprintf(pf, "call failed (%m)\n", err);
 		goto out;

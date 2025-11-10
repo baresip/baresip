@@ -303,14 +303,13 @@ struct media_dirs {
 int media_dirs_decode(const char *prm, struct media_dirs *mdir,
 		      struct re_printf *pf);
 
-
 /** UA command parameters */
 struct ua_cmd_prm {
 	struct pl dname;              /**< Display name                   */
 	struct pl uri;	              /**< SIP URI                        */
-	enum sdp_dir adir;	      /**< Audio direction                */
-	enum sdp_dir vdir;	      /**< Video direction                */
-	struct pl userdata;	      /**< User data                      */
+	enum sdp_dir adir;            /**< Audio direction                */
+	enum sdp_dir vdir;            /**< Video direction                */
+	struct pl userdata;           /**< User data                      */
 };
 
 int ua_cmd_prm_decode(struct ua_cmd_prm **prmp,
@@ -319,9 +318,9 @@ int ua_cmd_prm_decode(struct ua_cmd_prm **prmp,
 /** Call command parameters */
 struct call_cmd_prm {
 	struct pl callid;             /**< Call-ID                        */
-	enum sdp_dir adir;	      /**< Audio direction                */
-	enum sdp_dir vdir;	      /**< Video direction                */
-	bool mdir;		      /**< Media direction flag           */
+	enum sdp_dir adir;            /**< Audio direction                */
+	enum sdp_dir vdir;            /**< Video direction                */
+	bool mdir;                    /**< Media direction flag           */
 };
 
 int call_cmd_prm_decode(struct call_cmd_prm **prmp,
