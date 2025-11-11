@@ -295,14 +295,6 @@ bool call_sdp_change_allowed(const struct call *call);
 
 int cmd_prm_decode(const char *prm, const char *name, struct pl *val);
 
-struct media_dirs {
-	enum sdp_dir a;
-	enum sdp_dir v;
-};
-
-int media_dirs_decode(const char *prm, struct media_dirs *mdir,
-		      struct re_printf *pf);
-
 /** UA command parameters */
 struct ua_cmd_prm {
 	struct pl dname;              /**< Display name                   */
