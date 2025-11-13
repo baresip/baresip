@@ -955,6 +955,7 @@ enum ua_event {
 	UA_EVENT_AUDIO_LATENCY_OUTGOING, /**< click detection on encoder side*/
 
 	UA_EVENT_MAX,
+	UA_EVENT_SUB_NOTIFY,
 };
 
 /* Define function pointer for event callback */
@@ -1043,6 +1044,7 @@ int  ua_set_custom_hdrs(struct ua *ua, struct list *custom_hdrs);
 int  ua_add_custom_hdr(struct ua *ua, const struct pl *name,
 		       const struct pl *value);
 int  ua_rm_custom_hdr(struct ua *ua, struct pl *name);
+struct list    *ua_custom_hdrs(const struct ua *ua);
 int  ua_enable_autoanswer(struct ua *ua, int32_t adelay,
 		enum answer_method met);
 int  ua_disable_autoanswer(struct ua *ua, enum answer_method met);

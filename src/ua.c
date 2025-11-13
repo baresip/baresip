@@ -2205,6 +2205,10 @@ int ua_set_custom_hdrs(struct ua *ua, struct list *custom_headers)
 	return 0;
 }
 
+struct list *ua_custom_hdrs(const struct ua *ua)
+{
+	return ua ? (struct list *)&ua->custom_hdrs : NULL;
+}
 
 /**
  * Enables SIP auto answer with given method and answer delay in seconds.

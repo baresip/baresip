@@ -152,6 +152,8 @@ static const char *ua_event_class_name(enum ua_event ev)
 	case UA_EVENT_AUDIO_LATENCY_INCOMING:
 	case UA_EVENT_AUDIO_LATENCY_OUTGOING:
 
+	case UA_EVENT_SUB_NOTIFY:
+
 	default:
 		return "other";
 	}
@@ -1098,6 +1100,7 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_OPENAI_RESPONSE:      return "OPENAI_RESPONSE";
 	case UA_EVENT_AUDIO_LATENCY_INCOMING:  return "AUDIO_LATENCY_INCOMING";
 	case UA_EVENT_AUDIO_LATENCY_OUTGOING:  return "AUDIO_LATENCY_OUTGOING";
+	case UA_EVENT_SUB_NOTIFY:			return "NOTIFY";
 	default: return "?";
 	}
 }

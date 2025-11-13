@@ -74,6 +74,7 @@ set(MODULES
   srtp
   stdio
   stun
+  subscribe
   swscale
   syslog
   turn
