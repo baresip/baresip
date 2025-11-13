@@ -55,6 +55,8 @@ struct account {
 	enum answermode answermode;  /**< Answermode for incoming calls      */
 	bool autoredirect;           /**< Autoredirect on 3xx reply on/off   */
 	int32_t adelay;              /**< Delay for delayed auto answer [ms] */
+	int32_t rcode;              /**< Reject code */
+	char *rreason;              /**< Reject reason */
 	enum dtmfmode dtmfmode;      /**< Send type for DTMF tones           */
 	enum inreq_mode inreq_mode;  /**< Incoming request mode              */
 	struct le acv[16];           /**< List elements for aucodecl         */

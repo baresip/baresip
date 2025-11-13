@@ -187,6 +187,9 @@ static int cmd_set_answermode(struct re_printf *pf, void *arg)
 	else if (0 == str_cmp(carg->prm, "auto")) {
 		mode = ANSWERMODE_AUTO;
 	}
+	else if (0 == str_cmp(carg->prm, "reject")) {
+		mode = ANSWERMODE_REJECT;
+	}
 	else {
 		(void)re_hprintf(pf, "Invalid answer mode: %s\n", carg->prm);
 		return EINVAL;

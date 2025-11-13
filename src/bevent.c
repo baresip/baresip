@@ -109,6 +109,7 @@ static const char *ua_event_class_name(enum ua_event ev)
 	case UA_EVENT_CALL_ANSWERED:
 	case UA_EVENT_CALL_ESTABLISHED:
 	case UA_EVENT_CALL_CLOSED:
+	case UA_EVENT_CALL_REJECTED:
 	case UA_EVENT_CALL_TRANSFER:
 	case UA_EVENT_CALL_TRANSFER_FAILED:
 	case UA_EVENT_CALL_REDIRECT:
@@ -1039,6 +1040,7 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_CALL_ANSWERED:        return "CALL_ANSWERED";
 	case UA_EVENT_CALL_ESTABLISHED:     return "CALL_ESTABLISHED";
 	case UA_EVENT_CALL_CLOSED:          return "CALL_CLOSED";
+	case UA_EVENT_CALL_REJECTED:        return "CALL_REJECTED";
 	case UA_EVENT_CALL_TRANSFER:        return "TRANSFER";
 	case UA_EVENT_CALL_TRANSFER_FAILED: return "TRANSFER_FAILED";
 	case UA_EVENT_CALL_REDIRECT:        return "CALL_REDIRECT";

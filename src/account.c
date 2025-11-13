@@ -48,6 +48,8 @@ static void destructor(void *arg)
 	mem_deref(acc->extra);
 	mem_deref(acc->uas_user);
 	mem_deref(acc->uas_pass);
+	mem_deref(acc->rcode);
+	mem_deref(acc->rreason);
 }
 
 
@@ -223,6 +225,7 @@ static int decode_pair(char **val1, char **val2,
 static void answermode_decode(struct account *prm, const struct pl *pl)
 {
 	struct pl amode, adelay;
+	struct pl rcode, rreason;
 
 	prm->answermode = ANSWERMODE_MANUAL;
 
@@ -243,6 +246,9 @@ static void answermode_decode(struct account *prm, const struct pl *pl)
 		else if (0 == pl_strcasecmp(&amode, "auto")) {
 			prm->answermode = ANSWERMODE_AUTO;
 		}
+		else if (0 == pl_strcasecmp(&amode, "reject")) {
+			prm->answermode = ANSWERMODE_REJECT;
+		}
 		else {
 			warning("account: answermode unknown (%r)\n", &amode);
 		}
@@ -250,6 +256,12 @@ static void answermode_decode(struct account *prm, const struct pl *pl)
 
 	if (0 == msg_param_decode(pl, "answerdelay", &adelay))
 		prm->adelay = pl_u32(&adelay);
+
+	if (0 == msg_param_decode(pl, "rejectcode", &rcode))
+		prm->rcode = pl_u32(&rcode);
+
+	if (0 == msg_param_decode(pl, "rejectreason", &rreason))
+		(void)pl_strdup(&prm->rreason, &rreason);
 }
 
 
@@ -1352,7 +1364,7 @@ int account_set_answermode(struct account *acc, enum answermode mode)
 
 	if ((mode != ANSWERMODE_MANUAL) && (mode != ANSWERMODE_EARLY) &&
 	    (mode != ANSWERMODE_AUTO) && (mode != ANSWERMODE_EARLY_VIDEO) &&
-	    (mode != ANSWERMODE_EARLY_AUDIO)) {
+	    (mode != ANSWERMODE_EARLY_AUDIO) && (mode != ANSWERMODE_REJECT)) {
 		warning("account: invalid answermode : `%d'\n", mode);
 		return EINVAL;
 	}
@@ -1731,6 +1743,7 @@ static const char *answermode_str(enum answermode mode)
 	case ANSWERMODE_MANUAL:       return "manual";
 	case ANSWERMODE_EARLY:        return "early";
 	case ANSWERMODE_AUTO:         return "auto";
+	case ANSWERMODE_REJECT:       return "reject";
 	case ANSWERMODE_EARLY_AUDIO:  return "early-audio";
 	case ANSWERMODE_EARLY_VIDEO:  return "early-video";
 	default: return "???";
