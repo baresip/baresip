@@ -179,6 +179,7 @@ set(SRCS
   src/mnat.c
   src/module.c
   src/net.c
+  src/parse.c
   src/peerconn.c
   src/play.c
   src/reg.c

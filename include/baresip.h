@@ -281,12 +281,41 @@ void call_get_media_estdir(struct call *call,
 			   enum sdp_dir *ap, enum sdp_dir *vp);
 void call_start_answtmr(struct call *call, uint32_t ms);
 bool          call_supported(struct call *call, uint16_t tags);
-const char   *call_user_data(const struct call *call);
-int call_set_user_data(struct call *call, const char *user_data);
+const struct pl *call_user_data(const struct call *call);
+int call_set_user_data(struct call *call, const struct pl *user_data);
 int call_msg_src(const struct call *call, struct sa *sa);
 enum sip_transp call_transp(const struct call *call);
 enum sdp_neg_state call_sdp_neg_state(const struct call *call);
 bool call_sdp_change_allowed(const struct call *call);
+
+/**
+ * Command parse helpers
+ */
+
+int cmd_prm_decode(const char *prm, const char *name, struct pl *val);
+
+/** UA command parameters */
+struct ua_cmd_prm {
+	struct pl dname;              /**< Display name                   */
+	struct pl uri;	              /**< SIP URI                        */
+	enum sdp_dir adir;            /**< Audio direction                */
+	enum sdp_dir vdir;            /**< Video direction                */
+	struct pl userdata;           /**< User data                      */
+};
+
+int ua_cmd_prm_decode(struct ua_cmd_prm **prmp,
+		      const char *prm, struct re_printf *pf);
+
+/** Call command parameters */
+struct call_cmd_prm {
+	struct pl callid;             /**< Call-ID                        */
+	enum sdp_dir adir;            /**< Audio direction                */
+	enum sdp_dir vdir;            /**< Video direction                */
+	bool mdir;                    /**< Media direction flag           */
+};
+
+int call_cmd_prm_decode(struct call_cmd_prm **prmp,
+			const char *prm, struct re_printf *pf);
 
 /*
  * Custom headers
