@@ -344,11 +344,8 @@ static int odict_encode_call(struct odict *od, struct call *call)
 		err |= odict_entry_add(od, "diverteruri", ODICT_STRING,
 				       call_diverteruri(call));
 
-	const char *user_data = call_user_data(call);
-	if (user_data) {
-		err |= odict_entry_add(od, "userdata", ODICT_STRING,
-				       user_data);
-	}
+	if (pl_isset(call_user_data(call)))
+		err |= odict_pl_add(od, "userdata", call_user_data(call));
 
 	return err;
 }

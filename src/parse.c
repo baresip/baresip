@@ -8,7 +8,7 @@
 #include <baresip.h>
 
 
-static bool mdir_isvalid(struct pl *pl)
+static bool mdir_isvalid(const struct pl *pl)
 {
 	if (!pl_strcmp(pl, "sendrecv"))
 		return true;

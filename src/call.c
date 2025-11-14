@@ -83,7 +83,7 @@ struct call {
 	enum sdp_dir estvdir;      /**< Established video direction         */
 	bool use_video;
 	bool use_rtp;
-	char *user_data;           /**< User data related to the call       */
+	struct pl *user_data;      /**< User data related to the call       */
 };
 
 
@@ -3335,6 +3335,7 @@ bool call_supported(struct call *call, uint16_t tags)
 	return (call->supported & tags) == tags;
 }
 
+
 /**
  * Get the user data for the call
  *
@@ -3342,33 +3343,37 @@ bool call_supported(struct call *call, uint16_t tags)
  *
  * @return Call's user data
  */
-const char *call_user_data(const struct call *call)
+const struct pl *call_user_data(const struct call *call)
 {
 	return call ? call->user_data : NULL;
 }
+
 
 /**
  * Set the user data of the call
  *
  * @param call Call object
- * @param pl User data to be set
+ * @param user_data User data to be set
  * @return int
  */
 
-int call_set_user_data(struct call *call, const struct pl *pl)
+int call_set_user_data(struct call *call, const struct pl *user_data)
 {
 	if (!call)
 		return EINVAL;
 
 	call->user_data = mem_deref(call->user_data);
-	if (!pl_isset(pl))
+	if (!pl_isset(user_data))
 		return 0;
 
-	int err = pl_strdup(&call->user_data, pl);
+	char *str;
+	int err = pl_strdup(&str, user_data);
 	if (err)
 		return err;
 
-	return 0;
+	call->user_data = pl_alloc_str(str);
+	mem_deref(str);
+	return call->user_data ? 0 : ENOMEM;
 }
 
 
