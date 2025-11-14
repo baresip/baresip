@@ -841,10 +841,9 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 		err = ua_call_alloc(&call2, ua, VIDMODE_ON, NULL, call,
 				call_localuri(call), true);
 		if (!err) {
-			struct pl pl = PL_INIT;
-			pl_set_str(&pl, call_user_data(call));
-			call_set_user_data(call2, &pl);
+			call_set_user_data(call2, call_user_data(call));
 
+			struct pl pl;
 			pl_set_str(&pl, prm);
 			err = call_connect(call2, &pl);
 			if (err) {
