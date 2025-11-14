@@ -54,7 +54,7 @@ static int decode_media_dir(struct pl *pl, enum sdp_dir *dirp,
  */
 int cmd_prm_decode(const char *prm, const char *name, struct pl *val)
 {
-	char expr[128];
+	char expr[128] = "";
 	struct pl v;
 
 	if (!str_isset(prm) || !name || !val)
