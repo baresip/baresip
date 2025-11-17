@@ -552,8 +552,7 @@ static int dial_handler(struct re_printf *pf, void *arg)
 	}
 
 	struct pl pl = PL_INIT;
-	cmd_prm_decode(carg->prm, "userdata", &pl);
-	if (pl_isset(&pl))
+	if (cmd_prm_decode(carg->prm, "userdata", &pl) == 0)
 		call_set_user_data(call, &pl);
 
 	re_hprintf(pf, "call id: %s\n", call_id(call));
