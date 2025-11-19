@@ -1321,6 +1321,25 @@ uint32_t account_pubint(const struct account *acc)
 
 
 /**
+ * Set the SIP publish interval for a SIP account
+ *
+ * @param acc     User-Agent account
+ * @param pubint  Publish interval in [seconds]
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_pubint(struct account *acc, uint32_t pubint)
+{
+	if (!acc)
+		return EINVAL;
+
+	acc->pubint = pubint;
+
+	return 0;
+}
+
+
+/**
  * Get the answermode of an account
  *
  * @param acc User-Agent account

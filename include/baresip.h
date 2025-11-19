@@ -125,6 +125,7 @@ struct uri *account_luri(const struct account *acc);
 uint32_t account_regint(const struct account *acc);
 uint32_t account_fbregint(const struct account *acc);
 uint32_t account_pubint(const struct account *acc);
+int account_set_pubint(struct account *acc, uint32_t pubint);
 uint32_t account_ptime(const struct account *acc);
 uint32_t account_prio(const struct account *acc);
 enum answermode account_answermode(const struct account *acc);
