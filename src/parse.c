@@ -89,14 +89,14 @@ int call_cmd_prm_decode(struct call_cmd_prm **prmp, const char *prm,
 	int err = 0;
 
 	/* audio/video direction */
-	struct pl pla = PL_INIT;
-	struct pl plv = PL_INIT;
-	struct pl pl  = PL_INIT;
 	struct call_cmd_prm *cp;
-
 	cp = mem_zalloc(sizeof(*cp), NULL);
 	if (!cp)
 		return ENOMEM;
+
+	struct pl pla = PL_INIT;
+	struct pl plv = PL_INIT;
+	struct pl pl  = PL_INIT;
 
 	/* long form */
 	set  = cmd_prm_decode(prm, "audio", &pla) == 0;

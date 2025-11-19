@@ -3170,6 +3170,29 @@ struct call *call_find_linenum(const struct list *calls, uint32_t linenum)
  * Find a call by call-id
  *
  * @param calls   List of calls
+ * @param id      Call-id pointer-length string
+ *
+ * @return Call object if found, NULL if not found
+ */
+struct call *call_find_id_pl(const struct list *calls, const struct pl *id)
+{
+	struct le *le;
+
+	for (le = list_head(calls); le; le = le->next) {
+		struct call *call = le->data;
+
+		if (0 == pl_strcmp(id, call->id))
+			return call;
+	}
+
+	return NULL;
+}
+
+
+/**
+ * Find a call by call-id
+ *
+ * @param calls   List of calls
  * @param id      Call-id string
  *
  * @return Call object if found, NULL if not found
@@ -3356,7 +3379,6 @@ const struct pl *call_user_data(const struct call *call)
  * @param user_data User data to be set
  * @return int
  */
-
 int call_set_user_data(struct call *call, const struct pl *user_data)
 {
 	if (!call)

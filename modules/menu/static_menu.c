@@ -104,7 +104,6 @@ static int cmd_answer(struct re_printf *pf, void *arg)
 static int cmd_answerdir(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
-	char *cid = NULL;
 	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	struct call *call;
 	int err = 0;
@@ -124,19 +123,26 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 		return EINVAL;
 	}
 
+	/* fallback */
 	call = ua_call(ua);
-
-	(void)pl_strdup(&cid, &cp->callid);
-	if (str_isset(cid)) {
-		call = uag_call_find(cid);
-		cid = mem_deref(cid);
-		ua = call_get_ua(call);
+	if (pl_isset(&cp->callid)) {
+		call = uag_call_find_pl(&cp->callid);
+		if (!call) {
+			re_hprintf(pf, "call not found with id '%r'\n",
+				   &cp->callid);
+			return EINVAL;
+		}
 	}
 	else if (call_state(call) != CALL_STATE_INCOMING) {
 		call = menu_find_call_state(CALL_STATE_INCOMING);
-		ua = call_get_ua(call);
 	}
 
+	if (!call) {
+		re_hprintf(pf, "no call to answer\n");
+		return EINVAL;
+	}
+
+	ua = call_get_ua(call);
 	call_set_media_estdir(call, cp->adir, cp->vdir);
 	if (call_sdp_change_allowed(call))
 		call_set_mdir(call, cp->adir, cp->vdir);

@@ -271,6 +271,7 @@ int32_t       call_answer_delay(const struct call *call);
 void          call_set_answer_delay(struct call *call, int32_t adelay);
 struct call  *call_find_linenum(const struct list *calls, uint32_t linenum);
 struct call  *call_find_id(const struct list *calls, const char *id);
+struct call  *call_find_id_pl(const struct list *calls, const struct pl *id);
 void call_set_current(struct list *calls, struct call *call);
 const struct list *call_get_custom_hdrs(const struct call *call);
 void call_set_media_direction(struct call *call, enum sdp_dir a,
@@ -1041,6 +1042,7 @@ struct tls  *uag_tls(void);
 struct sipsess_sock  *uag_sipsess_sock(void);
 struct sipevent_sock *uag_sipevent_sock(void);
 struct call *uag_call_find(const char *id);
+struct call *uag_call_find_pl(const struct pl *id);
 void uag_filter_calls(call_list_h *listh, call_match_h *matchh, void *arg);
 
 
