@@ -190,6 +190,7 @@ int cparam_ua_decode(struct cparam_ua **prmp,
 	set  = cparam_decode(prm, "audio", &pla) == 0;
 	set |= cparam_decode(prm, "video", &plv) == 0;
 	set |= cparam_decode(prm, "userdata", &cp->userdata) == 0;
+	set |= cparam_decode(prm, "cuser", &cp->cuser) == 0;
 	if (!set) {
 		/* short form */
 		one = re_regex(prm, str_len(prm), "[^ ]+", &pl) == 0;
