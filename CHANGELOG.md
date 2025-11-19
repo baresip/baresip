@@ -5,9 +5,32 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v4.3.0 - 2025-11-19
+
+### What's Changed
+* video: find new encoder if not available by @xiaokuang95 in https://github.com/baresip/baresip/pull/3532
+* video: null pointer checks for codec functions by @cspiel1 in https://github.com/baresip/baresip/pull/3538
+* test/ccheck: ignore reversed list_unlink by @sreimers in https://github.com/baresip/baresip/pull/3546
+* g722: add libg722 module as alternative to avoid spandsp dependency by @fosple in https://github.com/baresip/baresip/pull/3545
+* pulse: return err if unsupported stream by @cspiel1 in https://github.com/baresip/baresip/pull/3554
+* jbuf: update copyright by @alfredh in https://github.com/baresip/baresip/pull/3551
+* jbuf: remove unused jbuf_frames() in API by @alfredh in https://github.com/baresip/baresip/pull/3550
+* rtprecv, aureceiver: fix ssrc re-invite by @Turkish in https://github.com/baresip/baresip/pull/3533
+* test: remove include to menu.h by @cspiel1 in https://github.com/baresip/baresip/pull/3558
+* play: warnings for failed audio devices by @cspiel1 in https://github.com/baresip/baresip/pull/3553
+* account: added account_set_pubint API function by @juha-h in https://github.com/baresip/baresip/pull/3560
+
+### New Contributors
+* @xiaokuang95 made their first contribution in https://github.com/baresip/baresip/pull/3532
+* @fosple made their first contribution in https://github.com/baresip/baresip/pull/3545
+* @Turkish made their first contribution in https://github.com/baresip/baresip/pull/3533
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v4.2.0...v4.3.0
+
+
 ## v4.2.0 - 2025-10-15
 
-## What's Changed
+### What's Changed
 * menu: check return value from str_dup() by @alfredh in https://github.com/baresip/baresip/pull/3495
 * ctrl_dbus: check return value of str_dup() by @alfredh in https://github.com/baresip/baresip/pull/3493
 * core: set bundle rtpext before aulevel by @alfredh in https://github.com/baresip/baresip/pull/3497
