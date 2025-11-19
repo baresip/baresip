@@ -54,22 +54,9 @@ static int decode_media_dir(struct pl *pl, enum sdp_dir *dirp,
  */
 int cmd_prm_decode(const char *prm, const char *name, struct pl *val)
 {
-	char expr[128] = "";
-	struct pl v;
-
-	if (!str_isset(prm) || !name || !val)
-		return EINVAL;
-
-	(void)re_snprintf(expr, sizeof(expr),
-			  "[ \t\r\n]*%s[ \t\r\n]*=[ \t\r\n]*[~ \t\r\n;]+",
-			  name);
-
-	if (re_regex(prm, str_len(prm), expr, NULL, NULL, NULL, &v))
-		return ENOENT;
-
-	*val = v;
-
-	return 0;
+	struct pl pl;
+	pl_set_str(&pl, prm);
+	return fmt_param_sep_get(&pl, name, ' ', val) ? 0 : ENOENT;
 }
 
 
