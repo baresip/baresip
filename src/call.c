@@ -3388,13 +3388,7 @@ int call_set_user_data(struct call *call, const struct pl *user_data)
 	if (!pl_isset(user_data))
 		return 0;
 
-	char *str;
-	int err = pl_strdup(&str, user_data);
-	if (err)
-		return err;
-
-	call->user_data = pl_alloc_str(str);
-	mem_deref(str);
+	call->user_data = pl_alloc_dup(user_data);
 	return call->user_data ? 0 : ENOMEM;
 }
 
