@@ -1,5 +1,5 @@
 /**
- * @file parse.c  Parsing helpers
+ * @file cparam.c  Command parameter parse helpers
  *
  * Copyright (C) 2025 Christian Spielberger - c.spielberger@commend.com
  */
@@ -52,7 +52,7 @@ static int decode_media_dir(struct pl *pl, enum sdp_dir *dirp,
  *
  * @return 0 for success, otherwise errorcode
  */
-int cmd_prm_decode(const char *prm, const char *name, struct pl *val)
+int cparam_decode(const char *prm, const char *name, struct pl *val)
 {
 	struct pl pl;
 	pl_set_str(&pl, prm);
@@ -63,12 +63,12 @@ int cmd_prm_decode(const char *prm, const char *name, struct pl *val)
 /**
  * Decode call command parameters
  *
- * @param cp   Call command parameters
+ * @param prmp Returned call command parameters
  * @param prm  Command arguments parameter string
  * @param pf   Print handler for debug output
  * @return 0 for success, otherwise errorcode
  */
-int call_cmd_prm_decode(struct call_cmd_prm **prmp, const char *prm,
+int cparam_call_decode(struct cparam_call **prmp, const char *prm,
 			struct re_printf *pf)
 {
 	bool set;
@@ -76,7 +76,7 @@ int call_cmd_prm_decode(struct call_cmd_prm **prmp, const char *prm,
 	int err = 0;
 
 	/* audio/video direction */
-	struct call_cmd_prm *cp;
+	struct cparam_call *cp;
 	cp = mem_zalloc(sizeof(*cp), NULL);
 	if (!cp)
 		return ENOMEM;
@@ -86,9 +86,9 @@ int call_cmd_prm_decode(struct call_cmd_prm **prmp, const char *prm,
 	struct pl pl  = PL_INIT;
 
 	/* long form */
-	set  = cmd_prm_decode(prm, "audio", &pla) == 0;
-	set |= cmd_prm_decode(prm, "video", &plv) == 0;
-	set |= cmd_prm_decode(prm, "callid", &cp->callid) == 0;
+	set  = cparam_decode(prm, "audio", &pla) == 0;
+	set |= cparam_decode(prm, "video", &plv) == 0;
+	set |= cparam_decode(prm, "callid", &cp->callid) == 0;
 	if (!set) {
 		/* short form */
 		set = re_regex(prm, str_len(prm),
@@ -140,10 +140,18 @@ out:
 }
 
 
-int ua_cmd_prm_decode(struct ua_cmd_prm **prmp,
+/**
+ * Decode UA command parameters
+ *
+ * @param prmp Returned UA command parameters
+ * @param prm  Command arguments parameter string
+ * @param pf   Print handler for debug output
+ * @return 0 for success, otherwise errorcode
+ */
+int cparam_ua_decode(struct cparam_ua **prmp,
 		      const char *prm, struct re_printf *pf)
 {
-	struct ua_cmd_prm *cp;
+	struct cparam_ua *cp;
 	int err;
 
 	cp = mem_zalloc(sizeof(*cp), NULL);
@@ -179,9 +187,9 @@ int ua_cmd_prm_decode(struct ua_cmd_prm **prmp,
 	struct pl pl;
 	bool set;
 	bool one = false;
-	set  = cmd_prm_decode(prm, "audio", &pla) == 0;
-	set |= cmd_prm_decode(prm, "video", &plv) == 0;
-	set |= cmd_prm_decode(prm, "userdata", &cp->userdata) == 0;
+	set  = cparam_decode(prm, "audio", &pla) == 0;
+	set |= cparam_decode(prm, "video", &plv) == 0;
+	set |= cparam_decode(prm, "userdata", &cp->userdata) == 0;
 	if (!set) {
 		/* short form */
 		one = re_regex(prm, str_len(prm), "[^ ]+", &pl) == 0;

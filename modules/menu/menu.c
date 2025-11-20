@@ -958,7 +958,7 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 		if (!re_regex(prm, strlen(prm), "sip:"))
 			pl_set_str(&val, "invite");
 
-		(void)cmd_prm_decode(prm, "method", &val);
+		(void)cparam_decode(prm, "method", &val);
 		if (!pl_strcmp(&val, "invite")) {
 			info("menu: incoming REFER to %s\n", prm);
 			menu_invite(prm);

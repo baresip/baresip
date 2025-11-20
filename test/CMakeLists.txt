@@ -19,7 +19,7 @@ add_executable(${PROJECT_NAME}
   dial_number.c
   message.c
   net.c
-  parse.c
+  cparam.c
   play.c
   stunuri.c
   ua.c

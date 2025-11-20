@@ -291,13 +291,13 @@ enum sdp_neg_state call_sdp_neg_state(const struct call *call);
 bool call_sdp_change_allowed(const struct call *call);
 
 /**
- * Command parse helpers
+ * Command parameter parse helpers
  */
 
-int cmd_prm_decode(const char *prm, const char *name, struct pl *val);
+int cparam_decode(const char *prm, const char *name, struct pl *val);
 
 /** UA command parameters */
-struct ua_cmd_prm {
+struct cparam_ua {
 	struct pl dname;              /**< Display name                   */
 	struct pl uri;	              /**< SIP URI                        */
 	enum sdp_dir adir;            /**< Audio direction                */
@@ -305,19 +305,19 @@ struct ua_cmd_prm {
 	struct pl userdata;           /**< User data                      */
 };
 
-int ua_cmd_prm_decode(struct ua_cmd_prm **prmp,
-		      const char *prm, struct re_printf *pf);
+int cparam_ua_decode(struct cparam_ua **prmp,
+		     const char *prm, struct re_printf *pf);
 
 /** Call command parameters */
-struct call_cmd_prm {
+struct cparam_call {
 	struct pl callid;             /**< Call-ID                        */
 	enum sdp_dir adir;            /**< Audio direction                */
 	enum sdp_dir vdir;            /**< Video direction                */
 	bool mdir;                    /**< Media direction flag           */
 };
 
-int call_cmd_prm_decode(struct call_cmd_prm **prmp,
-			const char *prm, struct re_printf *pf);
+int cparam_call_decode(struct cparam_call **prmp,
+		       const char *prm, struct re_printf *pf);
 
 /*
  * Custom headers

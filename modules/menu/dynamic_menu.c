@@ -356,8 +356,8 @@ static int set_media_ldir(struct re_printf *pf, void *arg)
 			"Audio & video must not be"
 			" inactive at the same time\n";
 
-	struct call_cmd_prm *cp;
-	err = call_cmd_prm_decode(&cp, carg->prm, pf);
+	struct cparam_call *cp;
+	err = cparam_call_decode(&cp, carg->prm, pf);
 	if (err || !cp->mdir) {
 		(void) re_hprintf(pf, "%s", usage);
 		return EINVAL;

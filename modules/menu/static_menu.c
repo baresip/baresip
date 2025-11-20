@@ -116,8 +116,8 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 			"Audio & video must not be"
 			" inactive at the same time\n";
 
-	struct call_cmd_prm *cp;
-	err = call_cmd_prm_decode(&cp, carg->prm, pf);
+	struct cparam_call *cp;
+	err = cparam_call_decode(&cp, carg->prm, pf);
 	if (err) {
 		(void) re_hprintf(pf, "%s", usage);
 		return EINVAL;
@@ -558,7 +558,7 @@ static int dial_handler(struct re_printf *pf, void *arg)
 	}
 
 	struct pl pl = PL_INIT;
-	if (cmd_prm_decode(carg->prm, "userdata", &pl) == 0)
+	if (cparam_decode(carg->prm, "userdata", &pl) == 0)
 		call_set_user_data(call, &pl);
 
 	re_hprintf(pf, "call id: %s\n", call_id(call));
@@ -587,8 +587,8 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 			"Audio & video must not be"
 			" inactive at the same time\n";
 
-	struct ua_cmd_prm *cp;
-	err = ua_cmd_prm_decode(&cp, carg->prm, pf);
+	struct cparam_ua *cp;
+	err = cparam_ua_decode(&cp, carg->prm, pf);
 	if (err) {
 		(void)re_hprintf(pf, "%s", usage);
 		return EINVAL;

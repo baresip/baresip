@@ -21,7 +21,7 @@ static int mbuf_vph(const char *p, size_t size, void *arg)
 }
 
 
-int test_call_cmd_prm_decode(void)
+int test_cparam_call_decode(void)
 {
 	int err = 0;
 	struct mbuf *mb = mbuf_alloc(32);
@@ -32,7 +32,7 @@ int test_call_cmd_prm_decode(void)
 
 	const struct {
 		const char *prm;
-		struct call_cmd_prm cp;
+		struct cparam_call cp;
 		int err;
 		struct pl log;
 	} testv[] = {
@@ -104,13 +104,13 @@ int test_call_cmd_prm_decode(void)
 	},
 	};
 
-	struct call_cmd_prm *cp = NULL;
+	struct cparam_call *cp = NULL;
 	for (uint32_t i=0; i<RE_ARRAY_SIZE(testv); i++) {
 		mbuf_rewind(mb);
 
 		info("test %u: %s\n", i, testv[i].prm);
 		cp = mem_deref(cp);
-		err = call_cmd_prm_decode(&cp, testv[i].prm, &pf);
+		err = cparam_call_decode(&cp, testv[i].prm, &pf);
 		ASSERT_EQ(testv[i].err, err);
 
 		/* err set means negative test */
@@ -136,7 +136,7 @@ out:
 }
 
 
-int test_ua_cmd_prm_decode(void)
+int test_cparam_ua_decode(void)
 {
 	int err = 0;
 	struct mbuf *mb = mbuf_alloc(32);
@@ -147,7 +147,7 @@ int test_ua_cmd_prm_decode(void)
 
 	const struct {
 		const char *prm;
-		struct ua_cmd_prm cp;
+		struct cparam_ua cp;
 		int err;
 		struct pl log;
 	} testv[] = {
@@ -236,13 +236,13 @@ int test_ua_cmd_prm_decode(void)
 	},
 	};
 
-	struct ua_cmd_prm *cp = NULL;
+	struct cparam_ua *cp = NULL;
 	for (uint32_t i=0; i<RE_ARRAY_SIZE(testv); i++) {
 		mbuf_rewind(mb);
 
 		info("test %u: %s\n", i, testv[i].prm);
 		cp = mem_deref(cp);
-		err = ua_cmd_prm_decode(&cp, testv[i].prm, &pf);
+		err = cparam_ua_decode(&cp, testv[i].prm, &pf);
 		ASSERT_EQ(testv[i].err, err);
 
 		/* err set means negative test */
