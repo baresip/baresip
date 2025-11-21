@@ -116,6 +116,34 @@ int uag_hold_others(struct call *call)
 /**
  * Find call with given id
  *
+ * @param id  Call-id pointer-length string
+ *
+ * @return The call if found, otherwise NULL.
+ */
+struct call *uag_call_find_pl(const struct pl *id)
+{
+	struct le *le = NULL;
+	struct ua *ua = NULL;
+	struct call *call = NULL;
+
+	if (!pl_isset(id))
+		return NULL;
+
+	for (le = list_head(&uag.ual); le; le = le->next) {
+		ua = le->data;
+
+		call = call_find_id_pl(ua_calls(ua), id);
+		if (call)
+			break;
+	}
+
+	return call;
+}
+
+
+/**
+ * Find call with given id
+ *
  * @param id  Call-id string
  *
  * @return The call if found, otherwise NULL.
