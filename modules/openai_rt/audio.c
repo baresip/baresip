@@ -16,51 +16,6 @@
 #include <baresip.h>
 #include <pthread.h>
 
-/* Simple timestamp function for audio debugging */
-static inline const char *get_timestamp(void)
-{
-    static char timestamp[32];
-    uint64_t now = tmr_jiffies();
-    re_snprintf(timestamp, sizeof(timestamp), "[%llu]", (unsigned long long)now);
-    return timestamp;
-}
-
-/* --- Correct G.711 μ-law encoder (PCMU, PT=0) --- */
-static inline uint8_t pcm_to_ulaw(int16_t pcm_val)
-{
-    /* ITU-T G.711 μ-law constants */
-    const int16_t BIAS = 0x84;     /* 132 */
-    const int16_t CLIP = 32635;
-
-    /* Sign bit: 1 = negative */
-    uint8_t sign = (pcm_val < 0) ? 0x80 : 0x00;
-    if (pcm_val < 0) {
-        /* Negate carefully to avoid -32768 overflow to itself */
-        pcm_val = (pcm_val == INT16_MIN) ? (INT16_MAX) : (int16_t)(-pcm_val);
-    }
-
-    /* Clip to allowed range */
-    if (pcm_val > CLIP) pcm_val = CLIP;
-
-    /* Add bias */
-    pcm_val = (int16_t)(pcm_val + BIAS);
-
-    /* Find segment (exponent) – position of highest 1 among bits 7..14 */
-    int exponent = 7;
-    int16_t temp = pcm_val & 0x7F80;  /* mask out low 7 + keep next 8 bits */
-    while (exponent > 0 && (temp & 0x4000) == 0) {
-        temp <<= 1;
-        exponent--;
-    }
-
-    /* Quantize mantissa: take 4 bits right after the segment */
-    int mantissa = (pcm_val >> (exponent + 3)) & 0x0F;
-
-    /* Compose byte and invert all bits as per μ-law spec */
-    uint8_t ulaw = ~(sign | (uint8_t)(exponent << 4) | (uint8_t)mantissa);
-
-    return ulaw;
-}
 
 /* Forward declarations */
 static void ausrc_destructor(void *arg);
@@ -288,105 +243,64 @@ void handle_incoming_audio(const int16_t *s16_data, size_t sampc)
 {
     if (!s16_data || sampc == 0 || !g_oairt.call_active) return;
 
-    //info("openai_rt: %s Handle incoming audio in active call (PCM path)\n", get_timestamp());
-
-    /* 4) Send 24 kHz PCM16 to OpenAI: base64 of raw little-endian bytes */
     size_t byte_len = sampc * sizeof(int16_t);
     char *b64 = encode_audio_base64((const uint8_t *)s16_data, byte_len);
-    if (b64) {
-        char *json_msg = NULL;
-        re_sdprintf(&json_msg,
-            "{"
-              "\"type\":\"input_audio_buffer.append\","
-              "\"audio\":\"%s\""
-            "}", b64);
-
-        if (json_msg) {
-            int err = queue_message_to_openai(json_msg, str_len(json_msg), NULL, NULL);
-            if (err) {
-                warning("openai_rt: Failed to queue PCM audio: %m\n", err);
-            } else {
-                //DEBUG_INFO("Queued %zu bytes of 24k PCM16 to OpenAI\n", byte_len);
-                g_audio.audio_accumulated += byte_len;
-                if (g_audio.audio_accumulated >= g_audio.commit_threshold) {
-                    //double ms = (double)g_audio.audio_accumulated / 2 / 24000.0 * 1000.0;
-                    //info("openai_rt: committing %.1f ms (%u bytes)\n",
-                    //     ms, (unsigned)g_audio.audio_accumulated);
-                    
-                    /* Only commit if session configuration has been applied */
-                    if (g_oairt.session_cfg_applied) {
-                        send_audio_commit();         /* {"type":"input_audio_buffer.commit"} */
-                    } else {
-                        DEBUG_INFO("Skipping commit - session not ready yet\n");
-                    }
-                    g_audio.audio_accumulated = 0;
-                }
-            }
-            mem_deref(json_msg);
-        }
-        mem_deref(b64);
-    } else {
+    if (!b64) {
         warning("openai_rt: base64 encode failed for %zu bytes\n", byte_len);
+        return;
     }
+
+    char *json_msg = NULL;
+    re_sdprintf(&json_msg,
+        "{"
+          "\"type\":\"input_audio_buffer.append\","
+          "\"audio\":\"%s\""
+        "}", b64);
+
+    if (json_msg) {
+        int err = queue_message_to_openai(json_msg, str_len(json_msg), NULL, NULL);
+        if (err) {
+            warning("openai_rt: Failed to queue PCM audio: %m\n", err);
+        } else {
+            g_audio.audio_accumulated += byte_len;
+            if (g_audio.audio_accumulated >= g_audio.commit_threshold) {
+                if (g_oairt.session_cfg_applied) {
+                    send_audio_commit();
+                } else {
+                    DEBUG_INFO("Skipping commit - session not ready yet\n");
+                }
+                g_audio.audio_accumulated = 0;
+            }
+        }
+        mem_deref(json_msg);
+    }
+    mem_deref(b64);
 }
 
 /* Handle outgoing audio from OpenAI - convert from G711u and buffer for injection */
 void handle_outgoing_audio(const uint8_t *g711u_data, size_t len)
 {
-    if (!g711u_data || len == 0 || !g_oairt.call_active) {
+    if (!g711u_data || len == 0 || !g_oairt.call_active || !g_audio.g711u_output_buffer) {
         return;
     }
 
-    /* Use the main output buffer - don't allocate new ones */
-    if (!g_audio.g711u_output_buffer) {
-        warning("openai_rt: Output buffer not available\n");
+    if (!g_audio.src_st || !g_audio.src_st->ready) {
         return;
     }
 
-    /* Lock mutex for thread-safe buffer access */
-    if (g_audio.src_st && g_audio.src_st->ready) {
-        mtx_lock(&g_audio.src_st->mutex);
-        
-        /* Save current buffer position for error recovery */
-        size_t original_pos = g_audio.g711u_output_buffer->pos;
-        
-        /* Check if buffer is getting too full */
-        if (mbuf_get_left(g_audio.g711u_output_buffer) + len > g_audio.buffer_size) {
-            /* Buffer too full, clear it and start fresh */
-            int clear_result = safe_clear_buffer(g_audio.g711u_output_buffer, "output");
-            if (clear_result) {
-                warning("openai_rt: Failed to clear output buffer on overflow: %m\n", clear_result);
-                /* Restore original position and return */
-                mbuf_set_pos(g_audio.g711u_output_buffer, original_pos);
-                mtx_unlock(&g_audio.src_st->mutex);
-                return;
-            }
-            warning("openai_rt: Output buffer overflow, cleared\n");
-        }
-        
-        /* Check if we have enough space for the new data */
-        if (mbuf_get_space(g_audio.g711u_output_buffer) < len) {
-            warning("openai_rt: Output buffer too small for %zu bytes\n", len);
-            /* Restore original position and return */
-            mbuf_set_pos(g_audio.g711u_output_buffer, original_pos);
-            mtx_unlock(&g_audio.src_st->mutex);
-            return;
-        }
-
-        /* Add new audio data to buffer */
-        int write_error = mbuf_write_mem(g_audio.g711u_output_buffer, g711u_data, len);
-        if (write_error) {
-            warning("openai_rt: Failed to write audio data to output buffer: %m\n", write_error);
-            /* Restore original position and return */
-            mbuf_set_pos(g_audio.g711u_output_buffer, original_pos);
-            mtx_unlock(&g_audio.src_st->mutex);
-            return;
-        }
-        
-        mtx_unlock(&g_audio.src_st->mutex);
-        
-        DEBUG_INFO("Added %zu bytes of G711u audio to output buffer\n", len);
+    mtx_lock(&g_audio.src_st->mutex);
+    
+    /* Clear buffer if it's getting too full */
+    if (mbuf_get_left(g_audio.g711u_output_buffer) + len > g_audio.buffer_size) {
+        safe_clear_buffer(g_audio.g711u_output_buffer, "output");
     }
+    
+    /* Write audio data to buffer */
+    if (mbuf_get_space(g_audio.g711u_output_buffer) >= len) {
+        mbuf_write_mem(g_audio.g711u_output_buffer, g711u_data, len);
+    }
+    
+    mtx_unlock(&g_audio.src_st->mutex);
 }
 
 /* Audio source destructor */
@@ -487,8 +401,6 @@ static int read_from_injection_buffer(int16_t *samples, size_t max_samples)
         maybe_shrink_injection_buffer();
     }
     
-    //DEBUG_INFO("Read %zu samples from injection buffer, remaining: %zu, read_pos: %zu, write_pos: %zu\n", 
-    //           samples_to_read, g_audio.injection_available, g_audio.injection_read_pos, g_audio.injection_write_pos);
     return (int)samples_to_read;
 }
 
@@ -502,10 +414,7 @@ static int ausrc_read_thread(void *arg)
                st->prm.srate, st->prm.ch, st->prm.ptime, st->sampc);
 
     const uint32_t ptime_ms = st->prm.ptime ? st->prm.ptime : 20;
-    uint64_t slot_due = tmr_jiffies();  /* first frame immediately */
-
-    size_t frame_count = 0;
-    //uint64_t t0 = tmr_jiffies();
+    uint64_t slot_due = tmr_jiffies();
 
     st->run = true;
     while (st->run && st->ready) {
@@ -554,16 +463,7 @@ static int ausrc_read_thread(void *arg)
         st->rh(&af, st->arg);
         st->total_samples_sent += st->sampc;
 
-        frame_count++;
-        /*
-        if ((frame_count % 50) == 0) {
-            uint64_t dt = tmr_jiffies() - t0;
-            double fps = (double)frame_count * 1000.0 / (double)dt;
-            DEBUG_INFO("Audio source paced: %zu frames / %llums => %.2f fps (target=%.2f)\n",
-                       frame_count, (unsigned long long)dt, fps, 1000.0 / ptime_ms);
-        }
-        */
-        /* ---- realtime pacing with drift correction ---- */
+        /* Realtime pacing with drift correction */
         slot_due += ptime_ms;
         uint64_t now = tmr_jiffies();
 
@@ -571,10 +471,8 @@ static int ausrc_read_thread(void *arg)
             sys_msleep((int)(slot_due - now));
         } else {
             uint64_t lag = now - slot_due;
-            uint64_t missed = lag / ptime_ms + 1;   /* skip missed slots */
+            uint64_t missed = lag / ptime_ms + 1;
             slot_due += missed * ptime_ms;
-            //DEBUG_INFO("Audio pacer late by %llums; skipping %llu slots to realign\n",
-            //           (unsigned long long)lag, (unsigned long long)missed);
         }
     }
 
@@ -593,17 +491,12 @@ static int auplay_write_thread(void *arg)
     
     DEBUG_INFO("Audio playback thread started\n");
     
-    /* Track thread activity for debugging */
-    size_t frame_count = 0;
-    
     /* Create a single auframe ONCE at the beginning (like WASAPI/ALSA) */
     struct auframe af;
     auframe_init(&af, st->prm.fmt, st->sampv, st->sampc,
                st->prm.srate, st->prm.ch);
     
     while (st->run && st->ready) {
-        frame_count++;
-        
         /* Check if call is still active - stop if not */
         if (!g_oairt.call_active) {
             DEBUG_INFO("Audio playback thread stopping - call ended\n");
@@ -932,11 +825,7 @@ void openai_rt_receive_audio(const int16_t *sampv, size_t sampc)
         return;
     }
 
-    /* Track samples */
     g_audio.play_st->total_samples_received += sampc;
-
-    /* Immediately send this audio to OpenAI */
-    //info("openai_rt: %s Processing %zu audio samples\n", get_timestamp(), sampc);
     handle_incoming_audio(sampv, sampc);
 }
 
@@ -1099,36 +988,12 @@ static int safe_clear_buffer(struct mbuf *buffer, const char *buffer_name)
 /* Send commit message to OpenAI to process accumulated audio */
 static void send_audio_commit(void)
 {
-
-    int err;
-
- /* sending commit not needed,  since we're using server_vad  
-    char *json_msg = NULL;
+    /* Note: explicit commit not needed since we're using server_vad */
     
-    DEBUG_INFO("Sending audio commit to OpenAI\n");
-    
-    re_sdprintf(&json_msg,
-        "{"
-        "\"type\":\"input_audio_buffer.commit\""
-        "}");
-    
-    if (json_msg) {
-        err = queue_message_to_openai(json_msg, str_len(json_msg), NULL, NULL);
-        if (err) {
-            warning("openai_rt: Failed to queue commit message: %m\n", err);
-            mem_deref(json_msg);
-            return;
-        } else {
-            DEBUG_INFO("Audio commit message queued\n");
-        }
-        mem_deref(json_msg);
-    }
-*/
-    
-
     if (g_oairt.wait_for_greeting) {
         g_audio.response_created = true;
     }
+    
     if (!g_audio.response_created) {
         char *response_msg = NULL;
         re_sdprintf(&response_msg,
@@ -1142,18 +1007,17 @@ static void send_audio_commit(void)
         );
         
         if (response_msg) {
-            err = queue_message_to_openai(response_msg, str_len(response_msg), NULL, NULL);
+            int err = queue_message_to_openai(response_msg, str_len(response_msg), NULL, NULL);
             if (err) {
                 warning("openai_rt: Failed to queue response.create message: %m\n", err);
             } else {
                 DEBUG_INFO("Response.create message queued\n");
-                g_audio.response_created = true;  /* Only send once */
+                g_audio.response_created = true;
             }
             mem_deref(response_msg);
         }
     }
     
-    /* Reset accumulation counter */
     g_audio.audio_accumulated = 0;
 }
 
@@ -1336,9 +1200,5 @@ int write_to_injection_buffer(const int16_t *samples, size_t sample_count)
     g_audio.injection_available += sample_count;
 
     mtx_unlock(&g_audio.injection_buffer_mutex);
-
-    //DEBUG_INFO("Wrote %zu samples to injection buffer, available: %zu, write_pos: %zu, read_pos: %zu\n",
-    //           sample_count, g_audio.injection_available,
-    //           g_audio.injection_write_pos, g_audio.injection_read_pos);
     return 0;
 }
