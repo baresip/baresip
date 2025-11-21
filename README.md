@@ -347,7 +347,6 @@ x11           X11 video output driver
 * RFC 4347  Datagram Transport Layer Security
 * RFC 4568  SDP Security Descriptions for Media Streams
 * RFC 4572  Connection-Oriented Media Transport over TLS Protocol in SDP
-* RFC 4574  The SDP Label Attribute
 * RFC 4585  Extended RTP Profile for RTCP-Based Feedback (RTP/AVPF)
 * RFC 4587  RTP Payload Format for H.261 Video Streams
 * RFC 4796  The SDP Content Attribute

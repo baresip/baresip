@@ -733,7 +733,6 @@ int call_streams_alloc(struct call *call)
 	struct account *acc = call->acc;
 	struct stream_param strm_prm;
 	struct le *le;
-	int label = 0;
 	int err;
 
 	memset(&strm_prm, 0, sizeof(strm_prm));
@@ -770,9 +769,6 @@ int call_streams_alloc(struct call *call)
 
 	FOREACH_STREAM {
 		struct stream *strm = le->data;
-
-		sdp_media_set_lattr(stream_sdpmedia(strm), true,
-				    "label", "%d", ++label);
 
 		stream_set_session_handlers(strm, stream_mnatconn_handler,
 					    stream_rtpestab_handler,
