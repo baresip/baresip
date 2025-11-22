@@ -9,20 +9,22 @@
  #include <json-c/json.h>
  #include <pthread.h>
  #include "openai_rt.h"
+ #include "ai_model.h"
  
 /* Forward declarations */
 static int ws_callback(struct lws *wsi, enum lws_callback_reasons reason,
                        void *user, void *in, size_t len);
 static int add_auth_headers(void *in, size_t len);
 static void process_outgoing_messages(void);
-
-/* JSON parsing helpers */
-static struct json_object *parse_json_safe(const char *json_str, const char *context);
-static const char *get_json_string_field(struct json_object *obj, const char *field_name, 
-                                         const char *context);
-static struct json_object *get_json_object_field(struct json_object *obj, const char *field_name,
-                                                 const char *context);
 static void send_function_call_output(const char *call_id, const char *output);
+
+/* Callbacks for AI model message parsing */
+static void handle_audio_delta(const char *base64_audio, void *arg);
+static void handle_session_updated_cb(void *arg);
+static void handle_speech_started_cb(void *arg);
+static void handle_function_call_cb(const char *call_id, const char *name,
+                                    const char *arguments, void *arg);
+static void handle_response_done_cb(const char *response_json, void *arg);
  
  /* WebSocket protocols (local binding for callbacks; NOT sent as WS subprotocol) */
  static const struct lws_protocols protocols[] = {
@@ -113,59 +115,23 @@ static inline void ws_wake_service(void)
     }
 }
 
-/* JSON parsing helpers */
-static struct json_object *parse_json_safe(const char *json_str, const char *context)
-{
-    struct json_object *root = json_tokener_parse(json_str);
-    if (!root) {
-        warning("openai_rt: Failed to parse JSON in %s\n", context);
-    }
-    return root;
-}
-
-static const char *get_json_string_field(struct json_object *obj, const char *field_name,
-                                         const char *context)
-{
-    struct json_object *field_obj = NULL;
-    if (!json_object_object_get_ex(obj, field_name, &field_obj)) {
-        warning("openai_rt: JSON message missing '%s' field in %s\n", field_name, context);
-        return NULL;
-    }
-    if (!json_object_is_type(field_obj, json_type_string)) {
-        warning("openai_rt: JSON '%s' field is not a string in %s\n", field_name, context);
-        return NULL;
-    }
-    return json_object_get_string(field_obj);
-}
-
-static struct json_object *get_json_object_field(struct json_object *obj, const char *field_name,
-                                                 const char *context)
-{
-    struct json_object *field_obj = NULL;
-    if (!json_object_object_get_ex(obj, field_name, &field_obj)) {
-        warning("openai_rt: JSON message missing '%s' field in %s\n", field_name, context);
-        return NULL;
-    }
-    return field_obj;
-}
-
 static void send_function_call_output(const char *call_id, const char *output)
 {
+    struct ai_model *model = get_ai_model();
+    if (!model || !model->build_function_call_output) {
+        warning("openai_rt: AI model not initialized\n");
+        return;
+    }
+    
     char *json_msg = NULL;
-    re_sdprintf(&json_msg,
-        "{"
-            "\"type\": \"conversation.item.create\","
-            "\"item\": {"
-                "\"type\":\"function_call_output\","
-                "\"call_id\": \"%s\","
-                "\"output\": \"%s\""
-            "}"
-        "}",
-        call_id, output
-    );
+    int err = model->build_function_call_output(call_id, output, &json_msg);
+    if (err) {
+        warning("openai_rt: Failed to build function_call_output: %m\n", err);
+        return;
+    }
     
     if (json_msg) {
-        int err = queue_message_to_openai(json_msg, str_len(json_msg), NULL, NULL);
+        err = queue_message_to_openai(json_msg, str_len(json_msg), NULL, NULL);
         if (err) {
             warning("openai_rt: Failed to queue function_call_output: %m\n", err);
         }
@@ -173,37 +139,20 @@ static void send_function_call_output(const char *call_id, const char *output)
     }
 }
  
- static void handle_session_updated(const char *json_str)
+/* Callbacks for AI model message parsing */
+static void handle_audio_delta(const char *base64_audio, void *arg)
 {
-    struct json_object *root = parse_json_safe(json_str, "session.updated");
-    if (!root) return;
+    (void)arg;
 
-    const char *type = get_json_string_field(root, "type", "session.updated");
-    if (type && strcmp(type, "session.updated") == 0) {
-        g_oairt.session_cfg_applied = true;
-        g_oairt.session_ready = true;
-        info("openai_rt: session.updated received; input_audio_format now active\n");
-        audio_flush_accumulated();
-    }
-    json_object_put(root);
-}
- 
-static void handle_openai_audio_delta(const char *json_str)
-{
-    struct json_object *root = parse_json_safe(json_str, "audio_delta");
-    if (!root) return;
-
-    const char *b64 = get_json_string_field(root, "delta", "audio_delta");
-    if (!b64 || !*b64) {
-        json_object_put(root);
+    if (!base64_audio || !*base64_audio || !g_oairt.call_active) {
         return;
     }
 
     /* Decode base64 -> PCM16LE @ 24 kHz */
     uint8_t *decoded = NULL;
-    size_t nbytes = decode_audio_base64(b64, &decoded);
+    size_t nbytes = decode_audio_base64(base64_audio, &decoded);
 
-    if (decoded && nbytes >= 2 && g_oairt.call_active) {
+    if (decoded && nbytes >= 2) {
         const int16_t *pcm24 = (const int16_t *)decoded;
         size_t nsamp24 = nbytes / 2;
         int err = write_to_injection_buffer(pcm24, nsamp24);
@@ -213,44 +162,24 @@ static void handle_openai_audio_delta(const char *json_str)
     }
 
     if (decoded) mem_deref(decoded);
-    json_object_put(root);
 }
 
-static void handle_openai_function_call(const char *call_id, const char *name, const char *arguments)
+static void handle_session_updated_cb(void *arg)
 {
-    if (strcmp(name, "hangup_call") == 0) {
-        DEBUG_INFO("openai_rt: Executing hangup_call function\n");
-        calls_hangup();
-        send_function_call_output(call_id, "Call hung up");
-    } else if (strcmp(name, "send_dtmf") == 0) {
-        DEBUG_INFO("openai_rt: Executing send_dtmf function\n");
-        
-        struct json_object *args_obj = parse_json_safe(arguments, "send_dtmf arguments");
-        if (!args_obj) return;
-        
-        const char *digits = get_json_string_field(args_obj, "digits", "send_dtmf");
-        if (digits && *digits) {
-            int err = calls_send_dtmf(digits);
-            if (!err) {
-                char output[256];
-                re_snprintf(output, sizeof(output), "DTMF tones sent: %s", digits);
-                send_function_call_output(call_id, output);
-            } else {
-                warning("openai_rt: Failed to send DTMF string '%s': %m\n", digits, err);
-            }
-        }
-        json_object_put(args_obj);
-    } else {
-        warning("openai_rt: Unknown function call: %s\n", name);
-    }
+    (void)arg;
+
+    g_oairt.session_cfg_applied = true;
+    g_oairt.session_ready = true;
+    info("openai_rt: session.updated received; input_audio_format now active\n");
+    audio_flush_accumulated();
 }
 
-static void handle_speech_started(const char *json_str)
+static void handle_speech_started_cb(void *arg)
 {
-    (void)json_str;
+    (void)arg;
 
-    DEBUG_INFO("openai_rt: speech.started received, interrupt ongoing audion output\n");
-    // clear the injection buffer
+    DEBUG_INFO("openai_rt: speech.started received, interrupt ongoing audio output\n");
+    /* clear the injection buffer */
     mtx_lock(&g_audio.injection_buffer_mutex);
     g_audio.injection_read_pos = 0;
     g_audio.injection_write_pos = 0;
@@ -259,57 +188,57 @@ static void handle_speech_started(const char *json_str)
     DEBUG_INFO("openai_rt: injection buffer cleared\n");
 }
 
-static void handle_openai_handle_event(const char *json_str)
+static void handle_function_call_cb(const char *call_id, const char *name,
+                                    const char *arguments, void *arg)
 {
-    struct json_object *root = parse_json_safe(json_str, "event handler");
-    if (!root) return;
+    (void)arg;
 
-    const char *type = get_json_string_field(root, "type", "event handler");
-    if (!type) {
-        json_object_put(root);
-        return;
-    }
+    if (strcmp(name, AI_TOOL_HANGUP_CALL.name) == 0) {
+        DEBUG_INFO("openai_rt: Executing hangup_call function\n");
+        calls_hangup();
+        send_function_call_output(call_id, "Call hung up");
+    } else if (strcmp(name, AI_TOOL_SEND_DTMF.name) == 0) {
+        DEBUG_INFO("openai_rt: Executing send_dtmf function\n");
 
-    if (strcmp(type, "response.output_audio.delta") == 0) {
-        handle_openai_audio_delta(json_str);
-    } else if (strcmp(type, "session.updated") == 0) {
-        handle_session_updated(json_str);
-    } else if (strcmp(type, "input_audio_buffer.speech_started") == 0) {
-        handle_speech_started(json_str);
-    } else if (strcmp(type, "response.output_item.done") == 0) {
-        DEBUG_INFO("openai_rt: response.output_item.done received\n");
-        
-        struct json_object *item_obj = get_json_object_field(root, "item", "output_item.done");
-        if (item_obj) {
-            const char *item_type = get_json_string_field(item_obj, "type", "output_item.done");
-            if (item_type && strcmp(item_type, "function_call") == 0) {
-                const char *name = get_json_string_field(item_obj, "name", "function_call");
-                const char *call_id = get_json_string_field(item_obj, "call_id", "function_call");
-                const char *arguments = get_json_string_field(item_obj, "arguments", "function_call");
-                
-                if (name && call_id && arguments) {
-                    handle_openai_function_call(call_id, name, arguments);
+        /* Parse arguments JSON */
+        struct json_object *args_obj = json_tokener_parse(arguments);
+        if (!args_obj) {
+            warning("openai_rt: Failed to parse send_dtmf arguments\n");
+            return;
+        }
+
+        struct json_object *digits_obj = NULL;
+        if (json_object_object_get_ex(args_obj, "digits", &digits_obj) &&
+            json_object_is_type(digits_obj, json_type_string)) {
+            const char *digits = json_object_get_string(digits_obj);
+            if (digits && *digits) {
+                int err = calls_send_dtmf(digits);
+                if (!err) {
+                    char output[256];
+                    re_snprintf(output, sizeof(output), "DTMF tones sent: %s", digits);
+                    send_function_call_output(call_id, output);
+                } else {
+                    warning("openai_rt: Failed to send DTMF string '%s': %m\n", digits, err);
                 }
             }
         }
-    } else if (strcmp(type, "response.done") == 0) {
-        DEBUG_INFO("openai_rt: response.done received\n");
-        
-        struct json_object *response_obj = get_json_object_field(root, "response", "response.done");
-        if (response_obj) {
-            const char *response_json = json_object_to_json_string(response_obj);
-            if (response_json) {
-                int err = calls_queue_openai_response(response_json);
-                if (err) {
-                    warning("openai_rt: Failed to queue OpenAI response: %m\n", err);
-                }
-            }
-        }
+        json_object_put(args_obj);
     } else {
-        DEBUG_INFO("openai_rt: Unhandled message type: %s\n", type);
+        warning("openai_rt: Unknown function call: %s\n", name);
     }
+}
 
-    json_object_put(root);
+static void handle_response_done_cb(const char *response_json, void *arg)
+{
+    (void)arg;
+
+    DEBUG_INFO("openai_rt: response.done received\n");
+    if (response_json) {
+        int err = calls_queue_openai_response(response_json);
+        if (err) {
+            warning("openai_rt: Failed to queue OpenAI response: %m\n", err);
+        }
+    }
 }
  
  /* WebSocket callback */
@@ -346,12 +275,19 @@ static void handle_openai_handle_event(const char *json_str)
  
      case LWS_CALLBACK_CLIENT_RECEIVE:
          //info("openai_rt: WebSocket received %zu bytes\n", len);
-         DEBUG_INFO("Received message from OpenAI: %s\n", (const char *)in);
- 
+         DEBUG_INFO("Received message from AI model: %s\n", (const char *)in);
+
          if (len > 0 && g_oairt.ws_state == WS_CONNECTED) {
-            // TODO: remove the queue from openai completely, as we handle all events directly in this thread
-            //queue_message_from_openai((const uint8_t *)in, len);
-            handle_openai_handle_event((const char *)in); 
+            struct ai_model *model = get_ai_model();
+            if (model && model->parse_message) {
+                model->parse_message((const char *)in,
+                                   handle_audio_delta,
+                                   handle_session_updated_cb,
+                                   handle_speech_started_cb,
+                                   handle_function_call_cb,
+                                   handle_response_done_cb,
+                                   NULL);
+            }
          }
          break;
  
@@ -446,40 +382,23 @@ static void handle_openai_handle_event(const char *json_str)
  
  static int add_auth_headers(void *in, size_t len)
  {
-     unsigned char **p = (unsigned char **)in;
-     unsigned char *end = (*p) + len;
-     int written;
- 
-     if (!str_isset(g_oairt.api_key)) {
-         warning("openai_rt: No API key available for headers\n");
+     struct ai_model *model = get_ai_model();
+     if (!model || !model->add_auth_headers) {
+         warning("openai_rt: AI model not initialized\n");
          return -1;
      }
- 
-     written = lws_snprintf((char *)*p, end - *p,
-             "Authorization: Bearer %s\r\n", g_oairt.api_key);
-     if (written < 0 || written >= (int)(end - *p)) {
-         warning("openai_rt: failed to add Authorization header\n");
-         return -1;
-     }
-     *p += written;
- 
-     /*
-     written = lws_snprintf((char *)*p, end - *p,
-             "OpenAI-Beta: realtime=v1\r\n");
-     if (written < 0 || written >= (int)(end - *p)) {
-         warning("openai_rt: failed to add OpenAI-Beta header\n");
-         return -1;
-     }
-     *p += written;
-    */
-     return 0;
+     return model->add_auth_headers(in, len);
  }
  
- /* Connect to OpenAI WebSocket */
+ /* Connect to AI model WebSocket */
  int connect_openai_ws(void)
  {
      struct lws_client_connect_info ccinfo;
- 
+     struct ai_model *model = get_ai_model();
+     char address[256];
+     char path[512];
+     int port;
+
      if (g_oairt.ws_state != WS_DISCONNECTED) {
          warning("openai_rt: WebSocket already connected or connecting\n");
          return EALREADY;
@@ -488,43 +407,49 @@ static void handle_openai_handle_event(const char *json_str)
          warning("openai_rt: WebSocket context not initialized\n");
          return ENOMEM;
      }
-     if (!g_oairt.api_key[0]) {
-         warning("openai_rt: API key not set\n");
+     if (!model || !model->get_connection_info) {
+         warning("openai_rt: AI model not initialized\n");
          return EINVAL;
      }
- 
-     info("openai_rt: Initiating WebSocket connection to OpenAI...\n");
+
+     int err = model->get_connection_info(address, sizeof(address), &port, path, sizeof(path));
+     if (err) {
+         warning("openai_rt: Failed to get connection info: %m\n", err);
+         return err;
+     }
+
+     info("openai_rt: Initiating WebSocket connection to AI model...\n");
      g_oairt.ws_state = WS_CONNECTING;
- 
+
      memset(&ccinfo, 0, sizeof(ccinfo));
      ccinfo.context = g_oairt.ws_context;
-     ccinfo.address = "api.openai.com";
-     ccinfo.port = 443;
-     ccinfo.path = "/v1/realtime?model=gpt-realtime";
-     ccinfo.host = "api.openai.com";                  /* SNI / Host header */
+     ccinfo.address = address;
+     ccinfo.port = port;
+     ccinfo.path = path;
+     ccinfo.host = address;                           /* SNI / Host header */
      ccinfo.origin = NULL;                            /* Not required */
      ccinfo.protocol = NULL;                          /* DO NOT send Sec-WebSocket-Protocol */
      ccinfo.ietf_version_or_minus_one = -1;           /* Auto-select WS version */
-     ccinfo.ssl_connection = LCCSCF_USE_SSL; /* Verify cert + hostname in prod */
+     ccinfo.ssl_connection = LCCSCF_USE_SSL;          /* Verify cert + hostname in prod */
      ccinfo.pwsi = &g_oairt.ws_client;                /* Single authoritative pointer */
- 
+
      info("openai_rt: Connecting to wss://%s:%d%s\n",
           ccinfo.address, ccinfo.port, ccinfo.path);
      info("openai_rt: Calling lws_client_connect_via_info...\n");
- 
+
      g_oairt.ws_client = lws_client_connect_via_info(&ccinfo);
      if (!g_oairt.ws_client) {
-         warning("openai_rt: Failed to connect to OpenAI WebSocket\n");
+         warning("openai_rt: Failed to connect to AI model WebSocket\n");
          g_oairt.ws_state = WS_DISCONNECTED;
          return ENOMEM;
      }
- 
+
      info("openai_rt: lws_client_connect_via_info returned: %p\n", (void*)g_oairt.ws_client);
      info("openai_rt: WebSocket connection initiated, waiting for callback...\n");
      return 0;
  }
  
- /* Disconnect from OpenAI */
+ /* Disconnect from AI model */
  void disconnect_openai_ws(void)
  {
      if (g_oairt.ws_state == WS_CONNECTED && g_oairt.ws_client) {
@@ -536,7 +461,7 @@ static void handle_openai_handle_event(const char *json_str)
      g_oairt.ws_client = NULL;
      g_oairt.session_ready = false;
  
-     info("openai_rt: WebSocket disconnected\n");
+     info("openai_rt: WebSocket disconnected from AI model\n");
  }
  
  /* Check if WebSocket is ready for use */
@@ -584,8 +509,8 @@ static void handle_openai_handle_event(const char *json_str)
  
  void send_session_update(void)
 {
+    struct ai_model *model = get_ai_model();
     char *json_msg = NULL;
-    char *escaped_prompt = NULL;
     int err;
 
     if (g_oairt.ws_state != WS_CONNECTED) {
@@ -593,110 +518,29 @@ static void handle_openai_handle_event(const char *json_str)
         return;
     }
 
-    /* Escape JSON special characters in the prompt */
-    escaped_prompt = mem_zalloc(str_len(g_oairt.prompt) * 2 + 1, NULL);
-    if (!escaped_prompt) {
-        warning("openai_rt: Failed to allocate memory for escaped prompt\n");
+    if (!model || !model->build_session_update) {
+        warning("openai_rt: AI model not initialized\n");
         return;
     }
-    
-    /* Simple JSON escaping - escape quotes, backslashes, and control characters */
-    const char *src = g_oairt.prompt;
-    char *dst = escaped_prompt;
-    while (*src) {
-        switch (*src) {
-        case '"':
-            *dst++ = '\\';
-            *dst++ = '"';
-            break;
-        case '\\':
-            *dst++ = '\\';
-            *dst++ = '\\';
-            break;
-        case '\b':
-            *dst++ = '\\';
-            *dst++ = 'b';
-            break;
-        case '\f':
-            *dst++ = '\\';
-            *dst++ = 'f';
-            break;
-        case '\n':
-            *dst++ = '\\';
-            *dst++ = 'n';
-            break;
-        case '\r':
-            *dst++ = '\\';
-            *dst++ = 'r';
-            break;
-        case '\t':
-            *dst++ = '\\';
-            *dst++ = 't';
-            break;
-        default:
-            if (*src < 0x20) {
-                /* Escape other control characters as \uXXXX */
-                re_snprintf(dst, 7, "\\u%04x", (unsigned char)*src);
-                dst += 6;
-            } else {
-                *dst++ = *src;
-            }
-            break;
-        }
-        src++;
+
+    err = model->build_session_update(g_oairt.prompt, &json_msg);
+    if (err) {
+        warning("openai_rt: Failed to build session update: %m\n", err);
+        return;
     }
-    *dst = '\0';
 
-    /* Build session update JSON with tools */
-    static const char *session_update_template = 
-        "{"
-            "\"type\": \"session.update\","
-            "\"session\": {"
-                "\"type\": \"realtime\","
-                "\"instructions\": \"%s\","
-                "\"tool_choice\": \"auto\","
-                "\"tools\": ["
-                    "{"
-                        "\"type\": \"function\","
-                        "\"name\": \"hangup_call\","
-                        "\"description\": \"Hang up the call\""
-                    "},"
-                    "{"
-                        "\"type\": \"function\","
-                        "\"name\": \"send_dtmf\","
-                        "\"description\": \"Send DTMF tones to the call\","
-                        "\"parameters\": {"
-                            "\"type\": \"object\","
-                            "\"properties\": {"
-                                "\"digits\": {"
-                                    "\"type\": \"string\","
-                                    "\"description\": \"String of DTMF digits to send (e.g., '123', '*9#', '1234*'). Valid characters: 0-9, *, #, A-D\","
-                                    "\"pattern\": \"^[0-9*#A-D]+$\""
-                                "}"
-                            "},"
-                            "\"required\": [\"digits\"]"
-                        "}"
-                    "}"
-                "]"
-            "}"
-        "}";
-    
-    re_sdprintf(&json_msg, session_update_template, escaped_prompt);
+    info("openai_rt: Session update: %s\n", json_msg);
 
-     info("openai_rt: Session update: %s\n", json_msg);
-
-     if (json_msg) {
-         err = queue_message_to_openai(json_msg, str_len(json_msg), NULL, NULL);
-         if (err) {
-             warning("openai_rt: Failed to queue session update: %m\n", err);
-         } else {
-             info("openai_rt: Session update queued (PCM16 format)\n");
-         }
-         mem_deref(json_msg);
-     }
-     
-     mem_deref(escaped_prompt);
- }
+    if (json_msg) {
+        err = queue_message_to_openai(json_msg, str_len(json_msg), NULL, NULL);
+        if (err) {
+            warning("openai_rt: Failed to queue session update: %m\n", err);
+        } else {
+            info("openai_rt: Session update queued (PCM16 format)\n");
+        }
+        mem_deref(json_msg);
+    }
+}
  
  int queue_message_to_openai(const char *json_msg, size_t len,
     void (*callback)(void *arg, int err), void *arg)

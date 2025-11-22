@@ -9,6 +9,7 @@
  */
 
 #include "openai_rt.h"
+#include "ai_model.h"
 #include <re.h>
 #include <re_atomic.h>
 #include <re_thread.h>
@@ -241,7 +242,15 @@ void audio_close(void)
 
 void handle_incoming_audio(const int16_t *s16_data, size_t sampc)
 {
+    struct ai_model *model = get_ai_model();
+    char *json_msg = NULL;
+    int err;
+
     if (!s16_data || sampc == 0 || !g_oairt.call_active) return;
+    if (!model || !model->build_audio_append) {
+        warning("openai_rt: AI model not initialized\n");
+        return;
+    }
 
     size_t byte_len = sampc * sizeof(int16_t);
     char *b64 = encode_audio_base64((const uint8_t *)s16_data, byte_len);
@@ -250,15 +259,16 @@ void handle_incoming_audio(const int16_t *s16_data, size_t sampc)
         return;
     }
 
-    char *json_msg = NULL;
-    re_sdprintf(&json_msg,
-        "{"
-          "\"type\":\"input_audio_buffer.append\","
-          "\"audio\":\"%s\""
-        "}", b64);
+    err = model->build_audio_append(b64, &json_msg);
+    mem_deref(b64);
+
+    if (err) {
+        warning("openai_rt: Failed to build audio append message: %m\n", err);
+        return;
+    }
 
     if (json_msg) {
-        int err = queue_message_to_openai(json_msg, str_len(json_msg), NULL, NULL);
+        err = queue_message_to_openai(json_msg, str_len(json_msg), NULL, NULL);
         if (err) {
             warning("openai_rt: Failed to queue PCM audio: %m\n", err);
         } else {
@@ -274,7 +284,6 @@ void handle_incoming_audio(const int16_t *s16_data, size_t sampc)
         }
         mem_deref(json_msg);
     }
-    mem_deref(b64);
 }
 
 /* Handle outgoing audio from OpenAI - convert from G711u and buffer for injection */
@@ -985,29 +994,24 @@ static int safe_clear_buffer(struct mbuf *buffer, const char *buffer_name)
     return 0;
 }
 
-/* Send commit message to OpenAI to process accumulated audio */
+/* Send commit message to AI model to process accumulated audio */
 static void send_audio_commit(void)
 {
+    struct ai_model *model = get_ai_model();
+    char *response_msg = NULL;
+    int err;
+
     /* Note: explicit commit not needed since we're using server_vad */
     
     if (g_oairt.wait_for_greeting) {
         g_audio.response_created = true;
     }
     
-    if (!g_audio.response_created) {
-        char *response_msg = NULL;
-        re_sdprintf(&response_msg,
-            "{"
-              "\"type\":\"response.create\","
-              "\"response\":{"
-                 "\"instructions\":\"%s\""
-              "}"
-            "}",
-            g_oairt.prompt
-        );
+    if (!g_audio.response_created && model && model->build_response_create) {
+        err = model->build_response_create(g_oairt.prompt, &response_msg);
         
-        if (response_msg) {
-            int err = queue_message_to_openai(response_msg, str_len(response_msg), NULL, NULL);
+        if (!err && response_msg) {
+            err = queue_message_to_openai(response_msg, str_len(response_msg), NULL, NULL);
             if (err) {
                 warning("openai_rt: Failed to queue response.create message: %m\n", err);
             } else {

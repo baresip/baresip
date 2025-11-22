@@ -28,7 +28,8 @@ set(SRCS
     audio.c
     websocket.c
     utils.c
-    calls.c)
+    calls.c
+    openai.c)
 
 if(STATIC)
     add_library(${PROJECT_NAME} OBJECT ${SRCS})

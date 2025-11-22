@@ -2,6 +2,7 @@
  * @file openai_rt.c  OpenAI Realtime API module - main
  */
 #include "openai_rt.h"
+#include "ai_model.h"
 
 /* Global instance */
 struct openai_rt g_oairt;
@@ -22,6 +23,7 @@ static void module_destructor(void *arg)
 	calls_close();
 	websocket_close();
 	audio_close();
+	ai_model_close();
 
 	/* Clear global state */
 	memset(&g_oairt, 0, sizeof(g_oairt));
@@ -46,6 +48,13 @@ static int module_init(void)
 	if (!str_isset(g_oairt.api_key)) {
 		warning("openai_rt: No API key configured. Please set openai_rt_api_key in config\n");
 		return EINVAL;
+	}
+
+	/* Initialize AI model system */
+	err = ai_model_init(&g_oairt);
+	if (err) {
+		warning("openai_rt: failed to initialize AI model: %m\n", err);
+		goto out;
 	}
 
 	/* Initialize subsystems */

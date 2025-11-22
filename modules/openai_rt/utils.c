@@ -109,6 +109,7 @@ int read_config(void)
 
     conf_get_str(conf_cur(), "openai_rt_prompt", g_oairt.prompt, sizeof(g_oairt.prompt));
     conf_get_str(conf_cur(), "openai_rt_api_key", g_oairt.api_key, sizeof(g_oairt.api_key));
+    conf_get_str(conf_cur(), "openai_rt_tool_calls", g_oairt.enabled_tools, sizeof(g_oairt.enabled_tools));
     g_oairt.wait_for_greeting = true;
     conf_get_bool(conf_cur(), "openai_rt_wait_for_greeting", &g_oairt.wait_for_greeting);
 
@@ -116,10 +117,15 @@ int read_config(void)
     if (!str_isset(g_oairt.prompt))
         str_ncpy(g_oairt.prompt, "You are a helpful voice assistant for phone calls.", sizeof(g_oairt.prompt));
 
-    DEBUG_INFO("Config loaded - API key: %s, Prompt: %.50s%s\n",
+    /* Set default enabled tools if not configured - enable all by default */
+    if (!str_isset(g_oairt.enabled_tools))
+        str_ncpy(g_oairt.enabled_tools, "hangup_call,send_dtmf", sizeof(g_oairt.enabled_tools));
+
+    DEBUG_INFO("Config loaded - API key: %s, Prompt: %.50s%s, Tools: %s\n",
            str_isset(g_oairt.api_key) ? "[CONFIGURED]" : "[MISSING]",
            g_oairt.prompt,
-           str_len(g_oairt.prompt) > 50 ? "..." : "");
+           str_len(g_oairt.prompt) > 50 ? "..." : "",
+           g_oairt.enabled_tools);
 
     return 0;
 }

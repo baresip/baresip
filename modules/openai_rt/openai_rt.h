@@ -11,6 +11,7 @@
 #include <rem.h>
 #include <baresip.h>
 #include <pthread.h>
+#include "ai_model.h"
 
 /* WebSocket states */
 enum ws_state {
@@ -41,6 +42,7 @@ struct openai_rt {
     /* Configuration */
     char api_key[256];
     char prompt[4096];
+    char enabled_tools[256];  /* Comma-separated list of enabled tool calls (e.g., "hangup_call,send_dtmf") */
     bool wait_for_greeting;
     /* Call state */
     bool call_active;
