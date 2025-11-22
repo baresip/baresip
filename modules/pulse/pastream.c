@@ -103,7 +103,8 @@ static void stream_latency_update_cb(pa_stream *s, void *arg)
 	pa_err = pa_stream_get_latency(s, &usec, &neg);
 	if (!pa_err)
 		debug("pulse: stream %s latency update "
-				"usec=%lu, neg=%d\n", st->sname, usec, neg);
+				"usec=%lu, neg=%d\n", st->sname,
+				(unsigned long) usec, neg);
 }
 
 
