@@ -193,6 +193,19 @@ static void handle_function_call_cb(const char *call_id, const char *name,
 {
     (void)arg;
 
+    /* Validate that the tool call is enabled in configuration */
+    if (!ai_model_is_tool_enabled(name, g_oairt.enabled_tools)) {
+        warning("openai_rt: Tool call '%s' is not enabled in configuration. Rejecting.\n", name);
+        /* Send error response back to OpenAI */
+        char error_msg[512];
+        re_snprintf(error_msg, sizeof(error_msg), 
+                    "Error: Tool call '%s' is not enabled. Only these tools are available: %s",
+                    name, g_oairt.enabled_tools);
+        send_function_call_output(call_id, error_msg);
+        return;
+    }
+
+    /* Process enabled tool calls */
     if (strcmp(name, AI_TOOL_HANGUP_CALL.name) == 0) {
         DEBUG_INFO("openai_rt: Executing hangup_call function\n");
         calls_hangup();
@@ -204,6 +217,7 @@ static void handle_function_call_cb(const char *call_id, const char *name,
         struct json_object *args_obj = json_tokener_parse(arguments);
         if (!args_obj) {
             warning("openai_rt: Failed to parse send_dtmf arguments\n");
+            send_function_call_output(call_id, "Error: Failed to parse function arguments");
             return;
         }
 
@@ -218,13 +232,26 @@ static void handle_function_call_cb(const char *call_id, const char *name,
                     re_snprintf(output, sizeof(output), "DTMF tones sent: %s", digits);
                     send_function_call_output(call_id, output);
                 } else {
+                    char error_msg[256];
+                    re_snprintf(error_msg, sizeof(error_msg), 
+                               "Error: Failed to send DTMF string '%s'", digits);
+                    send_function_call_output(call_id, error_msg);
                     warning("openai_rt: Failed to send DTMF string '%s': %m\n", digits, err);
                 }
+            } else {
+                send_function_call_output(call_id, "Error: Missing or empty 'digits' parameter");
             }
+        } else {
+            send_function_call_output(call_id, "Error: Missing or invalid 'digits' parameter");
         }
         json_object_put(args_obj);
     } else {
-        warning("openai_rt: Unknown function call: %s\n", name);
+        /* This shouldn't happen if validation above worked, but handle it anyway */
+        warning("openai_rt: Unknown function call: %s (but was enabled in config?)\n", name);
+        char error_msg[256];
+        re_snprintf(error_msg, sizeof(error_msg), 
+                   "Error: Unknown or unsupported tool call: %s", name);
+        send_function_call_output(call_id, error_msg);
     }
 }
 

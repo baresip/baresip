@@ -183,7 +183,7 @@ static int openai_add_auth_headers(void *in, size_t len)
 /**
  * Check if a tool name is enabled in the comma-separated list
  */
-static bool is_tool_enabled(const char *tool_name, const char *enabled_tools)
+bool ai_model_is_tool_enabled(const char *tool_name, const char *enabled_tools)
 {
 	const char *p;
 	size_t tool_name_len;
@@ -264,7 +264,7 @@ int ai_model_build_tools_json(const char *enabled_tools, char **tools_json)
 			continue;
 		}
 		
-		if (is_tool_enabled(tool->name, enabled_tools)) {
+		if (ai_model_is_tool_enabled(tool->name, enabled_tools)) {
 			has_enabled = true;
 			
 			/* Build tool JSON object */

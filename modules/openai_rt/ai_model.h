@@ -53,6 +53,15 @@ extern const size_t AI_AVAILABLE_TOOLS_COUNT;
 int ai_model_build_tools_json(const char *enabled_tools, char **tools_json);
 
 /**
+ * Check if a tool name is enabled in the comma-separated list
+ *
+ * @param tool_name      Tool name to check (e.g., "hangup_call")
+ * @param enabled_tools  Comma-separated list of enabled tool names (e.g., "hangup_call,send_dtmf")
+ * @return true if tool is enabled, false otherwise
+ */
+bool ai_model_is_tool_enabled(const char *tool_name, const char *enabled_tools);
+
+/**
  * AI Model Interface Structure
  *
  * This structure defines the functions that must be implemented
