@@ -29,7 +29,9 @@ set(SRCS
     websocket.c
     utils.c
     calls.c
-    openai.c)
+    openai.c
+    gemini.c
+    ai_model.c)
 
 if(STATIC)
     add_library(${PROJECT_NAME} OBJECT ${SRCS})

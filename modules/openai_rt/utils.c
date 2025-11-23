@@ -110,6 +110,7 @@ int read_config(void)
     conf_get_str(conf_cur(), "openai_rt_prompt", g_oairt.prompt, sizeof(g_oairt.prompt));
     conf_get_str(conf_cur(), "openai_rt_api_key", g_oairt.api_key, sizeof(g_oairt.api_key));
     conf_get_str(conf_cur(), "openai_rt_tool_calls", g_oairt.enabled_tools, sizeof(g_oairt.enabled_tools));
+    conf_get_str(conf_cur(), "openai_rt_backend", g_oairt.backend, sizeof(g_oairt.backend));
     g_oairt.wait_for_greeting = true;
     conf_get_bool(conf_cur(), "openai_rt_wait_for_greeting", &g_oairt.wait_for_greeting);
 
@@ -121,7 +122,23 @@ int read_config(void)
     if (!str_isset(g_oairt.enabled_tools))
         str_ncpy(g_oairt.enabled_tools, "hangup_call,send_dtmf", sizeof(g_oairt.enabled_tools));
 
-    DEBUG_INFO("Config loaded - API key: %s, Prompt: %.50s%s, Tools: %s\n",
+    /* Set default backend if not configured - default to OpenAI */
+    if (!str_isset(g_oairt.backend))
+        str_ncpy(g_oairt.backend, "openai_realtime", sizeof(g_oairt.backend));
+
+    /* Parse backend type */
+    if (str_casecmp(g_oairt.backend, "openai_realtime") == 0) {
+        g_oairt.backend_type = AI_BACKEND_OPENAI_REALTIME;
+    } else if (str_casecmp(g_oairt.backend, "gemini_live") == 0) {
+        g_oairt.backend_type = AI_BACKEND_GEMINI_LIVE;
+    } else {
+        warning("openai_rt: Unknown backend '%s', defaulting to openai_realtime\n", g_oairt.backend);
+        g_oairt.backend_type = AI_BACKEND_OPENAI_REALTIME;
+        str_ncpy(g_oairt.backend, "openai_realtime", sizeof(g_oairt.backend));
+    }
+
+    DEBUG_INFO("Config loaded - Backend: %s, API key: %s, Prompt: %.50s%s, Tools: %s\n",
+           g_oairt.backend,
            str_isset(g_oairt.api_key) ? "[CONFIGURED]" : "[MISSING]",
            g_oairt.prompt,
            str_len(g_oairt.prompt) > 50 ? "..." : "",

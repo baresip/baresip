@@ -5,7 +5,7 @@
  * Implementations (like OpenAI) provide model-specific code while
  * the rest of the module works through this interface.
  *
- * Copyright (C) 2024 SIPFront
+ * Copyright (C) 2025 Sipfront
  */
 
 #ifndef AI_MODEL_H
@@ -160,8 +160,12 @@ struct ai_model {
 	                     void *cb_arg);
 };
 
-/* Get the current AI model implementation */
-extern struct ai_model *get_ai_model(void);
+/* AI model implementations - exported from their respective files */
+extern struct ai_model openai_model;
+extern struct ai_model gemini_model;
+
+/* Get the current AI model implementation based on configuration */
+struct ai_model *get_ai_model(void);
 
 /* Initialize AI model system */
 int ai_model_init(struct openai_rt *ort);

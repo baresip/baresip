@@ -1,7 +1,7 @@
 /**
  * @file openai_rt.h  OpenAI Realtime API module
  *
- * Copyright (C) 2024 SIPFront
+ * Copyright (C) 2025 Sipfront
  */
 
 #ifndef OPENAI_RT_H
@@ -37,12 +37,20 @@ struct ws_message {
     void *arg;
 };
 
+/* AI Backend types */
+enum ai_backend_type {
+	AI_BACKEND_OPENAI_REALTIME,
+	AI_BACKEND_GEMINI_LIVE,
+};
+
 /* Global module state */
 struct openai_rt {
     /* Configuration */
     char api_key[256];
     char prompt[4096];
     char enabled_tools[256];  /* Comma-separated list of enabled tool calls (e.g., "hangup_call,send_dtmf") */
+    char backend[64];         /* AI backend selection: "openai_realtime" or "gemini_live" */
+    enum ai_backend_type backend_type;  /* Parsed backend type */
     bool wait_for_greeting;
     /* Call state */
     bool call_active;

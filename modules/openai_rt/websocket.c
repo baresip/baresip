@@ -300,23 +300,26 @@ static void handle_response_done_cb(const char *response_json, void *arg)
          process_outgoing_messages();
          break;
  
-     case LWS_CALLBACK_CLIENT_RECEIVE:
-         //info("openai_rt: WebSocket received %zu bytes\n", len);
-         DEBUG_INFO("Received message from AI model: %s\n", (const char *)in);
+    case LWS_CALLBACK_CLIENT_RECEIVE:
+        info("openai_rt: WebSocket received %zu bytes\n", len);
+        if (len > 0) {
+            info("openai_rt: Received message from AI model: %.200s%s\n", 
+                 (const char *)in, len > 200 ? "..." : "");
+        }
 
-         if (len > 0 && g_oairt.ws_state == WS_CONNECTED) {
-            struct ai_model *model = get_ai_model();
-            if (model && model->parse_message) {
-                model->parse_message((const char *)in,
-                                   handle_audio_delta,
-                                   handle_session_updated_cb,
-                                   handle_speech_started_cb,
-                                   handle_function_call_cb,
-                                   handle_response_done_cb,
-                                   NULL);
-            }
-         }
-         break;
+        if (len > 0 && g_oairt.ws_state == WS_CONNECTED) {
+           struct ai_model *model = get_ai_model();
+           if (model && model->parse_message) {
+               model->parse_message((const char *)in,
+                                  handle_audio_delta,
+                                  handle_session_updated_cb,
+                                  handle_speech_started_cb,
+                                  handle_function_call_cb,
+                                  handle_response_done_cb,
+                                  NULL);
+           }
+        }
+        break;
  
      case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
          warning("openai_rt: WebSocket connection error\n");
@@ -325,12 +328,15 @@ static void handle_response_done_cb(const char *response_json, void *arg)
          g_oairt.session_ready = false;
          break;
  
-     case LWS_CALLBACK_CLIENT_CLOSED:
-         info("openai_rt: WebSocket disconnected\n");
-         g_oairt.ws_state = WS_DISCONNECTED;
-         g_oairt.ws_client = NULL;
-         g_oairt.session_ready = false;
-         break;
+    case LWS_CALLBACK_CLIENT_CLOSED:
+        info("openai_rt: WebSocket disconnected\n");
+        if (len > 0 && in) {
+            info("openai_rt: Close reason/data: %.200s\n", (const char *)in);
+        }
+        g_oairt.ws_state = WS_DISCONNECTED;
+        g_oairt.ws_client = NULL;
+        g_oairt.session_ready = false;
+        break;
  
      case LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER: {
          info("openai_rt: Adding authentication headers\n");
@@ -399,9 +405,17 @@ static void handle_response_done_cb(const char *response_json, void *arg)
          info("openai_rt: HTTP client transaction completed\n");
          break;
  
-     default:
-         info("openai_rt: WebSocket callback: reason=%d (unhandled)\n", reason);
-         break;
+    case 38:  /* LWS_CALLBACK_CLIENT_CONFIRM_EXTENSION_SUPPORTED or similar */
+        info("openai_rt: WebSocket callback: reason=38 (likely client confirm extension)\n");
+        break;
+    
+    default:
+        info("openai_rt: WebSocket callback: reason=%d (unhandled)\n", reason);
+        if (len > 0 && in) {
+            info("openai_rt: Callback data: %.200s%s\n", 
+                 (const char *)in, len > 200 ? "..." : "");
+        }
+        break;
      }
  
      return 0;

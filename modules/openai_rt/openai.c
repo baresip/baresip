@@ -6,7 +6,7 @@
  * - JSON message building (session setup, audio, responses, tools)
  * - JSON message parsing (event handling)
  *
- * Copyright (C) 2024 SIPFront
+ * Copyright (C) 2025 Sipfront
  */
 
 #include "openai_rt.h"
@@ -83,7 +83,7 @@ static struct json_object *get_json_object_field(struct json_object *obj,
                                                  const char *context);
 
 /* OpenAI AI model implementation */
-static struct ai_model openai_model = {
+struct ai_model openai_model = {
 	.name = "openai",
 	.init = openai_init,
 	.close = openai_close,
@@ -95,32 +95,6 @@ static struct ai_model openai_model = {
 	.build_function_call_output = openai_build_function_call_output,
 	.parse_message = openai_parse_message,
 };
-
-/* Static instance pointer */
-static struct ai_model *current_model = &openai_model;
-
-/* Get current AI model implementation */
-struct ai_model *get_ai_model(void)
-{
-	return current_model;
-}
-
-/* Initialize AI model system */
-int ai_model_init(struct openai_rt *ort)
-{
-	if (!current_model || !current_model->init) {
-		return EINVAL;
-	}
-	return current_model->init(ort);
-}
-
-/* Close AI model system */
-void ai_model_close(void)
-{
-	if (current_model && current_model->close) {
-		current_model->close();
-	}
-}
 
 /* OpenAI-specific implementations */
 
