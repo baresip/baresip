@@ -74,30 +74,30 @@ static void handle_response_done_cb(const char *response_json, void *arg);
          return;
      }
  
-     //DEBUG_INFO("Sending message to OpenAI: %s\n", msg->data + LWS_PRE);
- 
-     /* Send the message */
-     int written = lws_write(g_oairt.ws_client, msg->data + LWS_PRE, msg->len, LWS_WRITE_TEXT);
-     if (written < 0) {
-         warning("openai_rt: Failed to write WebSocket message\n");
-         /* Put message back in queue */
-         pthread_mutex_lock(&g_oairt.ws_mutex);
-         list_prepend(&g_oairt.to_openai_queue, &msg->le, msg);
-         pthread_mutex_unlock(&g_oairt.ws_mutex);
-     } else if (written < (int)msg->len) {
-         /* Partial write, update message and put back in queue */
-         memmove(msg->data + LWS_PRE, msg->data + LWS_PRE + written, msg->len - written);
-         msg->len -= written;
-         pthread_mutex_lock(&g_oairt.ws_mutex);
-         list_prepend(&g_oairt.to_openai_queue, &msg->le, msg);
-         pthread_mutex_unlock(&g_oairt.ws_mutex);
-     } else {
-         /* Full message sent, call callback if provided */
-         if (msg->callback) {
-             msg->callback(msg->arg, 0);
-         }
-         mem_deref(msg);
-     }
+    //DEBUG_INFO("Sending message to OpenAI: %s\n", msg->data + LWS_PRE);
+
+    /* Send the message */
+    int written = lws_write(g_oairt.ws_client, msg->data + LWS_PRE, msg->len, LWS_WRITE_TEXT);
+    if (written < 0) {
+        warning("openai_rt: Failed to write WebSocket message\n");
+        /* Put message back in queue */
+        pthread_mutex_lock(&g_oairt.ws_mutex);
+        list_prepend(&g_oairt.to_openai_queue, &msg->le, msg);
+        pthread_mutex_unlock(&g_oairt.ws_mutex);
+    } else if (written < (int)msg->len) {
+        /* Partial write, update message and put back in queue */
+        memmove(msg->data + LWS_PRE, msg->data + LWS_PRE + written, msg->len - written);
+        msg->len -= written;
+        pthread_mutex_lock(&g_oairt.ws_mutex);
+        list_prepend(&g_oairt.to_openai_queue, &msg->le, msg);
+        pthread_mutex_unlock(&g_oairt.ws_mutex);
+    } else {
+        /* Full message sent, call callback if provided */
+        if (msg->callback) {
+            msg->callback(msg->arg, 0);
+        }
+        mem_deref(msg);
+    }
  
      /* If there are more messages to send, request another writable callback */
      pthread_mutex_lock(&g_oairt.ws_mutex);
