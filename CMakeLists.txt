@@ -165,6 +165,7 @@ set(SRCS
   src/conf.c
   src/config.c
   src/contact.c
+  src/cparam.c
   src/custom_hdrs.c
   src/descr.c
   src/dial_number.c
@@ -179,7 +180,6 @@ set(SRCS
   src/mnat.c
   src/module.c
   src/net.c
-  src/cparam.c
   src/peerconn.c
   src/play.c
   src/reg.c
