@@ -1,5 +1,5 @@
 /**
- * @file test/parse.c  Baresip selftest -- parse
+ * @file test/cparam.c  Baresip selftest -- Command parameter parse helpers
  *
  * Copyright (C) 2025 Christian Spielberger - c.spielberger@commend.com
  */
