@@ -941,7 +941,7 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 		if (!acc || !acc->regint)
 			continue;
 
-		if (0 == pl_strcasecmp(cuser, ua_local_cuser(ua))) {
+		if (0 == pl_strcasecmp(cuser, ua_cuser(ua))) {
 			ua_printf(ua, "selected for %r\n", cuser);
 			return ua;
 		}
