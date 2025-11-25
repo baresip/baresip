@@ -890,7 +890,7 @@ struct ua *uag_find(const struct pl *cuser)
 	for (le = uag.ual.head; le; le = le->next) {
 		struct ua *ua = le->data;
 
-		if (0 == pl_strcasecmp(cuser, ua_local_cuser(ua)))
+		if (0 == pl_strcasecmp(cuser, ua_cuser(ua)))
 			return ua;
 	}
 
