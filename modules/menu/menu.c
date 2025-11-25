@@ -910,11 +910,10 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 		err = ua_call_alloc(&call2, ua, VIDMODE_ON, NULL, call,
 				    call_localuri(call), true);
 		if (!err) {
-			struct pl pl;
-
 			call_set_user_data(call2, call_user_data(call));
-			pl_set_str(&pl, prm);
 
+			struct pl pl;
+			pl_set_str(&pl, prm);
 			err = call_connect(call2, &pl);
 			if (err) {
 				warning("menu: transfer: connect error: %m\n",
@@ -959,7 +958,7 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 		if (!re_regex(prm, strlen(prm), "sip:"))
 			pl_set_str(&val, "invite");
 
-		(void)menu_param_decode(prm, "method", &val);
+		(void)cparam_decode(prm, "method", &val);
 		if (!pl_strcmp(&val, "invite")) {
 			info("menu: incoming REFER to %s\n", prm);
 			menu_invite(prm);
@@ -1161,36 +1160,6 @@ struct ua   *menu_ua_carg(struct re_printf *pf, const struct cmd_arg *carg,
 	}
 
 	return ua;
-}
-
-
-/**
- * Decode a command parameter
- *
- * @param prm  Command arguments parameter string
- * @param name Parameter name
- * @param val  Returned parameter value
- *
- * @return 0 for success, otherwise errorcode
- */
-int menu_param_decode(const char *prm, const char *name, struct pl *val)
-{
-	char expr[128];
-	struct pl v;
-
-	if (!str_isset(prm) || !name || !val)
-		return EINVAL;
-
-	(void)re_snprintf(expr, sizeof(expr),
-			  "[ \t\r\n]*%s[ \t\r\n]*=[ \t\r\n]*[~ \t\r\n;]+",
-			  name);
-
-	if (re_regex(prm, strlen(prm), expr, NULL, NULL, NULL, &v))
-		return ENOENT;
-
-	*val = v;
-
-	return 0;
 }
 
 

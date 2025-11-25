@@ -271,6 +271,7 @@ int32_t       call_answer_delay(const struct call *call);
 void          call_set_answer_delay(struct call *call, int32_t adelay);
 struct call  *call_find_linenum(const struct list *calls, uint32_t linenum);
 struct call  *call_find_id(const struct list *calls, const char *id);
+struct call  *call_find_id_pl(const struct list *calls, const struct pl *id);
 void call_set_current(struct list *calls, struct call *call);
 const struct list *call_get_custom_hdrs(const struct call *call);
 void call_set_media_direction(struct call *call, enum sdp_dir a,
@@ -282,12 +283,41 @@ void call_get_media_estdir(struct call *call,
 			   enum sdp_dir *ap, enum sdp_dir *vp);
 void call_start_answtmr(struct call *call, uint32_t ms);
 bool          call_supported(struct call *call, uint16_t tags);
-const char   *call_user_data(const struct call *call);
-int call_set_user_data(struct call *call, const char *user_data);
+const struct pl *call_user_data(const struct call *call);
+int call_set_user_data(struct call *call, const struct pl *user_data);
 int call_msg_src(const struct call *call, struct sa *sa);
 enum sip_transp call_transp(const struct call *call);
 enum sdp_neg_state call_sdp_neg_state(const struct call *call);
 bool call_sdp_change_allowed(const struct call *call);
+
+/**
+ * Command parameter parse helpers
+ */
+
+int cparam_decode(const char *prm, const char *name, struct pl *val);
+
+/** UA command parameters */
+struct cparam_ua {
+	struct pl dname;              /**< Display name                   */
+	struct pl uri;	              /**< SIP URI                        */
+	enum sdp_dir adir;            /**< Audio direction                */
+	enum sdp_dir vdir;            /**< Video direction                */
+	struct pl userdata;           /**< User data                      */
+};
+
+int cparam_ua_decode(struct cparam_ua **prmp,
+		     const char *prm, struct re_printf *pf);
+
+/** Call command parameters */
+struct cparam_call {
+	struct pl callid;             /**< Call-ID                        */
+	enum sdp_dir adir;            /**< Audio direction                */
+	enum sdp_dir vdir;            /**< Video direction                */
+	bool mdir;                    /**< Media direction flag           */
+};
+
+int cparam_call_decode(struct cparam_call **prmp,
+		       const char *prm, struct re_printf *pf);
 
 /*
  * Custom headers
@@ -1012,6 +1042,7 @@ struct tls  *uag_tls(void);
 struct sipsess_sock  *uag_sipsess_sock(void);
 struct sipevent_sock *uag_sipevent_sock(void);
 struct call *uag_call_find(const char *id);
+struct call *uag_call_find_pl(const struct pl *id);
 void uag_filter_calls(call_list_h *listh, call_match_h *matchh, void *arg);
 
 

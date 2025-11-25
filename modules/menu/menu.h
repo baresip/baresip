@@ -66,9 +66,7 @@ void dial_menu_unregister(void);
 
 /* Generic menu functions */
 void menu_update_callstatus(bool incall);
-int  menu_param_decode(const char *prm, const char *name, struct pl *val);
 int menu_get_call_ua(struct re_printf *pf, const struct cmd_arg *carg,
 		     struct ua **uap, struct call **callp);
 struct call *menu_find_call(call_match_h *matchh, const struct call *exclude);
 struct call *menu_find_call_state(enum call_state st);
-enum sdp_dir decode_sdp_enum(const struct pl *pl);

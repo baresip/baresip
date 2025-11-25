@@ -83,7 +83,7 @@ struct call {
 	enum sdp_dir estvdir;      /**< Established video direction         */
 	bool use_video;
 	bool use_rtp;
-	char *user_data;           /**< User data related to the call       */
+	struct pl *user_data;      /**< User data related to the call       */
 };
 
 
@@ -3166,6 +3166,29 @@ struct call *call_find_linenum(const struct list *calls, uint32_t linenum)
  * Find a call by call-id
  *
  * @param calls   List of calls
+ * @param id      Call-id pointer-length string
+ *
+ * @return Call object if found, NULL if not found
+ */
+struct call *call_find_id_pl(const struct list *calls, const struct pl *id)
+{
+	struct le *le;
+
+	for (le = list_head(calls); le; le = le->next) {
+		struct call *call = le->data;
+
+		if (0 == pl_strcmp(id, call->id))
+			return call;
+	}
+
+	return NULL;
+}
+
+
+/**
+ * Find a call by call-id
+ *
+ * @param calls   List of calls
  * @param id      Call-id string
  *
  * @return Call object if found, NULL if not found
@@ -3331,6 +3354,7 @@ bool call_supported(struct call *call, uint16_t tags)
 	return (call->supported & tags) == tags;
 }
 
+
 /**
  * Get the user data for the call
  *
@@ -3338,10 +3362,11 @@ bool call_supported(struct call *call, uint16_t tags)
  *
  * @return Call's user data
  */
-const char *call_user_data(const struct call *call)
+const struct pl *call_user_data(const struct call *call)
 {
 	return call ? call->user_data : NULL;
 }
+
 
 /**
  * Set the user data of the call
@@ -3350,20 +3375,17 @@ const char *call_user_data(const struct call *call)
  * @param user_data User data to be set
  * @return int
  */
-
-int call_set_user_data(struct call *call, const char *user_data)
+int call_set_user_data(struct call *call, const struct pl *user_data)
 {
 	if (!call)
 		return EINVAL;
 
 	call->user_data = mem_deref(call->user_data);
+	if (!pl_isset(user_data))
+		return 0;
 
-	int err = str_dup(&call->user_data, user_data);
-
-	if (err)
-		return err;
-
-	return 0;
+	call->user_data = pl_alloc_dup(user_data);
+	return call->user_data ? 0 : ENOMEM;
 }
 
 
