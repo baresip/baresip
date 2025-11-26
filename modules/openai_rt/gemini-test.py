@@ -6,8 +6,12 @@ import json
 import sys
 import os
 
+# docs at https://ai.google.dev/api/live#send-messages
+
 # The Endpoint for Ephemeral Tokens is strictly "Constrained"
 URI = "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained"
+MODEL = "gemini-2.5-flash-native-audio-preview-09-2025"
+# MODEL = "gemini-live-2.5-flash-preview-native-audio-09-2025"
 
 async def connect_and_run(token):
     # FIX: Use 'Token' schema, NOT 'Bearer'. 
@@ -41,21 +45,55 @@ async def connect_and_run(token):
             # Setup message based on working SDK example
             # Note: Even with ephemeral tokens, the SDK sends a full setup message
             # with model (with "models/" prefix) and systemInstruction (with "role": "user")
+            # docs at:
+            # https://ai.google.dev/api/live#bidigeneratecontentsetup
+            # https://ai.google.dev/api/generate-content#v1alpha.GenerationConfig
+            # https://ai.google.dev/gemini-api/docs/function-calling?example=meeting
             setup_msg = {
                 "setup": {
-                    "model": "models/gemini-2.5-flash-native-audio-preview-09-2025",
+                    "model": "models/" + MODEL,
                     "generationConfig": {
-                        "responseModalities": ["AUDIO"],
-                        "temperature": 0.7
+                        "responseModalities": ["AUDIO"], 
+                        "speechConfig": { #https://ai.google.dev/api/generate-content#SpeechConfig
+                        },
+                        "temperature": 0.7, # randomness of output
                     },
-                    "systemInstruction": {
+                    "systemInstruction": { # https://ai.google.dev/api/caching#Content
                         "parts": [
                             {
-                                "text": "You are a helpful assistant and answer in a friendly tone."
+                                "text": "You are a helpful assistant and answer in a friendly tone. First thing, log a test message via logtest."
                             }
                         ],
                         "role": "user"
-                    }
+                    },
+                    "tools": [ # https://ai.google.dev/gemini-api/docs/function-calling?example=meeting
+                        {
+                            "function_declarations": [
+                                {
+                                    "name": "logtest",
+                                    "description": "Log a test message",
+                                    "parameters": {
+                                        "type": "object",
+                                        "properties": {
+                                            "message": {
+                                                "type": "string",
+                                                "description": "The message to log"
+                                            },
+                                            "level": {
+                                                "type": "string",
+                                                "description": "The level of the message",
+                                                "enum": ["info", "warning", "error"]
+                                            }
+                                        },
+                                        "required": ["message", "level"]
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "sessionResumption": {
+                        # "handle": "...", # https://ai.google.dev/api/live#SessionResumptionConfig
+                    },
                 }
             }
             setup_msg_json = json.dumps(setup_msg)
@@ -79,7 +117,7 @@ async def connect_and_run(token):
             message_count = 0
             while True:
                 try:
-                    response_raw = await asyncio.wait_for(websocket.recv(), timeout=10.0)
+                    response_raw = await asyncio.wait_for(websocket.recv(), timeout=300.0)
                     message_count += 1
                     
                     print("=" * 80)
