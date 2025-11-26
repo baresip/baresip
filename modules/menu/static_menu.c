@@ -581,6 +581,7 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	const char *usage = "usage: /dialdir <address/number>"
 			" [audio=<inactive|sendonly|recvonly|sendrecv>]"
 			" [video=<inactive|sendonly|recvonly|sendrecv>]"
+			" [cuser=<string>]"
 			" [userdata=<string>]\n"
 			"/dialdir <address/number>"
 			" [sendonly|recvonly|sendrecv]\n"
@@ -592,6 +593,15 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	if (err) {
 		(void)re_hprintf(pf, "%s", usage);
 		return EINVAL;
+	}
+
+	if (!ua && pl_isset(&cp->cuser)) {
+		ua = uag_find(&cp->cuser);
+		if (!ua) {
+			re_hprintf(pf, "could not find UA for cuser=%r\n",
+				   &cp->cuser);
+			return EINVAL;
+		}
 	}
 
 	if (!ua)

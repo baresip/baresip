@@ -300,6 +300,7 @@ int cparam_decode(const char *prm, const char *name, struct pl *val);
 struct cparam_ua {
 	struct pl dname;              /**< Display name                   */
 	struct pl uri;	              /**< SIP URI                        */
+	struct pl cuser;              /**< Contact user                   */
 	enum sdp_dir adir;            /**< Audio direction                */
 	enum sdp_dir vdir;            /**< Video direction                */
 	struct pl userdata;           /**< User data                      */
