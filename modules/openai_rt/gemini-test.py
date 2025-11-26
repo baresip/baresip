@@ -55,6 +55,11 @@ async def connect_and_run(token):
                     "generationConfig": {
                         "responseModalities": ["AUDIO"], 
                         "speechConfig": { #https://ai.google.dev/api/generate-content#SpeechConfig
+                            "voiceConfig": { 
+                                "prebuiltVoiceConfig": {  
+                                    "voiceName": "Aoede" # https://ai.google.dev/gemini-api/docs/speech-generation#voices
+                                }
+                            },
                         },
                         "temperature": 0.7, # randomness of output
                     },
