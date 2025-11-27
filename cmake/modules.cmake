@@ -90,6 +90,7 @@ set(MODULES
   webrtc_aecm
   wincons
   x11
+  tonedetect
 
   CACHE STRING "List of modules like 'turn;pipewire;alsa'"
 )
