@@ -34,7 +34,6 @@ set(MODULES
   libg722
   g722
   g7221
-  g726
   gst
   gtk
   gzrtp
