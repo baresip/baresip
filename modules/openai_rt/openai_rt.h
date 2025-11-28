@@ -52,6 +52,8 @@ struct openai_rt {
     char backend[64];         /* AI backend selection: "openai_realtime" or "gemini_live" */
     enum ai_backend_type backend_type;  /* Parsed backend type */
     bool wait_for_greeting;
+    float temperature;        /* Temperature for AI model generation (default 0.7) */
+    char voice[64];           /* Voice name for Gemini (e.g., "Aoede") */
     /* Call state */
     bool call_active;
     struct call *current_call;

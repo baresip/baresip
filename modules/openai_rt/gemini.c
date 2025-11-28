@@ -165,6 +165,136 @@ static int gemini_add_auth_headers(void *in, size_t len)
 }
 
 /**
+ * Build tools JSON for Gemini in Gemini's format
+ * Gemini uses: tools: [{ function_declarations: [{ name, description, parameters }] }]
+ * 
+ * @param enabled_tools  Comma-separated list of enabled tool names (e.g., "hangup_call,send_dtmf")
+ * @param tools_json     Output: JSON array string for tools (allocated, must be freed)
+ * @return 0 if success, error code otherwise
+ * 
+ * Example: enabled_tools="hangup_call,send_dtmf" produces:
+ *   [{"function_declarations":[
+ *     {"name":"hangup_call","description":"Hang up the call","parameters":{...}},
+ *     {"name":"send_dtmf","description":"Send DTMF tones to the call","parameters":{...}}
+ *   ]}]
+ */
+static int gemini_build_tools_json(const char *enabled_tools, char **tools_json)
+{
+	char *result = NULL;
+	char *temp = NULL;
+	size_t i;
+	int err;
+	bool first = true;
+	bool has_enabled = false;
+	
+	if (!tools_json) {
+		return EINVAL;
+	}
+	
+	/* If no enabled tools specified, return empty array */
+	if (!enabled_tools || !*enabled_tools) {
+		err = str_dup(tools_json, "[]");
+		return err ? err : 0;
+	}
+	
+	/* Start tools array with function_declarations wrapper */
+	err = re_sdprintf(&result, "[{\"function_declarations\":[");
+	if (err) {
+		return err;
+	}
+	
+	/* Iterate through available tools and include enabled ones */
+	for (i = 0; i < AI_AVAILABLE_TOOLS_COUNT; i++) {
+		const struct ai_tool_call *tool = AI_AVAILABLE_TOOLS[i];
+		
+		if (!tool || !tool->name) {
+			continue;
+		}
+		
+		if (ai_model_is_tool_enabled(tool->name, enabled_tools)) {
+			has_enabled = true;
+			
+			/* Build function declaration JSON object */
+			if (tool->parameters_json) {
+				/* Tool with parameters */
+				if (!first) {
+					err = re_sdprintf(&temp, "%s,{"
+					                       "\"name\":\"%s\","
+					                       "\"description\":\"%s\","
+					                       "\"parameters\":%s"
+					                       "}",
+					                       result,
+					                       tool->name,
+					                       tool->description ? tool->description : "",
+					                       tool->parameters_json);
+				} else {
+					err = re_sdprintf(&temp, "%s{"
+					                       "\"name\":\"%s\","
+					                       "\"description\":\"%s\","
+					                       "\"parameters\":%s"
+					                       "}",
+					                       result,
+					                       tool->name,
+					                       tool->description ? tool->description : "",
+					                       tool->parameters_json);
+				}
+			} else {
+				/* Tool without parameters */
+				if (!first) {
+					err = re_sdprintf(&temp, "%s,{"
+					                       "\"name\":\"%s\","
+					                       "\"description\":\"%s\","
+					                       "\"parameters\":{\"type\":\"object\",\"properties\":{}}"
+					                       "}",
+					                       result,
+					                       tool->name,
+					                       tool->description ? tool->description : "");
+				} else {
+					err = re_sdprintf(&temp, "%s{"
+					                       "\"name\":\"%s\","
+					                       "\"description\":\"%s\","
+					                       "\"parameters\":{\"type\":\"object\",\"properties\":{}}"
+					                       "}",
+					                       result,
+					                       tool->name,
+					                       tool->description ? tool->description : "");
+				}
+			}
+			
+			if (err) {
+				mem_deref(result);
+				return err;
+			}
+			
+			mem_deref(result);
+			result = temp;
+			temp = NULL;
+			
+			first = false;
+		}
+	}
+	
+	/* If no tools were enabled, return empty array */
+	if (!has_enabled) {
+		mem_deref(result);
+		err = str_dup(tools_json, "[]");
+		return err ? err : 0;
+	}
+	
+	/* Close function_declarations array and tools array */
+	err = re_sdprintf(&temp, "%s]}]", result);
+	if (err) {
+		mem_deref(result);
+		return err;
+	}
+	
+	mem_deref(result);
+	*tools_json = temp;
+	
+	return 0;
+}
+
+/**
  * Build session setup message for Gemini
  * 
  * Note: Gemini Live API uses a different message format than OpenAI.
@@ -237,9 +367,14 @@ static int gemini_build_session_update(const char *prompt, char **json_msg)
 	}
 	*dst = '\0';
 
-	/* Gemini Live API uses "setup" message format (not session.update like OpenAI) */
-	/* According to SF_DOC.md, the setup message format */
-	/* NOTE: Temporarily removed tools support for troubleshooting */
+	/* Build tools JSON array based on enabled tools */
+	char *tools_json = NULL;
+	err = gemini_build_tools_json(g_oairt.enabled_tools, &tools_json);
+	if (err) {
+		warning("openai_rt: Failed to build Gemini tools JSON: %m\n", err);
+		mem_deref(escaped_prompt);
+		return err;
+	}
 	
 	/* Determine model based on API key type */
 	/* All models now use gemini-2.5-flash-native-audio-preview-09-2025 */
@@ -250,33 +385,79 @@ static int gemini_build_session_update(const char *prompt, char **json_msg)
 		model_name = GEMINI_MODEL_EPHEMERAL;
 	}
 	
-	/* Setup message format matching working SDK example:
-	 * - Model name includes "models/" prefix
-	 * - systemInstruction includes "role": "user"
-	 * - No sessionResumption field (not in SDK example)
-	 */
-	static const char *setup_template =
-		"{"
-			"\"setup\": {"
-				"\"model\": \"models/%s\","
-				"\"generationConfig\": {"
-					"\"responseModalities\": [\"AUDIO\"],"
-					"\"temperature\": 0.7"
-				"},"
-				"\"systemInstruction\": {"
-					"\"parts\": ["
-						"{"
-							"\"text\": \"%s\""
-						"}"
-					"],"
-					"\"role\": \"user\""
+	/* Get temperature (default to 0.7 if not set) */
+	float temperature = g_oairt.temperature > 0.0f ? g_oairt.temperature : 0.7f;
+	
+	/* Get voice name (default to "Aoede" if not set) */
+	const char *voice_name = str_isset(g_oairt.voice) ? g_oairt.voice : "Aoede";
+	
+	/* Check if tools are enabled */
+	bool has_tools = (tools_json && strcmp(tools_json, "[]") != 0);
+	
+	/* Build setup message - always include voice config, conditionally include tools */
+	if (has_tools) {
+		/* With tools */
+		err = re_sdprintf(json_msg,
+			"{"
+				"\"setup\":{"
+					"\"model\":\"models/%s\","
+					"\"generationConfig\":{"
+						"\"responseModalities\":[\"AUDIO\"],"
+						"\"speechConfig\":{"
+							"\"voiceConfig\":{"
+								"\"prebuiltVoiceConfig\":{"
+									"\"voiceName\":\"%s\""
+								"}"
+							"}"
+						"},"
+						"\"temperature\":%.2f"
+					"},"
+					"\"systemInstruction\":{"
+						"\"parts\":["
+							"{"
+								"\"text\":\"%s\""
+							"}"
+						"],"
+						"\"role\":\"user\""
+					"},"
+					"\"tools\":%s,"
+					"\"sessionResumption\":{}"
 				"}"
-			"}"
-		"}";
-	err = re_sdprintf(json_msg, setup_template, 
-	                  model_name, escaped_prompt);
+			"}",
+			model_name, voice_name, temperature, escaped_prompt, tools_json);
+	} else {
+		/* No tools */
+		err = re_sdprintf(json_msg,
+			"{"
+				"\"setup\":{"
+					"\"model\":\"models/%s\","
+					"\"generationConfig\":{"
+						"\"responseModalities\":[\"AUDIO\"],"
+						"\"speechConfig\":{"
+							"\"voiceConfig\":{"
+								"\"prebuiltVoiceConfig\":{"
+									"\"voiceName\":\"%s\""
+								"}"
+							"}"
+						"},"
+						"\"temperature\":%.2f"
+					"},"
+					"\"systemInstruction\":{"
+						"\"parts\":["
+							"{"
+								"\"text\":\"%s\""
+							"}"
+						"],"
+						"\"role\":\"user\""
+					"},"
+					"\"sessionResumption\":{}"
+				"}"
+			"}",
+			model_name, voice_name, temperature, escaped_prompt);
+	}
 	
 	mem_deref(escaped_prompt);
+	mem_deref(tools_json);
 
 	if (err) {
 		return err;

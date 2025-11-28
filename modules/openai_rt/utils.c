@@ -113,6 +113,13 @@ int read_config(void)
     conf_get_str(conf_cur(), "openai_rt_backend", g_oairt.backend, sizeof(g_oairt.backend));
     g_oairt.wait_for_greeting = true;
     conf_get_bool(conf_cur(), "openai_rt_wait_for_greeting", &g_oairt.wait_for_greeting);
+    g_oairt.temperature = 0.7f;
+    {
+        double temp_double = 0.7;
+        conf_get_float(conf_cur(), "openai_rt_temperature", &temp_double);
+        g_oairt.temperature = (float)temp_double;
+    }
+    conf_get_str(conf_cur(), "openai_rt_voice", g_oairt.voice, sizeof(g_oairt.voice));
 
     /* Set defaults if not configured */
     if (!str_isset(g_oairt.prompt))
