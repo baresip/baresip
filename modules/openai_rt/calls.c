@@ -101,23 +101,81 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 	//DEBUG_INFO("UA event: %d for call %p\n", ev, call);
 
 	switch (ev) {
-	case UA_EVENT_CALL_ESTABLISHED:
-		info("openai_rt: Call ESTABLISHED with %s\n", call_peeruri(call));
-		DEBUG_INFO("Call established - queuing start event\n");
-
-		/* Mark call as active */
-		g_oairt.call_active = true;
-		g_oairt.current_call = call;
-
-		/* Reset audio state for new call */
-		audio_reset_for_new_call();
-
-		/* Queue event for WebSocket thread to handle */
-		audio_queue_event(EVENT_CALL_START, call);
+	case UA_EVENT_CALL_INCOMING:
+		{
+			info("openai_rt: Call INCOMING from %s\n", call_peeruri(call));
+			DEBUG_INFO("Incoming call - initiating session setup\n");
+			
+			/* Store call reference for later use */
+			g_oairt.current_call = call;
+			
+			/* Reset session state */
+			g_oairt.session_ready = false;
+			g_oairt.session_cfg_applied = false;
+			
+			/* Queue event to start WebSocket connection and session setup */
+			audio_queue_event(EVENT_CALL_START, call);
+		}
+		break;
 		
-		/* Note: WebSocket connection should already be established by now */
-		if (!websocket_is_ready()) {
-			warning("openai_rt: Call established but WebSocket not ready - connection may still be in progress\n");
+	case UA_EVENT_CALL_OUTGOING:
+		{
+			info("openai_rt: Call OUTGOING to %s\n", call_peeruri(call));
+			DEBUG_INFO("Outgoing call - initiating session setup\n");
+			
+			/* Store call reference for later use */
+			g_oairt.current_call = call;
+			
+			/* Reset session state */
+			g_oairt.session_ready = false;
+			g_oairt.session_cfg_applied = false;
+			
+			/* Queue event to start WebSocket connection and session setup */
+			audio_queue_event(EVENT_CALL_START, call);
+		}
+		break;
+		
+	case UA_EVENT_CALL_ESTABLISHED:
+		{
+			info("openai_rt: Call ESTABLISHED with %s\n", call_peeruri(call));
+			DEBUG_INFO("Call established - checking session readiness\n");
+
+			/* Mark call as active */
+			g_oairt.call_active = true;
+			g_oairt.current_call = call;
+
+			/* Reset audio state for new call */
+			audio_reset_for_new_call();
+			
+			/* Check if session setup is ready - if not, we need to wait or hang up */
+			if (!websocket_is_ready()) {
+				warning("openai_rt: Call established but WebSocket not ready\n");
+				
+				/* Wait up to 5 seconds for session to be ready */
+				int wait_err = websocket_wait_ready(5000);
+				if (wait_err) {
+					warning("openai_rt: Session setup failed or timed out after 5 seconds - hanging up call\n");
+					calls_hangup();
+					break;
+				}
+			}
+			
+			/* Verify session is actually ready */
+			if (!g_oairt.session_ready || !g_oairt.session_cfg_applied) {
+				warning("openai_rt: Session setup not complete - hanging up call\n");
+				calls_hangup();
+				break;
+			}
+			
+			info("openai_rt: Session ready, call can proceed\n");
+			
+			/* Start audio threads now that call is established and session is ready */
+			if (audio_ready_for_call()) {
+				DEBUG_INFO("Call established - starting audio threads\n");
+				audio_restart_threads();
+			} else {
+				warning("openai_rt: Audio drivers not ready when call established\n");
+			}
 		}
 		break;
 
@@ -131,6 +189,7 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 		/* Mark call as inactive */
 		g_oairt.call_active = false;
 		g_oairt.session_ready = false;
+		g_oairt.session_cfg_applied = false;
 		g_oairt.current_call = NULL;
 
 		/* Queue event for WebSocket thread to handle */

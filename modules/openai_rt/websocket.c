@@ -74,7 +74,17 @@ static void handle_response_done_cb(const char *response_json, void *arg);
          return;
      }
  
-    //DEBUG_INFO("Sending message to OpenAI: %s\n", msg->data + LWS_PRE);
+    /* Check if this is an audio message */
+    bool is_audio = (msg->len > 0 && 
+                     (strstr((const char *)(msg->data + LWS_PRE), "\"audio\"") != NULL ||
+                      strstr((const char *)(msg->data + LWS_PRE), "\"realtimeInput\"") != NULL ||
+                      strstr((const char *)(msg->data + LWS_PRE), "\"audioBytes\"") != NULL));
+    
+    if (is_audio) {
+        info("[AUDIO TX] Sending audio message via WebSocket (%zu bytes)\n", msg->len);
+    } else {
+        DEBUG_INFO("process_outgoing_messages: Sending message (%zu bytes)\n", msg->len);
+    }
 
     /* Send the message */
     int written = lws_write(g_oairt.ws_client, msg->data + LWS_PRE, msg->len, LWS_WRITE_TEXT);
@@ -92,6 +102,12 @@ static void handle_response_done_cb(const char *response_json, void *arg);
         list_prepend(&g_oairt.to_openai_queue, &msg->le, msg);
         pthread_mutex_unlock(&g_oairt.ws_mutex);
     } else {
+        /* Full message sent */
+        if (is_audio) {
+            info("[AUDIO TX] Audio message sent successfully via WebSocket (%d bytes)\n", written);
+        } else {
+            DEBUG_INFO("process_outgoing_messages: Message sent successfully (%d bytes)\n", written);
+        }
         /* Full message sent, call callback if provided */
         if (msg->callback) {
             msg->callback(msg->arg, 0);
@@ -144,9 +160,18 @@ static void handle_audio_delta(const char *base64_audio, void *arg)
 {
     (void)arg;
 
-    if (!base64_audio || !*base64_audio || !g_oairt.call_active) {
+    if (!base64_audio || !*base64_audio) {
+        DEBUG_INFO("[AUDIO RX] handle_audio_delta called but no audio data\n");
         return;
     }
+    
+    if (!g_oairt.call_active) {
+        DEBUG_INFO("[AUDIO RX] handle_audio_delta called but call not active, dropping audio\n");
+        return;
+    }
+
+    size_t b64_len = str_len(base64_audio);
+    info("[AUDIO RX] Received base64 audio data (%zu chars), decoding...\n", b64_len);
 
     /* Decode base64 -> PCM16LE @ 24 kHz */
     uint8_t *decoded = NULL;
@@ -155,10 +180,16 @@ static void handle_audio_delta(const char *base64_audio, void *arg)
     if (decoded && nbytes >= 2) {
         const int16_t *pcm24 = (const int16_t *)decoded;
         size_t nsamp24 = nbytes / 2;
+        info("[AUDIO RX] Decoded %zu base64 chars to %zu samples (%zu bytes) at 24kHz\n",
+             b64_len, nsamp24, nbytes);
         int err = write_to_injection_buffer(pcm24, nsamp24);
         if (err) {
             warning("openai_rt: write_to_injection_buffer failed: %m\n", err);
+        } else {
+            info("[AUDIO RX] Successfully wrote %zu samples to injection buffer\n", nsamp24);
         }
+    } else {
+        warning("[AUDIO RX] Failed to decode audio or insufficient data (nbytes=%zu)\n", nbytes);
     }
 
     if (decoded) mem_deref(decoded);
@@ -282,42 +313,68 @@ static void handle_response_done_cb(const char *response_json, void *arg)
          break;
  
      case LWS_CALLBACK_CLIENT_ESTABLISHED:
-         info("openai_rt: WebSocket connection established\n");
-         g_oairt.ws_state = WS_CONNECTED;
-         g_oairt.ws_client = wsi;
- 
-         /* not ready yet: wait for server to ack session.update */
-         g_oairt.session_ready = false;
-         g_oairt.session_cfg_applied = false;
- 
-         send_session_update();
-         lws_callback_on_writable(wsi);
+         {
+             info("openai_rt: WebSocket connection established\n");
+             g_oairt.ws_state = WS_CONNECTED;
+             g_oairt.ws_client = wsi;
+
+             /* not ready yet: wait for server to ack session.update */
+             g_oairt.session_ready = false;
+             g_oairt.session_cfg_applied = false;
+
+             send_session_update();
+             
+             /* Request writable callback to send session update and any queued messages */
+             pthread_mutex_lock(&g_oairt.ws_mutex);
+             size_t established_queue_size = list_count(&g_oairt.to_openai_queue);
+             pthread_mutex_unlock(&g_oairt.ws_mutex);
+             DEBUG_INFO("WebSocket connected, queue size=%zu, requesting writable callback\n", established_queue_size);
+             lws_callback_on_writable(wsi);
+         }
          break;
- 
-     case LWS_CALLBACK_CLIENT_WRITEABLE:
-         //info("openai_rt: WebSocket writable\n");
-         /* Process outgoing messages */
-         process_outgoing_messages();
-         break;
+
+    case LWS_CALLBACK_CLIENT_WRITEABLE:
+        {
+            pthread_mutex_lock(&g_oairt.ws_mutex);
+            size_t queue_size = list_count(&g_oairt.to_openai_queue);
+            pthread_mutex_unlock(&g_oairt.ws_mutex);
+            DEBUG_INFO("openai_rt: WebSocket writable callback, queue size=%zu\n", queue_size);
+            /* Process outgoing messages */
+            process_outgoing_messages();
+        }
+        break;
  
     case LWS_CALLBACK_CLIENT_RECEIVE:
-        info("openai_rt: WebSocket received %zu bytes\n", len);
-        if (len > 0) {
-            info("openai_rt: Received message from AI model: %.200s%s\n", 
-                 (const char *)in, len > 200 ? "..." : "");
-        }
+        {
+            /* Check if this message contains audio data */
+            bool has_audio = (len > 0 && 
+                              (strstr((const char *)in, "\"audio\"") != NULL ||
+                               strstr((const char *)in, "\"audioBytes\"") != NULL ||
+                               strstr((const char *)in, "\"serverContent\"") != NULL));
+            
+            if (has_audio) {
+                info("[AUDIO RX] WebSocket received message with audio data (%zu bytes)\n", len);
+            } else {
+                info("openai_rt: WebSocket received %zu bytes\n", len);
+            }
+            
+            if (len > 0 && !has_audio) {
+                info("openai_rt: Received message from AI model: %.200s%s\n", 
+                     (const char *)in, len > 200 ? "..." : "");
+            }
 
-        if (len > 0 && g_oairt.ws_state == WS_CONNECTED) {
-           struct ai_model *model = get_ai_model();
-           if (model && model->parse_message) {
-               model->parse_message((const char *)in,
-                                  handle_audio_delta,
-                                  handle_session_updated_cb,
-                                  handle_speech_started_cb,
-                                  handle_function_call_cb,
-                                  handle_response_done_cb,
-                                  NULL);
-           }
+            if (len > 0 && g_oairt.ws_state == WS_CONNECTED) {
+               struct ai_model *model = get_ai_model();
+               if (model && model->parse_message) {
+                   model->parse_message((const char *)in,
+                                      handle_audio_delta,
+                                      handle_session_updated_cb,
+                                      handle_speech_started_cb,
+                                      handle_function_call_cb,
+                                      handle_response_done_cb,
+                                      NULL);
+               }
+            }
         }
         break;
  
@@ -602,14 +659,22 @@ static void handle_response_done_cb(const char *response_json, void *arg)
     pthread_mutex_lock(&g_oairt.ws_mutex);
     //DEBUG_INFO("Queueing message to OpenAI: %s\n", json_msg);
     list_append(&g_oairt.to_openai_queue, &msg->le, msg);
+    size_t queue_size = list_count(&g_oairt.to_openai_queue);
     pthread_mutex_unlock(&g_oairt.ws_mutex);
- 
+
+    DEBUG_INFO("queue_message_to_openai: Message queued (len=%zu), queue size=%zu, ws_state=%d\n",
+               len, queue_size, g_oairt.ws_state);
+
     /* Wake the I/O thread right away */
     ws_wake_service();
- 
+
     /* If already connected, also request a writable callback */
     if (g_oairt.ws_state == WS_CONNECTED && g_oairt.ws_client) {
+        DEBUG_INFO("queue_message_to_openai: Requesting writable callback\n");
         lws_callback_on_writable(g_oairt.ws_client);
+    } else {
+        DEBUG_INFO("queue_message_to_openai: Not requesting writable (state=%d, client=%p)\n",
+                   g_oairt.ws_state, g_oairt.ws_client);
     }
  
     return 0;
