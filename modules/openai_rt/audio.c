@@ -178,11 +178,63 @@ int audio_init(void)
         goto cleanup;
     }
     
+    /* Initialize resamplers for Gemini (24kHz <-> 16kHz) */
+    g_audio.resamplers_initialized = false;
+    g_audio.tx_resamp_buffer = NULL;
+    g_audio.rx_resamp_buffer = NULL;
+    g_audio.tx_resamp_buffer_size = 0;
+    g_audio.rx_resamp_buffer_size = 0;
+    
+    /* Initialize resamplers if backend is Gemini - make it optional */
+    if (g_oairt.backend_type == AI_BACKEND_GEMINI_LIVE) {
+        auresamp_init(&g_audio.tx_resamp);
+        auresamp_init(&g_audio.rx_resamp);
+        
+        /* Setup TX resampler: 24kHz -> 16kHz (mono) */
+        err = auresamp_setup(&g_audio.tx_resamp, 24000, 1, 16000, 1);
+        if (err) {
+            warning("openai_rt: Failed to setup TX resampler (24kHz->16kHz): %m\n", err);
+            warning("openai_rt: Resampling disabled - audio may not work correctly with Gemini\n");
+            /* Don't fail initialization, just disable resampling */
+            g_audio.resamplers_initialized = false;
+        } else {
+            /* Setup RX resampler: 16kHz -> 24kHz (mono) */
+            err = auresamp_setup(&g_audio.rx_resamp, 16000, 1, 24000, 1);
+            if (err) {
+                warning("openai_rt: Failed to setup RX resampler (16kHz->24kHz): %m\n", err);
+                warning("openai_rt: Resampling disabled - audio may not work correctly with Gemini\n");
+                /* Don't fail initialization, just disable resampling */
+                g_audio.resamplers_initialized = false;
+            } else {
+                /* Allocate resampler buffers (enough for 20ms at target rates) */
+                g_audio.tx_resamp_buffer_size = 16000 * 1 * 20 / 1000; /* 20ms @ 16kHz */
+                g_audio.tx_resamp_buffer = mem_alloc(g_audio.tx_resamp_buffer_size * sizeof(int16_t), NULL);
+                if (!g_audio.tx_resamp_buffer) {
+                    warning("openai_rt: Failed to allocate TX resampler buffer\n");
+                    g_audio.resamplers_initialized = false;
+                } else {
+                    g_audio.rx_resamp_buffer_size = 24000 * 1 * 20 / 1000; /* 20ms @ 24kHz */
+                    g_audio.rx_resamp_buffer = mem_alloc(g_audio.rx_resamp_buffer_size * sizeof(int16_t), NULL);
+                    if (!g_audio.rx_resamp_buffer) {
+                        warning("openai_rt: Failed to allocate RX resampler buffer\n");
+                        g_audio.tx_resamp_buffer = mem_deref(g_audio.tx_resamp_buffer);
+                        g_audio.tx_resamp_buffer_size = 0;
+                        g_audio.resamplers_initialized = false;
+                    } else {
+                        g_audio.resamplers_initialized = true;
+                        info("openai_rt: Resamplers initialized for Gemini (24kHz <-> 16kHz)\n");
+                    }
+                }
+            }
+        }
+    }
+    
     DEBUG_INFO("Audio subsystem initialized with %zu byte buffers and queues\n", g_audio.buffer_size);
     return 0;
 
 cleanup:
-    /* Clean up on error */
+    /* Clean up on error - mem_deref handles NULL safely, but mutexes/conds need to be destroyed if initialized */
+    /* Destroy mutexes and condition variables (they're initialized before resampler setup) */
     mtx_destroy(&g_audio.read_queue_mutex);
     mtx_destroy(&g_audio.write_queue_mutex);
     mtx_destroy(&g_audio.event_queue_mutex);
@@ -190,9 +242,12 @@ cleanup:
     cnd_destroy(&g_audio.read_queue_cond);
     cnd_destroy(&g_audio.write_queue_cond);
     cnd_destroy(&g_audio.event_queue_cond);
+    /* mem_deref handles NULL safely */
     mem_deref(g_audio.g711u_input_buffer);
     mem_deref(g_audio.g711u_output_buffer);
     mem_deref(g_audio.injection_buffer);
+    mem_deref(g_audio.tx_resamp_buffer);
+    mem_deref(g_audio.rx_resamp_buffer);
     /* Note: src_st and play_st are not allocated during init, so no need to free them here */
     return ENOMEM;
 }
@@ -213,7 +268,16 @@ void audio_close(void)
         free_event_queue(&g_audio.event_queue, &g_audio.event_queue_mutex);
     }
     
+    /* Free resampler buffers first (before destroying mutexes) */
+    g_audio.tx_resamp_buffer = mem_deref(g_audio.tx_resamp_buffer);
+    g_audio.rx_resamp_buffer = mem_deref(g_audio.rx_resamp_buffer);
+    g_audio.resamplers_initialized = false;
+    
     /* Always clean up synchronization objects and buffers */
+    /* Note: Only destroy if they were initialized - but we can't check, so we assume they were */
+    /* If audio_init() failed early, these might not be initialized, but destroying uninitialized */
+    /* mutexes/conds is undefined behavior. We'll rely on the fact that audio_init() should either */
+    /* succeed completely or fail before initializing these. */
     mtx_destroy(&g_audio.read_queue_mutex);
     mtx_destroy(&g_audio.write_queue_mutex);
     mtx_destroy(&g_audio.event_queue_mutex);
@@ -261,10 +325,43 @@ void handle_incoming_audio(const int16_t *s16_data, size_t sampc)
         return;
     }
 
-    size_t byte_len = sampc * sizeof(int16_t);
-    info("[AUDIO TX] Received %zu samples (%zu bytes) from pipeline\n", sampc, byte_len);
+    const int16_t *audio_to_encode = s16_data;
+    size_t samples_to_encode = sampc;
+    size_t byte_len;
     
-    char *b64 = encode_audio_base64((const uint8_t *)s16_data, byte_len);
+    /* Resample for Gemini: 24kHz -> 16kHz */
+    if (g_oairt.backend_type == AI_BACKEND_GEMINI_LIVE && g_audio.resamplers_initialized) {
+        /* Ensure buffer is large enough */
+        size_t max_output_samples = (sampc * 16000 + 23999) / 24000; /* Round up */
+        if (max_output_samples > g_audio.tx_resamp_buffer_size) {
+            g_audio.tx_resamp_buffer = mem_deref(g_audio.tx_resamp_buffer);
+            g_audio.tx_resamp_buffer = mem_alloc(max_output_samples * sizeof(int16_t), NULL);
+            if (!g_audio.tx_resamp_buffer) {
+                warning("openai_rt: Failed to reallocate TX resampler buffer\n");
+                return;
+            }
+            g_audio.tx_resamp_buffer_size = max_output_samples;
+        }
+        
+        /* Perform resampling */
+        size_t output_samples = g_audio.tx_resamp_buffer_size;
+        err = auresamp(&g_audio.tx_resamp, g_audio.tx_resamp_buffer, &output_samples,
+                      s16_data, sampc);
+        if (err) {
+            warning("openai_rt: TX resampling failed: %m\n", err);
+            return;
+        }
+        
+        audio_to_encode = g_audio.tx_resamp_buffer;
+        samples_to_encode = output_samples;
+        info("[AUDIO TX] Resampled %zu samples (24kHz) -> %zu samples (16kHz) for Gemini\n",
+             sampc, output_samples);
+    }
+    
+    byte_len = samples_to_encode * sizeof(int16_t);
+    info("[AUDIO TX] Received %zu samples (%zu bytes) from pipeline\n", samples_to_encode, byte_len);
+    
+    char *b64 = encode_audio_base64((const uint8_t *)audio_to_encode, byte_len);
     if (!b64) {
         warning("openai_rt: base64 encode failed for %zu bytes\n", byte_len);
         return;
@@ -786,41 +883,81 @@ void audio_restart_threads(void)
         return;
     }
     
+    /* Check if call is active */
+    if (!g_oairt.call_active) {
+        DEBUG_INFO("Call not active, not starting audio threads\n");
+        return;
+    }
+    
     DEBUG_INFO("Starting audio threads for new call\n");
     
     /* Start audio source thread */
-    if (g_audio.src_st && g_audio.src_st->ready && !g_audio.src_st->thread) {
-        g_audio.src_st->run = true;
-        int thread_err = thread_create_name(&g_audio.src_st->thread, "openai_rt_src", ausrc_read_thread, g_audio.src_st);
-        if (thread_err) {
-            warning("openai_rt: Failed to restart audio source thread: %m\n", thread_err);
-            g_audio.src_st->run = false;
-        } else {
-            info("openai_rt: Audio source thread restarted\n");
+    if (g_audio.src_st && g_audio.src_st->ready) {
+        /* If thread already exists, check if it's still running */
+        if (g_audio.src_st->thread) {
+            /* Thread exists - check if it's actually running */
+            if (g_audio.src_st->run) {
+                DEBUG_INFO("Audio source thread already running\n");
+            } else {
+                /* Thread exists but not running - wait for it to finish and restart */
+                DEBUG_INFO("Audio source thread exists but not running, waiting to join...\n");
+                thrd_join(g_audio.src_st->thread, NULL);
+                g_audio.src_st->thread = 0;
+            }
+        }
+        
+        /* Start thread if it doesn't exist or was stopped */
+        if (!g_audio.src_st->thread) {
+            g_audio.src_st->run = true;
+            int thread_err = thread_create_name(&g_audio.src_st->thread, "openai_rt_src", ausrc_read_thread, g_audio.src_st);
+            if (thread_err) {
+                warning("openai_rt: Failed to restart audio source thread: %m\n", thread_err);
+                g_audio.src_st->run = false;
+            } else {
+                info("openai_rt: Audio source thread started successfully\n");
+            }
         }
     } else {
-        DEBUG_INFO("Audio source not ready for thread start: ready=%d, thread=%d\n", 
+        DEBUG_INFO("Audio source not ready for thread start: ready=%d, src_st=%p\n", 
                    g_audio.src_st ? g_audio.src_st->ready : 0,
-                   g_audio.src_st ? (int)g_audio.src_st->thread : -1);
+                   g_audio.src_st);
     }
     
     /* Start audio playback thread */
-    if (g_audio.play_st && g_audio.play_st->ready && !g_audio.play_st->thread) {
-        g_audio.play_st->run = true;
-        int thread_err = thread_create_name(&g_audio.play_st->thread, "openai_rt_play", auplay_write_thread, g_audio.play_st);
-        if (thread_err) {
-            warning("openai_rt: Failed to restart audio playback thread: %m\n", thread_err);
-            g_audio.play_st->run = false;
-        } else {
-            info("openai_rt: Audio playback thread restarted\n");
+    if (g_audio.play_st && g_audio.play_st->ready) {
+        /* If thread already exists, check if it's still running */
+        if (g_audio.play_st->thread) {
+            /* Thread exists - check if it's actually running */
+            if (g_audio.play_st->run) {
+                DEBUG_INFO("Audio playback thread already running\n");
+            } else {
+                /* Thread exists but not running - wait for it to finish and restart */
+                DEBUG_INFO("Audio playback thread exists but not running, waiting to join...\n");
+                thrd_join(g_audio.play_st->thread, NULL);
+                g_audio.play_st->thread = 0;
+            }
+        }
+        
+        /* Start thread if it doesn't exist or was stopped */
+        if (!g_audio.play_st->thread) {
+            g_audio.play_st->run = true;
+            int thread_err = thread_create_name(&g_audio.play_st->thread, "openai_rt_play", auplay_write_thread, g_audio.play_st);
+            if (thread_err) {
+                warning("openai_rt: Failed to restart audio playback thread: %m\n", thread_err);
+                g_audio.play_st->run = false;
+            } else {
+                info("openai_rt: Audio playback thread started successfully\n");
+            }
         }
     } else {
-        DEBUG_INFO("Audio playback not ready for thread start: ready=%d, thread=%d\n", 
+        DEBUG_INFO("Audio playback not ready for thread start: ready=%d, play_st=%p\n", 
                    g_audio.play_st ? g_audio.play_st->ready : 0,
-                   g_audio.play_st ? (int)g_audio.play_st->thread : -1);
+                   g_audio.play_st);
     }
     
-    DEBUG_INFO("Audio threads restart attempted\n");
+    DEBUG_INFO("Audio threads restart attempted (src_running=%d, play_running=%d)\n",
+               audio_threads_running(), 
+               g_audio.play_st && g_audio.play_st->thread && g_audio.play_st->run);
 }
 
 /* Check if audio threads are currently running */

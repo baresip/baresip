@@ -197,6 +197,15 @@ struct audio_state {
     size_t injection_write_pos;        /* Write position in circular buffer */
     size_t injection_available;        /* Number of samples available for reading */
     mtx_t injection_buffer_mutex;      /* Mutex for injection buffer access */
+    
+    /* Resampling for Gemini (24kHz <-> 16kHz) */
+    struct auresamp tx_resamp;          /* Resampler for TX: 24kHz -> 16kHz (Gemini) */
+    struct auresamp rx_resamp;          /* Resampler for RX: 16kHz -> 24kHz (Gemini) */
+    int16_t *tx_resamp_buffer;         /* Buffer for resampled TX audio */
+    int16_t *rx_resamp_buffer;         /* Buffer for resampled RX audio */
+    size_t tx_resamp_buffer_size;      /* Size of TX resampler buffer */
+    size_t rx_resamp_buffer_size;      /* Size of RX resampler buffer */
+    bool resamplers_initialized;       /* Whether resamplers have been initialized */
 };
 
 /* Audio commit threshold - commit after accumulating this many bytes */

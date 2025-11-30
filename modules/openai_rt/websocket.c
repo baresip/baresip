@@ -173,20 +173,61 @@ static void handle_audio_delta(const char *base64_audio, void *arg)
     size_t b64_len = str_len(base64_audio);
     info("[AUDIO RX] Received base64 audio data (%zu chars), decoding...\n", b64_len);
 
-    /* Decode base64 -> PCM16LE @ 24 kHz */
+    /* Decode base64 -> PCM16LE */
     uint8_t *decoded = NULL;
     size_t nbytes = decode_audio_base64(base64_audio, &decoded);
 
     if (decoded && nbytes >= 2) {
-        const int16_t *pcm24 = (const int16_t *)decoded;
-        size_t nsamp24 = nbytes / 2;
-        info("[AUDIO RX] Decoded %zu base64 chars to %zu samples (%zu bytes) at 24kHz\n",
-             b64_len, nsamp24, nbytes);
-        int err = write_to_injection_buffer(pcm24, nsamp24);
+        const int16_t *pcm_input = (const int16_t *)decoded;
+        size_t nsamp_input = nbytes / 2;
+        const int16_t *pcm_output = pcm_input;
+        size_t nsamp_output = nsamp_input;
+        int err;
+        
+        /* Resample for Gemini: 16kHz -> 24kHz */
+        if (g_oairt.backend_type == AI_BACKEND_GEMINI_LIVE && g_audio.resamplers_initialized) {
+            /* Decoded audio from Gemini is at 16kHz */
+            info("[AUDIO RX] Decoded %zu base64 chars to %zu samples (%zu bytes) at 16kHz (Gemini)\n",
+                 b64_len, nsamp_input, nbytes);
+            
+            /* Ensure buffer is large enough */
+            size_t max_output_samples = (nsamp_input * 24000 + 15999) / 16000; /* Round up */
+            if (max_output_samples > g_audio.rx_resamp_buffer_size) {
+                g_audio.rx_resamp_buffer = mem_deref(g_audio.rx_resamp_buffer);
+                g_audio.rx_resamp_buffer = mem_alloc(max_output_samples * sizeof(int16_t), NULL);
+                if (!g_audio.rx_resamp_buffer) {
+                    warning("openai_rt: Failed to reallocate RX resampler buffer\n");
+                    mem_deref(decoded);
+                    return;
+                }
+                g_audio.rx_resamp_buffer_size = max_output_samples;
+            }
+            
+            /* Perform resampling */
+            size_t output_samples = g_audio.rx_resamp_buffer_size;
+            err = auresamp(&g_audio.rx_resamp, g_audio.rx_resamp_buffer, &output_samples,
+                          pcm_input, nsamp_input);
+            if (err) {
+                warning("openai_rt: RX resampling failed: %m\n", err);
+                mem_deref(decoded);
+                return;
+            }
+            
+            pcm_output = g_audio.rx_resamp_buffer;
+            nsamp_output = output_samples;
+            info("[AUDIO RX] Resampled %zu samples (16kHz) -> %zu samples (24kHz) for injection\n",
+                 nsamp_input, output_samples);
+        } else {
+            /* OpenAI: decoded audio is already at 24kHz */
+            info("[AUDIO RX] Decoded %zu base64 chars to %zu samples (%zu bytes) at 24kHz\n",
+                 b64_len, nsamp_input, nbytes);
+        }
+        
+        err = write_to_injection_buffer(pcm_output, nsamp_output);
         if (err) {
             warning("openai_rt: write_to_injection_buffer failed: %m\n", err);
         } else {
-            info("[AUDIO RX] Successfully wrote %zu samples to injection buffer\n", nsamp24);
+            info("[AUDIO RX] Successfully wrote %zu samples to injection buffer\n", nsamp_output);
         }
     } else {
         warning("[AUDIO RX] Failed to decode audio or insufficient data (nbytes=%zu)\n", nbytes);
