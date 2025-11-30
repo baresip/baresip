@@ -184,14 +184,16 @@ static void handle_audio_delta(const char *base64_audio, void *arg)
         size_t nsamp_output = nsamp_input;
         int err;
         
-        /* Resample for Gemini: 16kHz -> 24kHz */
-        if (g_oairt.backend_type == AI_BACKEND_GEMINI_LIVE && g_audio.resamplers_initialized) {
-            /* Decoded audio from Gemini is at 16kHz */
-            info("[AUDIO RX] Decoded %zu base64 chars to %zu samples (%zu bytes) at 16kHz (Gemini)\n",
-                 b64_len, nsamp_input, nbytes);
+        /* Determine backend rate */
+        uint32_t backend_rate = (g_oairt.backend_type == AI_BACKEND_GEMINI_LIVE) ? 16000 : 24000;
+        
+        /* Resample if needed (backend rate -> configured rate) */
+        if (g_audio.resamplers_initialized) {
+            info("[AUDIO RX] Decoded %zu base64 chars to %zu samples (%zu bytes) at %u Hz\n",
+                 b64_len, nsamp_input, nbytes, backend_rate);
             
-            /* Ensure buffer is large enough */
-            size_t max_output_samples = (nsamp_input * 24000 + 15999) / 16000; /* Round up */
+            /* Ensure buffer is large enough (round up) */
+            size_t max_output_samples = (nsamp_input * g_audio.configured_srate + backend_rate - 1) / backend_rate;
             if (max_output_samples > g_audio.rx_resamp_buffer_size) {
                 g_audio.rx_resamp_buffer = mem_deref(g_audio.rx_resamp_buffer);
                 g_audio.rx_resamp_buffer = mem_alloc(max_output_samples * sizeof(int16_t), NULL);
@@ -215,12 +217,12 @@ static void handle_audio_delta(const char *base64_audio, void *arg)
             
             pcm_output = g_audio.rx_resamp_buffer;
             nsamp_output = output_samples;
-            info("[AUDIO RX] Resampled %zu samples (16kHz) -> %zu samples (24kHz) for injection\n",
-                 nsamp_input, output_samples);
+            info("[AUDIO RX] Resampled %zu samples (%u Hz) -> %zu samples (%u Hz) for injection\n",
+                 nsamp_input, backend_rate, output_samples, g_audio.configured_srate);
         } else {
-            /* OpenAI: decoded audio is already at 24kHz */
-            info("[AUDIO RX] Decoded %zu base64 chars to %zu samples (%zu bytes) at 24kHz\n",
-                 b64_len, nsamp_input, nbytes);
+            /* No resampling needed - decoded audio is already at configured rate */
+            info("[AUDIO RX] Decoded %zu base64 chars to %zu samples (%zu bytes) at %u Hz\n",
+                 b64_len, nsamp_input, nbytes, backend_rate);
         }
         
         err = write_to_injection_buffer(pcm_output, nsamp_output);

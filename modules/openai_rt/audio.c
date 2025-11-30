@@ -29,6 +29,7 @@ static int safe_clear_buffer(struct mbuf *buffer, const char *buffer_name);
 static void send_audio_commit(void);
 static void force_audio_commit(void);
 static void maybe_shrink_injection_buffer(void);
+static int audio_init_resamplers(uint32_t input_srate, uint32_t output_srate);
 
 /* Audio source structure - provides audio to baresip */
 struct ausrc_st {
@@ -178,56 +179,13 @@ int audio_init(void)
         goto cleanup;
     }
     
-    /* Initialize resamplers for Gemini (24kHz <-> 16kHz) */
+    /* Initialize resamplers - will be set up when audio drivers are allocated */
     g_audio.resamplers_initialized = false;
     g_audio.tx_resamp_buffer = NULL;
     g_audio.rx_resamp_buffer = NULL;
     g_audio.tx_resamp_buffer_size = 0;
     g_audio.rx_resamp_buffer_size = 0;
-    
-    /* Initialize resamplers if backend is Gemini - make it optional */
-    if (g_oairt.backend_type == AI_BACKEND_GEMINI_LIVE) {
-        auresamp_init(&g_audio.tx_resamp);
-        auresamp_init(&g_audio.rx_resamp);
-        
-        /* Setup TX resampler: 24kHz -> 16kHz (mono) */
-        err = auresamp_setup(&g_audio.tx_resamp, 24000, 1, 16000, 1);
-        if (err) {
-            warning("openai_rt: Failed to setup TX resampler (24kHz->16kHz): %m\n", err);
-            warning("openai_rt: Resampling disabled - audio may not work correctly with Gemini\n");
-            /* Don't fail initialization, just disable resampling */
-            g_audio.resamplers_initialized = false;
-        } else {
-            /* Setup RX resampler: 16kHz -> 24kHz (mono) */
-            err = auresamp_setup(&g_audio.rx_resamp, 16000, 1, 24000, 1);
-            if (err) {
-                warning("openai_rt: Failed to setup RX resampler (16kHz->24kHz): %m\n", err);
-                warning("openai_rt: Resampling disabled - audio may not work correctly with Gemini\n");
-                /* Don't fail initialization, just disable resampling */
-                g_audio.resamplers_initialized = false;
-            } else {
-                /* Allocate resampler buffers (enough for 20ms at target rates) */
-                g_audio.tx_resamp_buffer_size = 16000 * 1 * 20 / 1000; /* 20ms @ 16kHz */
-                g_audio.tx_resamp_buffer = mem_alloc(g_audio.tx_resamp_buffer_size * sizeof(int16_t), NULL);
-                if (!g_audio.tx_resamp_buffer) {
-                    warning("openai_rt: Failed to allocate TX resampler buffer\n");
-                    g_audio.resamplers_initialized = false;
-                } else {
-                    g_audio.rx_resamp_buffer_size = 24000 * 1 * 20 / 1000; /* 20ms @ 24kHz */
-                    g_audio.rx_resamp_buffer = mem_alloc(g_audio.rx_resamp_buffer_size * sizeof(int16_t), NULL);
-                    if (!g_audio.rx_resamp_buffer) {
-                        warning("openai_rt: Failed to allocate RX resampler buffer\n");
-                        g_audio.tx_resamp_buffer = mem_deref(g_audio.tx_resamp_buffer);
-                        g_audio.tx_resamp_buffer_size = 0;
-                        g_audio.resamplers_initialized = false;
-                    } else {
-                        g_audio.resamplers_initialized = true;
-                        info("openai_rt: Resamplers initialized for Gemini (24kHz <-> 16kHz)\n");
-                    }
-                }
-            }
-        }
-    }
+    g_audio.configured_srate = 0;  /* Will be set when audio drivers are allocated */
     
     DEBUG_INFO("Audio subsystem initialized with %zu byte buffers and queues\n", g_audio.buffer_size);
     return 0;
@@ -242,7 +200,6 @@ cleanup:
     cnd_destroy(&g_audio.read_queue_cond);
     cnd_destroy(&g_audio.write_queue_cond);
     cnd_destroy(&g_audio.event_queue_cond);
-    /* mem_deref handles NULL safely */
     mem_deref(g_audio.g711u_input_buffer);
     mem_deref(g_audio.g711u_output_buffer);
     mem_deref(g_audio.injection_buffer);
@@ -250,6 +207,63 @@ cleanup:
     mem_deref(g_audio.rx_resamp_buffer);
     /* Note: src_st and play_st are not allocated during init, so no need to free them here */
     return ENOMEM;
+}
+
+/* Initialize resamplers for converting between configured rate and backend rate */
+static int audio_init_resamplers(uint32_t input_srate, uint32_t output_srate)
+{
+    int err;
+    
+    /* If rates are the same, no resampling needed */
+    if (input_srate == output_srate) {
+        g_audio.resamplers_initialized = false;
+        return 0;
+    }
+    
+    /* Initialize resamplers */
+    auresamp_init(&g_audio.tx_resamp);
+    auresamp_init(&g_audio.rx_resamp);
+    
+    /* Setup TX resampler: configured rate -> backend rate (mono) */
+    err = auresamp_setup(&g_audio.tx_resamp, input_srate, 1, output_srate, 1);
+    if (err) {
+        warning("openai_rt: Failed to setup TX resampler (%u Hz -> %u Hz): %m\n", 
+               input_srate, output_srate, err);
+        g_audio.resamplers_initialized = false;
+        return err;
+    }
+    
+    /* Setup RX resampler: backend rate -> configured rate (mono) */
+    err = auresamp_setup(&g_audio.rx_resamp, output_srate, 1, input_srate, 1);
+    if (err) {
+        warning("openai_rt: Failed to setup RX resampler (%u Hz -> %u Hz): %m\n", 
+               output_srate, input_srate, err);
+        g_audio.resamplers_initialized = false;
+        return err;
+    }
+    
+    /* Allocate resampler buffers (enough for 20ms at target rates) */
+    g_audio.tx_resamp_buffer_size = output_srate * 1 * 20 / 1000; /* 20ms @ output rate */
+    g_audio.tx_resamp_buffer = mem_alloc(g_audio.tx_resamp_buffer_size * sizeof(int16_t), NULL);
+    if (!g_audio.tx_resamp_buffer) {
+        warning("openai_rt: Failed to allocate TX resampler buffer\n");
+        g_audio.resamplers_initialized = false;
+        return ENOMEM;
+    }
+    
+    g_audio.rx_resamp_buffer_size = input_srate * 1 * 20 / 1000; /* 20ms @ input rate */
+    g_audio.rx_resamp_buffer = mem_alloc(g_audio.rx_resamp_buffer_size * sizeof(int16_t), NULL);
+    if (!g_audio.rx_resamp_buffer) {
+        warning("openai_rt: Failed to allocate RX resampler buffer\n");
+        g_audio.tx_resamp_buffer = mem_deref(g_audio.tx_resamp_buffer);
+        g_audio.tx_resamp_buffer_size = 0;
+        g_audio.resamplers_initialized = false;
+        return ENOMEM;
+    }
+    
+    g_audio.resamplers_initialized = true;
+    info("openai_rt: Resamplers initialized (%u Hz <-> %u Hz)\n", input_srate, output_srate);
+    return 0;
 }
 
 /* Clean up audio subsystem */
@@ -329,10 +343,13 @@ void handle_incoming_audio(const int16_t *s16_data, size_t sampc)
     size_t samples_to_encode = sampc;
     size_t byte_len;
     
-    /* Resample for Gemini: 24kHz -> 16kHz */
-    if (g_oairt.backend_type == AI_BACKEND_GEMINI_LIVE && g_audio.resamplers_initialized) {
-        /* Ensure buffer is large enough */
-        size_t max_output_samples = (sampc * 16000 + 23999) / 24000; /* Round up */
+    /* Resample if needed (configured rate -> backend rate) */
+    if (g_audio.resamplers_initialized) {
+        /* Determine backend rate */
+        uint32_t backend_rate = (g_oairt.backend_type == AI_BACKEND_GEMINI_LIVE) ? 16000 : 24000;
+        
+        /* Ensure buffer is large enough (round up) */
+        size_t max_output_samples = (sampc * backend_rate + g_audio.configured_srate - 1) / g_audio.configured_srate;
         if (max_output_samples > g_audio.tx_resamp_buffer_size) {
             g_audio.tx_resamp_buffer = mem_deref(g_audio.tx_resamp_buffer);
             g_audio.tx_resamp_buffer = mem_alloc(max_output_samples * sizeof(int16_t), NULL);
@@ -354,8 +371,8 @@ void handle_incoming_audio(const int16_t *s16_data, size_t sampc)
         
         audio_to_encode = g_audio.tx_resamp_buffer;
         samples_to_encode = output_samples;
-        info("[AUDIO TX] Resampled %zu samples (24kHz) -> %zu samples (16kHz) for Gemini\n",
-             sampc, output_samples);
+        info("[AUDIO TX] Resampled %zu samples (%u Hz) -> %zu samples (%u Hz)\n",
+             sampc, g_audio.configured_srate, output_samples, backend_rate);
     }
     
     byte_len = samples_to_encode * sizeof(int16_t);
@@ -663,7 +680,7 @@ int openai_rt_ausrc_alloc(struct ausrc_st **stp, const struct ausrc *as,
     (void)dev;
     (void)errh;
 
-    info("openai_rt: opening audio source (24kHz, 1 channel, S16LE)\n");
+    info("openai_rt: opening audio source\n");
 
     st = mem_zalloc(sizeof(*st), ausrc_destructor);
     if (!st) {
@@ -681,10 +698,29 @@ int openai_rt_ausrc_alloc(struct ausrc_st **stp, const struct ausrc *as,
         st->prm.fmt = AUFMT_S16LE;
     }
     
-    /* Force 24kHz sample rate for OpenAI compatibility */
-    if (st->prm.srate != 24000) {
-        warning("openai_rt: Forcing 24kHz sample rate (was %u)\n", st->prm.srate);
-        st->prm.srate = 24000;
+    /* Store configured sample rate and set up resamplers if needed */
+    g_audio.configured_srate = st->prm.srate;
+    info("openai_rt: Audio source configured with sample rate: %u Hz\n", st->prm.srate);
+    
+    /* Initialize resamplers if configured rate doesn't match backend requirement */
+    if (g_oairt.backend_type == AI_BACKEND_GEMINI_LIVE && st->prm.srate != 16000) {
+        /* Gemini requires 16kHz - need resampling if configured rate is different */
+        int resamp_err = audio_init_resamplers(st->prm.srate, 16000);
+        if (resamp_err) {
+            warning("openai_rt: Failed to initialize resamplers for Gemini (configured: %u Hz, required: 16000 Hz)\n", 
+                   st->prm.srate);
+        }
+    } else if (g_oairt.backend_type == AI_BACKEND_OPENAI_REALTIME && st->prm.srate != 24000) {
+        /* OpenAI requires 24kHz - need resampling if configured rate is different */
+        int resamp_err = audio_init_resamplers(st->prm.srate, 24000);
+        if (resamp_err) {
+            warning("openai_rt: Failed to initialize resamplers for OpenAI (configured: %u Hz, required: 24000 Hz)\n", 
+                   st->prm.srate);
+        }
+    } else {
+        /* No resampling needed - configured rate matches backend requirement */
+        info("openai_rt: No resampling needed (configured rate %u Hz matches backend requirement)\n", 
+             st->prm.srate);
     }
     
     /* Ensure reasonable packet time (20ms is typical) */
@@ -740,7 +776,7 @@ int openai_rt_auplay_alloc(struct auplay_st **stp, const struct auplay *ap,
     (void)ap;
     (void)dev;
 
-    info("openai_rt: opening audio playback (24kHz, 1 channel, S16LE)\n");
+    info("openai_rt: opening audio playback\n");
 
     st = mem_zalloc(sizeof(*st), auplay_destructor);
     if (!st) {
@@ -756,6 +792,12 @@ int openai_rt_auplay_alloc(struct auplay_st **stp, const struct auplay *ap,
     if (st->prm.fmt != AUFMT_S16LE) {
         warning("openai_rt: Forcing S16LE format (was %s)\n", aufmt_name(st->prm.fmt));
         st->prm.fmt = AUFMT_S16LE;
+    }
+    
+    /* Store configured sample rate if not already set (should match ausrc) */
+    if (g_audio.configured_srate == 0) {
+        g_audio.configured_srate = st->prm.srate;
+        info("openai_rt: Audio playback configured with sample rate: %u Hz\n", st->prm.srate);
     }
     
     st->sampc = st->prm.srate * st->prm.ch * st->prm.ptime / 1000;
