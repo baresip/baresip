@@ -198,15 +198,6 @@ struct audio_state {
     size_t injection_available;        /* Number of samples available for reading */
     mtx_t injection_buffer_mutex;      /* Mutex for injection buffer access */
     
-    /* Resampling for backend-specific sample rates */
-    struct auresamp tx_resamp;          /* Resampler for TX: configured rate -> backend rate */
-    struct auresamp rx_resamp;          /* Resampler for RX: backend rate -> configured rate */
-    int16_t *tx_resamp_buffer;         /* Buffer for resampled TX audio */
-    int16_t *rx_resamp_buffer;         /* Buffer for resampled RX audio */
-    size_t tx_resamp_buffer_size;      /* Size of TX resampler buffer */
-    size_t rx_resamp_buffer_size;      /* Size of RX resampler buffer */
-    bool resamplers_initialized;       /* Whether resamplers have been initialized */
-    uint32_t configured_srate;          /* Configured sample rate from baresip (0 if not set yet) */
 };
 
 /* Audio commit threshold - commit after accumulating this many bytes */

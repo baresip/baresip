@@ -178,58 +178,19 @@ static void handle_audio_delta(const char *base64_audio, void *arg)
     size_t nbytes = decode_audio_base64(base64_audio, &decoded);
 
     if (decoded && nbytes >= 2) {
-        const int16_t *pcm_input = (const int16_t *)decoded;
-        size_t nsamp_input = nbytes / 2;
-        const int16_t *pcm_output = pcm_input;
-        size_t nsamp_output = nsamp_input;
-        int err;
+        const int16_t *pcm = (const int16_t *)decoded;
+        size_t nsamp = nbytes / 2;
         
-        /* Determine backend rate */
+        /* Determine backend rate for logging */
         uint32_t backend_rate = (g_oairt.backend_type == AI_BACKEND_GEMINI_LIVE) ? 16000 : 24000;
+        info("[AUDIO RX] Decoded %zu base64 chars to %zu samples (%zu bytes) at %u Hz\n",
+             b64_len, nsamp, nbytes, backend_rate);
         
-        /* Resample if needed (backend rate -> configured rate) */
-        if (g_audio.resamplers_initialized) {
-            info("[AUDIO RX] Decoded %zu base64 chars to %zu samples (%zu bytes) at %u Hz\n",
-                 b64_len, nsamp_input, nbytes, backend_rate);
-            
-            /* Ensure buffer is large enough (round up) */
-            size_t max_output_samples = (nsamp_input * g_audio.configured_srate + backend_rate - 1) / backend_rate;
-            if (max_output_samples > g_audio.rx_resamp_buffer_size) {
-                g_audio.rx_resamp_buffer = mem_deref(g_audio.rx_resamp_buffer);
-                g_audio.rx_resamp_buffer = mem_alloc(max_output_samples * sizeof(int16_t), NULL);
-                if (!g_audio.rx_resamp_buffer) {
-                    warning("openai_rt: Failed to reallocate RX resampler buffer\n");
-                    mem_deref(decoded);
-                    return;
-                }
-                g_audio.rx_resamp_buffer_size = max_output_samples;
-            }
-            
-            /* Perform resampling */
-            size_t output_samples = g_audio.rx_resamp_buffer_size;
-            err = auresamp(&g_audio.rx_resamp, g_audio.rx_resamp_buffer, &output_samples,
-                          pcm_input, nsamp_input);
-            if (err) {
-                warning("openai_rt: RX resampling failed: %m\n", err);
-                mem_deref(decoded);
-                return;
-            }
-            
-            pcm_output = g_audio.rx_resamp_buffer;
-            nsamp_output = output_samples;
-            info("[AUDIO RX] Resampled %zu samples (%u Hz) -> %zu samples (%u Hz) for injection\n",
-                 nsamp_input, backend_rate, output_samples, g_audio.configured_srate);
-        } else {
-            /* No resampling needed - decoded audio is already at configured rate */
-            info("[AUDIO RX] Decoded %zu base64 chars to %zu samples (%zu bytes) at %u Hz\n",
-                 b64_len, nsamp_input, nbytes, backend_rate);
-        }
-        
-        err = write_to_injection_buffer(pcm_output, nsamp_output);
+        int err = write_to_injection_buffer(pcm, nsamp);
         if (err) {
             warning("openai_rt: write_to_injection_buffer failed: %m\n", err);
         } else {
-            info("[AUDIO RX] Successfully wrote %zu samples to injection buffer\n", nsamp_output);
+            info("[AUDIO RX] Successfully wrote %zu samples to injection buffer\n", nsamp);
         }
     } else {
         warning("[AUDIO RX] Failed to decode audio or insufficient data (nbytes=%zu)\n", nbytes);
