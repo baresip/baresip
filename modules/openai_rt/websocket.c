@@ -81,7 +81,7 @@ static void handle_response_done_cb(const char *response_json, void *arg);
                       strstr((const char *)(msg->data + LWS_PRE), "\"audioBytes\"") != NULL));
     
     if (is_audio) {
-        info("[AUDIO TX] Sending audio message via WebSocket (%zu bytes)\n", msg->len);
+        //info("[AUDIO TX] Sending audio message via WebSocket (%zu bytes)\n", msg->len);
     } else {
         DEBUG_INFO("process_outgoing_messages: Sending message (%zu bytes)\n", msg->len);
     }
@@ -104,7 +104,7 @@ static void handle_response_done_cb(const char *response_json, void *arg);
     } else {
         /* Full message sent */
         if (is_audio) {
-            info("[AUDIO TX] Audio message sent successfully via WebSocket (%d bytes)\n", written);
+            //info("[AUDIO TX] Audio message sent successfully via WebSocket (%d bytes)\n", written);
         } else {
             DEBUG_INFO("process_outgoing_messages: Message sent successfully (%d bytes)\n", written);
         }
@@ -161,17 +161,17 @@ static void handle_audio_delta(const char *base64_audio, void *arg)
     (void)arg;
 
     if (!base64_audio || !*base64_audio) {
-        DEBUG_INFO("[AUDIO RX] handle_audio_delta called but no audio data\n");
+        //DEBUG_INFO("[AUDIO RX] handle_audio_delta called but no audio data\n");
         return;
     }
     
     if (!g_oairt.call_active) {
-        DEBUG_INFO("[AUDIO RX] handle_audio_delta called but call not active, dropping audio\n");
+        //DEBUG_INFO("[AUDIO RX] handle_audio_delta called but call not active, dropping audio\n");
         return;
     }
 
-    size_t b64_len = str_len(base64_audio);
-    info("[AUDIO RX] Received base64 audio data (%zu chars), decoding...\n", b64_len);
+    //size_t b64_len = str_len(base64_audio);
+    //info("[AUDIO RX] Received base64 audio data (%zu chars), decoding...\n", b64_len);
 
     /* Decode base64 -> PCM16LE */
     uint8_t *decoded = NULL;
@@ -182,15 +182,15 @@ static void handle_audio_delta(const char *base64_audio, void *arg)
         size_t nsamp = nbytes / 2;
         
         /* Determine backend rate for logging */
-        uint32_t backend_rate = (g_oairt.backend_type == AI_BACKEND_GEMINI_LIVE) ? 16000 : 24000;
-        info("[AUDIO RX] Decoded %zu base64 chars to %zu samples (%zu bytes) at %u Hz\n",
-             b64_len, nsamp, nbytes, backend_rate);
+        //uint32_t backend_rate = (g_oairt.backend_type == AI_BACKEND_GEMINI_LIVE) ? 16000 : 24000;
+        //info("[AUDIO RX] Decoded %zu base64 chars to %zu samples (%zu bytes) at %u Hz\n",
+        //     b64_len, nsamp, nbytes, backend_rate);
         
         int err = write_to_injection_buffer(pcm, nsamp);
         if (err) {
             warning("openai_rt: write_to_injection_buffer failed: %m\n", err);
         } else {
-            info("[AUDIO RX] Successfully wrote %zu samples to injection buffer\n", nsamp);
+            //info("[AUDIO RX] Successfully wrote %zu samples to injection buffer\n", nsamp);
         }
     } else {
         warning("[AUDIO RX] Failed to decode audio or insufficient data (nbytes=%zu)\n", nbytes);
@@ -340,9 +340,9 @@ static void handle_response_done_cb(const char *response_json, void *arg)
     case LWS_CALLBACK_CLIENT_WRITEABLE:
         {
             pthread_mutex_lock(&g_oairt.ws_mutex);
-            size_t queue_size = list_count(&g_oairt.to_openai_queue);
+            //size_t queue_size = list_count(&g_oairt.to_openai_queue);
             pthread_mutex_unlock(&g_oairt.ws_mutex);
-            DEBUG_INFO("openai_rt: WebSocket writable callback, queue size=%zu\n", queue_size);
+            //DEBUG_INFO("openai_rt: WebSocket writable callback, queue size=%zu\n", queue_size);
             /* Process outgoing messages */
             process_outgoing_messages();
         }
@@ -357,7 +357,7 @@ static void handle_response_done_cb(const char *response_json, void *arg)
                                strstr((const char *)in, "\"serverContent\"") != NULL));
             
             if (has_audio) {
-                info("[AUDIO RX] WebSocket received message with audio data (%zu bytes)\n", len);
+                //info("[AUDIO RX] WebSocket received message with audio data (%zu bytes)\n", len);
             } else {
                 info("openai_rt: WebSocket received %zu bytes\n", len);
             }
@@ -663,18 +663,18 @@ static void handle_response_done_cb(const char *response_json, void *arg)
     pthread_mutex_lock(&g_oairt.ws_mutex);
     //DEBUG_INFO("Queueing message to OpenAI: %s\n", json_msg);
     list_append(&g_oairt.to_openai_queue, &msg->le, msg);
-    size_t queue_size = list_count(&g_oairt.to_openai_queue);
+    //size_t queue_size = list_count(&g_oairt.to_openai_queue);
     pthread_mutex_unlock(&g_oairt.ws_mutex);
 
-    DEBUG_INFO("queue_message_to_openai: Message queued (len=%zu), queue size=%zu, ws_state=%d\n",
-               len, queue_size, g_oairt.ws_state);
+    //DEBUG_INFO("queue_message_to_openai: Message queued (len=%zu), queue size=%zu, ws_state=%d\n",
+    //           len, queue_size, g_oairt.ws_state);
 
     /* Wake the I/O thread right away */
     ws_wake_service();
 
     /* If already connected, also request a writable callback */
     if (g_oairt.ws_state == WS_CONNECTED && g_oairt.ws_client) {
-        DEBUG_INFO("queue_message_to_openai: Requesting writable callback\n");
+        //DEBUG_INFO("queue_message_to_openai: Requesting writable callback\n");
         lws_callback_on_writable(g_oairt.ws_client);
     } else {
         DEBUG_INFO("queue_message_to_openai: Not requesting writable (state=%d, client=%p)\n",

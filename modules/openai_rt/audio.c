@@ -267,7 +267,7 @@ void handle_incoming_audio(const int16_t *s16_data, size_t sampc)
     }
 
     size_t byte_len = sampc * sizeof(int16_t);
-    info("[AUDIO TX] Received %zu samples (%zu bytes) from pipeline\n", sampc, byte_len);
+    //info("[AUDIO TX] Received %zu samples (%zu bytes) from pipeline\n", sampc, byte_len);
     
     char *b64 = encode_audio_base64((const uint8_t *)s16_data, byte_len);
     if (!b64) {
@@ -275,8 +275,8 @@ void handle_incoming_audio(const int16_t *s16_data, size_t sampc)
         return;
     }
 
-    size_t b64_len = str_len(b64);
-    info("[AUDIO TX] Base64 encoded %zu bytes to %zu chars\n", byte_len, b64_len);
+    //size_t b64_len = str_len(b64);
+    //info("[AUDIO TX] Base64 encoded %zu bytes to %zu chars\n", byte_len, b64_len);
 
     err = model->build_audio_append(b64, &json_msg);
     mem_deref(b64);
@@ -288,18 +288,18 @@ void handle_incoming_audio(const int16_t *s16_data, size_t sampc)
 
     if (json_msg) {
         size_t msg_len = str_len(json_msg);
-        info("[AUDIO TX] Built audio message (%zu bytes), queuing to WebSocket (ws_state=%d, ws_client=%p)\n",
-                   msg_len, g_oairt.ws_state, g_oairt.ws_client);
+        //info("[AUDIO TX] Built audio message (%zu bytes), queuing to WebSocket (ws_state=%d, ws_client=%p)\n",
+        //           msg_len, g_oairt.ws_state, g_oairt.ws_client);
         
         err = queue_message_to_openai(json_msg, msg_len, NULL, NULL);
         if (err) {
             warning("openai_rt: Failed to queue PCM audio: %m\n", err);
         } else {
-            info("[AUDIO TX] Audio message queued successfully (total queued: %zu bytes)\n", g_audio.audio_accumulated + byte_len);
+            //info("[AUDIO TX] Audio message queued successfully (total queued: %zu bytes)\n", g_audio.audio_accumulated + byte_len);
             g_audio.audio_accumulated += byte_len;
             if (g_audio.audio_accumulated >= g_audio.commit_threshold) {
                 if (g_oairt.session_cfg_applied) {
-                    info("[AUDIO TX] Threshold reached, sending commit\n");
+                    //info("[AUDIO TX] Threshold reached, sending commit\n");
                     send_audio_commit();
                 } else {
                     DEBUG_INFO("Skipping commit - session not ready yet\n");
