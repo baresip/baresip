@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         compiler: [gcc, clang, gcc-14]
-        os: [ubuntu-22.04, ubuntu-24.04, macos-latest]
+        os: [ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-arm, macos-latest]
         exclude:
           - os: macos-latest
             compiler: gcc
@@ -63,7 +63,6 @@ jobs:
                             libgtk-3-dev \
                             libjack-jackd2-dev \
                             libmosquitto-dev \
-                            libmpg123-dev \
                             libopencore-amrnb-dev \
                             libopencore-amrwb-dev \
                             libopus-dev \
