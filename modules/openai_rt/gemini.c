@@ -726,8 +726,6 @@ static int gemini_parse_message(const char *json_str,
                                void (*response_done_cb)(const char *response_json, void *arg),
                                void *cb_arg)
 {
-	(void)speech_started_cb; /* Not currently used in Gemini implementation */
-	
 	struct json_object *root = parse_json_safe(json_str, "Gemini message parser");
 	if (!root) {
 		return EINVAL;
@@ -766,6 +764,15 @@ static int gemini_parse_message(const char *json_str,
 	/* Check for serverContent (model output) - optional field */
 	struct json_object *server_content = get_json_object_field_optional(root, "serverContent");
 	if (server_content) {
+		/* Check for interrupted flag - when True, clear audio buffer (similar to OpenAI speech_started) */
+		struct json_object *interrupted_obj = get_json_object_field_optional(server_content, "interrupted");
+		if (interrupted_obj && json_object_is_type(interrupted_obj, json_type_boolean)) {
+			if (json_object_get_boolean(interrupted_obj) && speech_started_cb) {
+				DEBUG_INFO("openai_rt: Gemini serverContent.interrupted=True, clearing audio buffer\n");
+				speech_started_cb(cb_arg);
+			}
+		}
+
 		/* Check for modelTurn with audio data */
 		struct json_object *model_turn = get_json_object_field_optional(server_content, "modelTurn");
 		if (model_turn) {
