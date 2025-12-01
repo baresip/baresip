@@ -394,7 +394,7 @@ static int gemini_build_session_update(const char *prompt, char **json_msg)
 	/* Check if tools are enabled */
 	bool has_tools = (tools_json && strcmp(tools_json, "[]") != 0);
 	
-	/* Build setup message - always include voice config, conditionally include tools */
+	/* Build setup message - always include voice config and realtime input config for interruption detection */
 	if (has_tools) {
 		/* With tools */
 		err = re_sdprintf(json_msg,
@@ -419,6 +419,14 @@ static int gemini_build_session_update(const char *prompt, char **json_msg)
 							"}"
 						"],"
 						"\"role\":\"user\""
+					"},"
+					"\"realtimeInputConfig\":{"
+						"\"automaticActivityDetection\":{"
+							"\"startOfSpeechSensitivity\":\"START_SENSITIVITY_HIGH\","
+							"\"prefixPaddingMs\":100,"
+							"\"endOfSpeechSensitivity\":\"END_SENSITIVITY_HIGH\","
+							"\"silenceDurationMs\":300"
+						"}"
 					"},"
 					"\"tools\":%s,"
 					"\"sessionResumption\":{}"
@@ -449,6 +457,14 @@ static int gemini_build_session_update(const char *prompt, char **json_msg)
 							"}"
 						"],"
 						"\"role\":\"user\""
+					"},"
+					"\"realtimeInputConfig\":{"
+						"\"automaticActivityDetection\":{"
+							"\"startOfSpeechSensitivity\":\"START_SENSITIVITY_HIGH\","
+							"\"prefixPaddingMs\":100,"
+							"\"endOfSpeechSensitivity\":\"END_SENSITIVITY_HIGH\","
+							"\"silenceDurationMs\":300"
+						"}"
 					"},"
 					"\"sessionResumption\":{}"
 				"}"
