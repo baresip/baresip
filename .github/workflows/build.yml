@@ -92,7 +92,6 @@ jobs:
                         fdk-aac \
                         ffmpeg \
                         jack \
-                        mpg123 \
                         spandsp \
                         sdl2 \
                         glib-utils \
