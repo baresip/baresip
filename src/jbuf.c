@@ -510,7 +510,9 @@ int jbuf_put(struct jbuf *jb, const struct rtp_header *hdr, void *mem)
 		return EINVAL;
 
 	if (!hdr->ts_arrive) {
-		DEBUG_WARNING("invalid ts_arrive header!\n");
+		DEBUG_WARNING("[id=%r] invalid ts_arrive header!"
+			      " [pt=%u seq=%u ts=%u]\n",
+			      jb->id, hdr->pt, hdr->seq, hdr->ts);
 		return EINVAL;
 	}
 
