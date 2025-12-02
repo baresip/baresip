@@ -1,5 +1,6 @@
 #include <re.h>
 #include <baresip.h>
+#include <stdlib.h>
 
 struct subscription {
     struct le le;
@@ -18,6 +19,8 @@ static void sub_destructor(void *arg)
 
 static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 {
+    (void)event;
+    (void)arg;
     if (ev == UA_EVENT_SHUTDOWN) {
         struct le *le;
         for (le = subl.head; le; le = le->next) {
@@ -90,8 +93,8 @@ static void notify_handler(struct sip *sip, const struct sip_msg *msg,
     if (!sub || !ua)
         return;
 
-	// Trigger NOTIFY event
-	notify_event_emit(ua, msg);
+    // Trigger NOTIFY event
+    notify_event_emit(ua, msg);
 }
 
 static int auth_handler(char **username, char **password,
@@ -103,12 +106,15 @@ static int auth_handler(char **username, char **password,
 static void close_handler(int err, const struct sip_msg *msg,
                           const struct sipevent_substate *substate, void *arg)
 {
+    (void)err;
+    (void)msg;
+    (void)substate;
     struct subscription *sub = arg;
     list_unlink(&sub->le);
     mem_deref(sub);
 }
 
-static void cmd_subscribe(struct re_printf *pf, void *arg)
+static int cmd_subscribe(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
     struct le *le = NULL;
@@ -123,14 +129,14 @@ static void cmd_subscribe(struct re_printf *pf, void *arg)
 
     if (!ua) {
         re_hprintf(pf, "No registered UA available\n");
-        return;
+        return 0;
     }
 
     const char *line = (const char *)carg->prm;
 
     if (!line || *line == '\0') {
         re_hprintf(pf, "Usage: /subscribe <target> <event> <expires>\n");
-        return;
+        return 0;
     }
 
     // Duplicate line so strtok doesn't modify const memory
@@ -145,14 +151,14 @@ static void cmd_subscribe(struct re_printf *pf, void *arg)
 
     if (!target || !event || !expires_str) {
         re_hprintf(pf, "Usage: /subscribe <target> <event> <expires>\n");
-        return;
+        return 0;
     }
     uint32_t expires = (uint32_t)strtoul(expires_str, NULL, 10);
 
     struct subscription *sub = mem_zalloc(sizeof(*sub), sub_destructor);
     if (!sub) {
         re_hprintf(pf, "Memory allocation error\n");
-        return;
+        return 0;
     }
 
     sub->ua = mem_ref(ua);
@@ -168,8 +174,8 @@ static void cmd_subscribe(struct re_printf *pf, void *arg)
         if (!hdr) continue;
         pos += snprintf(hdrstr + pos, sizeof(hdrstr) - pos,
                         "%.*s: %.*s\r\n",
-                        hdr->name.l, hdr->name.p,
-                        hdr->val.l, hdr->val.p);
+                        (int)hdr->name.l, hdr->name.p,
+                        (int)hdr->val.l, hdr->val.p);
     }
     hdrstr[pos] = '\0';  // ensure null-terminated
 
@@ -190,14 +196,14 @@ static void cmd_subscribe(struct re_printf *pf, void *arg)
 
     if (err) {
         re_hprintf(pf, "Subscribe failed: %m\n", err);
-        return;
+        return 0;
     }
 	/* TODO: Send SUBSCRIBE event*/
     re_hprintf(pf, "Subscription sent to %s for event %s\n", target, event);
 
     list_append(&subl, &sub->le, sub);
 
-    return;
+    return 0;
 }
 
 static const struct cmd cmdv[] = {
