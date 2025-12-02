@@ -66,7 +66,6 @@ Distributed under BSD license
   - Automatic gain control (AGC) and Noise reducation
   - Acoustic echo control (AEC)
   - Configurable audio sample format (Signed 16-bit, 24-bit, Float etc)
-  - EBU ACIP (Audio Contribution over IP) Profile
 
 * Audio-codecs:
   - AAC
@@ -132,9 +131,6 @@ Distributed under BSD license
   - Command line interface (CLI)
   - Simple configuration files
   - MQTT (Message Queue Telemetry Transport) module
-
-* Profiles:
-  - EBU ACIP (Audio Contribution over IP) Profile
 
 
 ## Building
@@ -288,6 +284,7 @@ ice           ICE protocol for NAT Traversal
 in_band_dtmf  In-band DTMF decoder
 jack          JACK Audio Connection Kit audio-driver
 l16           L16 audio codec
+libg722       G.722 audio codec
 menu          Interactive menu
 mixausrc      Mixes another audio source into audio stream
 mixminus      Mixes N-1 audio streams for conferencing
@@ -299,6 +296,7 @@ opensles      OpenSLES audio driver
 opus          OPUS Interactive audio codec
 opus_multistream    OPUS multistream audio codec
 pcp           Port Control Protocol (PCP) module
+pipewire      Pipewire sound driver
 plc           Packet Loss Concealment (PLC) using spandsp
 portaudio     Portaudio driver
 pulse         Pulseaudio driver
@@ -325,7 +323,6 @@ vp9           VP9 video codec
 vumeter       Display audio levels in console
 wasapi        Windows Audio Session API (WASAPI) driver
 webrtc_aec    Acoustic Echo Cancellation (AEC) using WebRTC SDK
-webrtc_aecm   Acoustic Echo Cancellation (AEC) mobile using WebRTC SDK
 wincons       Console input driver for Windows
 x11           X11 video output driver
 ```
@@ -348,7 +345,6 @@ x11           X11 video output driver
 * RFC 4568  SDP Security Descriptions for Media Streams
 * RFC 4572  Connection-Oriented Media Transport over TLS Protocol in SDP
 * RFC 4585  Extended RTP Profile for RTCP-Based Feedback (RTP/AVPF)
-* RFC 4587  RTP Payload Format for H.261 Video Streams
 * RFC 4796  The SDP Content Attribute
 * RFC 4867  RTP Payload Format for the AMR and AMR-WB Audio Codecs
 * RFC 4961  Symmetric RTP / RTP Control Protocol (RTCP)
