@@ -63,7 +63,6 @@ jobs:
           'fdk-aac-free-devel' \
           'gcc' \
           'gcc-c++' \
-          'lame-devel' \
           'libaom-devel' \
           'libpng-devel' \
           'libsndfile-devel' \
@@ -72,7 +71,6 @@ jobs:
           'libX11-devel' \
           'libXext-devel' \
           'mosquitto-devel' \
-          'mpg123-devel' \
           'openssl-devel' \
           'opus-devel' \
           'pkgconfig(gio-unix-2.0)' \
@@ -95,8 +93,6 @@ jobs:
           'python3-devel' \
           'SDL2-devel' \
           'spandsp-devel' \
-          'speexdsp-devel' \
-          'twolame-devel' \
           '/usr/bin/gdbus-codegen'
 
     - uses: actions/download-artifact@v4
