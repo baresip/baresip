@@ -29,6 +29,8 @@ static struct config core_config = {
 	/** SIP User-Agent */
 	.sip = {
 		.transp = SIP_TRANSP_UDP,
+		.verify_server = true,
+		.verify_client = false,
 		.tls_resume = TLS_RESUMPTION_ALL,
 		.tos = 0xa0,
 	},
@@ -866,6 +868,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#sip_tls_resumption\tall\n"
 			  "sip_tos\t\t\t160\n"
 			  "#filter_registrar\tudp,tcp,tls,ws,wss\n"
+			  "#sip_cuser_random\tno\n"
 			  "\n"
 			  ,
 			  have_cafile ? "" : "#",
