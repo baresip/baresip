@@ -12,6 +12,9 @@ jobs:
   coverage:
     runs-on: ubuntu-22.04
 
+    env:
+      CMAKE_GENERATOR: Ninja
+
     steps:
     - uses: actions/checkout@v5
 
@@ -22,7 +25,7 @@ jobs:
 
     - name: install packages
       run: |
-        sudo apt-get update && sudo apt-get install -y libssl-dev
+        sudo apt-get update && sudo apt-get install -y ninja-build libssl-dev
 
     - uses: sreimers/pr-dependency-action@v1
       with:
@@ -56,6 +59,17 @@ jobs:
     - name: coverage check
       run: |
         min_cov="53.9"
-        cov=$(~/.local/bin/gcovr -r . -f src -s | grep lines | awk '{ print $2 }' | sed 's/%//')
+        mkdir html
+        cov=$(~/.local/bin/gcovr -r . --html-details html/index.html --json-summary | jq .line_percent)
         echo "Coverage: ${cov}% (min $min_cov%)"
         exit $(echo "$cov < $min_cov" | bc -l)
+
+    - name: coverage zip
+      run: |
+        zip -r coverage.zip html
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: coverage
+        path: coverage.zip
+        retention-days: 7
