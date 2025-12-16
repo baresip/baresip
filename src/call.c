@@ -2501,15 +2501,17 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 	switch (msg->scode) {
 
 	case 180:
-		if (call_state(call) != CALL_STATE_EARLY) {
-			set_state(call, CALL_STATE_RINGING);
+		if (call_state(call) != CALL_STATE_EARLY && call_state(call) != CALL_STATE_RINGING) {
 			send_pdd = true;
 		}
+		set_state(call, CALL_STATE_RINGING);
 		break;
 
 	case 183:
+		if (call_state(call) != CALL_STATE_EARLY && call_state(call) != CALL_STATE_RINGING) {
+			send_pdd = true;
+		}
 		set_state(call, CALL_STATE_EARLY);
-		send_pdd = true;
 		break;
 	}
 
@@ -2521,6 +2523,7 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 	}
 	else if (call_state(call) != CALL_STATE_EARLY) {
 		call_stream_stop(call);
+		/* assuming ringing never has media */
 		call_event_handler(call, CALL_EVENT_RINGING, "%s",
                                    call->peer_uri);
 	}
