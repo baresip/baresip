@@ -130,7 +130,8 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 		if (!call) {
 			re_hprintf(pf, "call not found with id '%r'\n",
 				   &cp->callid);
-			return EINVAL;
+			err = EINVAL;
+			goto out;
 		}
 	}
 	else if (call_state(call) != CALL_STATE_INCOMING) {
@@ -139,7 +140,8 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 
 	if (!call) {
 		re_hprintf(pf, "no call to answer\n");
-		return EINVAL;
+		err = EINVAL;
+		goto out;
 	}
 
 	ua = call_get_ua(call);
@@ -151,6 +153,8 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 	if (err)
 		re_hprintf(pf, "could not answer call (%m)\n", err);
 
+out:
+	mem_deref(cp);
 	return err;
 }
 
