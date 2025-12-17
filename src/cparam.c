@@ -54,7 +54,7 @@ static int decode_media_dir(struct pl *pl, enum sdp_dir *dirp,
  */
 int cparam_decode(const char *prm, const char *name, struct pl *val)
 {
-	struct pl pl;
+	struct pl pl = pl_null;
 	pl_set_str(&pl, prm);
 	return fmt_param_sep_get(&pl, name, ' ', val) ? 0 : ENOENT;
 }
