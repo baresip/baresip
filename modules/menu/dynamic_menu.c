@@ -356,11 +356,12 @@ static int set_media_ldir(struct re_printf *pf, void *arg)
 			"Audio & video must not be"
 			" inactive at the same time\n";
 
-	struct cparam_call *cp;
+	struct cparam_call *cp = NULL;
 	err = cparam_call_decode(&cp, carg->prm, pf);
 	if (err || !cp->mdir) {
 		(void) re_hprintf(pf, "%s", usage);
-		return EINVAL;
+		err = EINVAL;
+		goto out;
 	}
 
 	(void)pl_strdup(&cid, &cp->callid);
@@ -374,7 +375,7 @@ static int set_media_ldir(struct re_printf *pf, void *arg)
 	call_set_media_direction(call, cp->adir, cp->vdir);
 out:
 	mem_deref(cp);
-	return 0;
+	return err;
 }
 
 
