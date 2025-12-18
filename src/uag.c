@@ -158,9 +158,11 @@ void uag_filter_calls(call_list_h *listh, call_match_h *matchh, void *arg)
 	for (leu = list_head(uag_list()); leu; leu = leu->next) {
 		struct ua *ua = leu->data;
 		struct le *lec;
+		struct le *leprev;
 
-		for (lec = list_tail(ua_calls(ua)); lec; lec = lec->prev) {
+		for (lec = list_tail(ua_calls(ua)); lec; lec = leprev) {
 			struct call *call = lec->data;
+			leprev = lec->prev;
 
 			if (!matchh || matchh(call, arg))
 				listh(call, arg);
