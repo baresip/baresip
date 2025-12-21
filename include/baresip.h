@@ -94,7 +94,7 @@ int account_json_api(struct odict *odacc, struct odict *odcfg,
 int account_set_auth_user(struct account *acc, const char *user);
 int account_set_auth_pass(struct account *acc, const char *pass);
 int account_set_outbound(struct account *acc, const char *ob, unsigned ix);
-int account_set_check_origin(struct account *acc, bool value);
+void account_set_check_origin(struct account *acc, bool value);
 int account_set_sipnat(struct account *acc, const char *sipnat);
 int account_set_answermode(struct account *acc, enum answermode mode);
 int account_set_rel100_mode(struct account *acc, enum rel100_mode mode);

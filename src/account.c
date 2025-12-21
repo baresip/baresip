@@ -531,7 +531,7 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 	if (0 != msg_param_decode(&aor->params, "check_origin", &tmp))
 		acc->check_origin = true;
 	else
-		acc->check_origin = pl_strcasecmp(&tmp, "no") != 0;
+		pl_bool(&acc->check_origin, &tmp);
 
 	value = NULL;
 	err |= param_dstr(&value, &aor->params, "sipnat");
@@ -761,17 +761,13 @@ int account_set_outbound(struct account *acc, const char *ob, unsigned ix)
  *
  * @param acc      User-Agent account
  * @param value    true or false
- *
- * @return 0 if success, otherwise errorcode
  */
-int account_set_check_origin(struct account *acc, bool value)
+void account_set_check_origin(struct account *acc, bool value)
 {
 	if (!acc)
-		return EINVAL;
+		return;
 
 	acc->check_origin = value;
-
-	return 0;
 }
 
 
