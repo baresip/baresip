@@ -2325,8 +2325,9 @@ bool ua_req_allowed(const struct ua *ua, const struct sip_msg *msg)
 
 
 /**
- * Return false if filter_registrar is active for the message transport and the
- * SIP request IP does not match the server IP
+ * Return false if filter_registrar is active for the message transport,
+ * UA's account has ;check_origin=yes, and the SIP request IP does not
+ * match the server IP
  *
  * @param ua  User-Agent
  * @param msg SIP message
