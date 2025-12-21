@@ -1,51 +1,54 @@
 #
 # SIP accounts - one account per line -- sample configuration
 #
-# Displayname <sip:user:password@domain:port;uri-params>;addr-params
+# Displayname <sip:user@domain:port;uri-params>;addr-params
 #
 #  uri-params:
 #    ;transport={udp,tcp,tls}
 #
 #  addr-params:
 #    ;100rel={yes,no,required}  # default: no
-#    ;answermode={manual,early,auto,early-audio,early-video}
 #    ;answerdelay=0
+#    ;answermode={manual,early,auto,early-audio,early-video}
 #    ;audio_codecs=opus/48000/2,pcma,...
-#    ;audio_source=alsa,default
 #    ;audio_player=alsa,default
+#    ;audio_source=alsa,default
 #    ;autelev_pt=101
-#    ;sip_autoanswer={yes, no}
-#    ;sip_autoanswer_beep={off, on, local}
-#    ;dtmfmode={rtpevent, info, auto}
-#    ;auth_user=username
 #    ;auth_pass=password
+#    ;auth_user=username
 #    ;call_transfer=no
 #    ;catchall={yes, no}  # default: no
 #    ;cert=cert.pem
+#    ;dtmfmode={rtpevent, info, auto}
+#    ;extra=EXTRA-STRING
+#    ;fbregint=120
+#    ;inreq_allowed={yes, no}  # default: yes
 #    ;mediaenc={srtp,srtp-mand,srtp-mandf,dtls_srtp,zrtp}
 #    ;medianat={stun,turn,ice}
-#    ;natpinhole={yes, no}  # default: no
 #    ;mwi=no
-#    ;outbound="sip:primary.example.com;transport=tcp"
+#    ;natpinhole={yes, no}  # default: no
 #    ;outbound2=sip:secondary.example.com
-#    ;ptime={10,20,30,40,...}
-#    ;regint=3600
-#    ;fbregint=120
+#    ;outbound="sip:primary.example.com;transport=tcp"
 #    ;prio={0,1,2,3,...}
-#    ;rwait=90
+#    ;ptime={10,20,30,40,...}
 #    ;pubint=0 (publishing off)
+#    ;regint=3600
 #    ;regq=0.5
 #    ;rtcp_mux={yes, no}  # default: no
-#    ;sipnat={outbound}
+#    ;rwait=90
+#    ;sip_autoanswer={yes, no}
+#    ;sip_autoanswer_beep={off, on, local}
 #    ;sip_autoredirect={yes, no}  # default: no
-#    ;stunuser=STUN/TURN/ICE-username
+#    ;sipnat={outbound}
 #    ;stunpass=STUN/TURN/ICE-password
-#    ;stunserver=stun:[user:pass]@host[:port]  # see RFC 3986: Use of the format "user:password" in the userinfo field is deprecated.
+#    ;stunserver=stun:[user]@host[:port]
+#    ;stunuser=STUN/TURN/ICE-username
 #    ;tcpsrcport=6060
-#    ;inreq_allowed={yes, no}  # default: yes
-#    ;uas_user=username
 #    ;uas_pass=password
+#    ;uas_user=username
 #    ;video_codecs=h264,vp8,...
+#    ;video_display=x11,nil
+#    ;video_source=v4l2,/dev/video0
 #
 # Examples:
 #
@@ -72,7 +75,7 @@
 # Use ICE for Media NAT Traversal, using a specific STUN-server
 # See RFC 3986: use of the format "user:password" in the userinfo field is deprecated.
 #
-<sip:user@example.com>;medianat=ice;stunserver="stun:username:password@stunserver.org";auth_pass=pass
+<sip:user@example.com>;medianat=ice;stunserver="stun:username@stunserver.org";auth_pass=pass
 
 
 #
