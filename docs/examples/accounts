@@ -28,6 +28,7 @@
 #    ;mwi=no
 #    ;outbound="sip:primary.example.com;transport=tcp"
 #    ;outbound2=sip:secondary.example.com
+#    ;check_origin={yes, no}  # default: yes
 #    ;ptime={10,20,30,40,...}
 #    ;regint=3600
 #    ;fbregint=120

@@ -2343,6 +2343,9 @@ bool ua_req_check_origin(const struct ua *ua, const struct sip_msg *msg)
 	if (!u32mask_enabled(uag_cfg()->reg_filt, msg->tp))
 		return true;
 
+	if (!ua->acc->check_origin)
+		return true;
+
 	for (le = ua->regl.head; le; le = le->next) {
 		struct reg *reg = le->data;
 		if (sa_cmp(reg_paddr(reg), &msg->src, SA_ADDR))
