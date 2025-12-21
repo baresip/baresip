@@ -2122,6 +2122,8 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 					  i+1, acc->outboundv[i]);
 		}
 	}
+	err |= re_hprintf(pf, " check_origin  %s\n",
+			  account_check_origin(acc) ? "yes" : "no");
 	err |= re_hprintf(pf, " mwi:          %s\n",
 			  account_mwi(acc) ? "yes" : "no");
 	err |= re_hprintf(pf, " ptime:        %u\n", acc->ptime);
