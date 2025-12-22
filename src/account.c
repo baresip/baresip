@@ -126,9 +126,6 @@ static int stunsrv_decode(struct account *acc, const struct sip_addr *aor)
 
 	if (0 == msg_param_exists(&aor->params, "stunuser", &tmp))
 		err |= param_dstr(&acc->stun_user, &aor->params, "stunuser");
-	else if (pl_isset(&uri.user))
-		err |= re_sdprintf(&acc->stun_user, "%H",
-					uri_user_unescape, &uri.user);
 
 	if (0 == msg_param_exists(&aor->params, "stunpass", &tmp))
 		err |= param_dstr(&acc->stun_pass, &aor->params, "stunpass");

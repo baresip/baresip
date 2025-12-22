@@ -20,14 +20,13 @@ static const char str[] =
 	";100rel=yes"
 	";answerdelay=1000"
 	";answermode=auto"
-	";audio_codecs=pcma"
+	";audio_codecs=pcmu/8000/1,pcma"
 	";audio_source=null,null"
 	";autelev_pt=101"
 	";auth_pass=pass"
 	";auth_user=xuser"
 	";call_transfer=no"
 	";catchall=yes"
-	";cert=test/data/sni/server-interm.pem"
 	";dtmfmode=auto"
 	";extra=EXTRA"
 	";fbregint=120"
@@ -41,7 +40,7 @@ static const char str[] =
 	";regint=600"
 	";regq=0.5"
 	";rtcp_mux=yes"
-	";rwait=90"
+	";rwait=3600"
 	";sip_autoanswer=yes"
 	";sip_autoanswer_beep=yes"
 	";sip_autoredirect=no"
@@ -64,6 +63,8 @@ int test_account(void)
 
 	err = module_load(".", "g711");
 	TEST_ERR(err);
+
+	mock_vidcodec_register();
 
 	err = account_alloc(&acc, str);
 	TEST_ERR(err);
@@ -95,6 +96,29 @@ int test_account(void)
 	ASSERT_STREQ("stunserver.org", account_stun_host(acc));
 	ASSERT_TRUE(!account_mwi(acc));
 	ASSERT_TRUE(!account_call_transfer(acc));
+
+	err = account_set_auth_user(acc, "AUTH-USER");
+	TEST_ERR(err);
+	err = account_set_auth_pass(acc, "AUTH-PASS");
+	TEST_ERR(err);
+	err = account_set_outbound(acc, "outbound.example.com", 1);
+	TEST_ERR(err);
+	err = account_set_regint(acc, 60);
+	TEST_ERR(err);
+	err = account_set_stun_uri(acc, "stun:stun.example.com");
+	TEST_ERR(err);
+	err = account_set_stun_host(acc, "stun.example.com");
+	TEST_ERR(err);
+	err = account_set_stun_port(acc, 19302);
+	TEST_ERR(err);
+	err = account_set_stun_user(acc, "STUN-USER");
+	TEST_ERR(err);
+	err = account_set_stun_pass(acc, "STUN-PASS");
+	TEST_ERR(err);
+	err = account_set_ausrc_dev(acc, "default");
+	TEST_ERR(err);
+	err = account_set_auplay_dev(acc, "default");
+	TEST_ERR(err);
 
 	re_printf("%H\n", account_debug, acc);
 
