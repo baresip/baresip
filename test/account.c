@@ -49,7 +49,7 @@ static const char str[] =
 	";stunserver=\"stun:stunserver.org\""
 	";stunuser=bob@bob.com"
 	";tcpsrcport=49152"
-	";video_codecs=vp8"
+	";video_codecs=h266"
 	";video_display=sdl,default"
 	";video_source=null,null"
 	;
@@ -62,6 +62,10 @@ int test_account(void)
 	int err = 0;
 
 	err = module_load(".", "g711");
+	TEST_ERR(err);
+	err = module_load(".", "dtls_srtp");
+	TEST_ERR(err);
+	err = module_load(".", "ice");
 	TEST_ERR(err);
 
 	mock_vidcodec_register();
@@ -119,11 +123,32 @@ int test_account(void)
 	TEST_ERR(err);
 	err = account_set_auplay_dev(acc, "default");
 	TEST_ERR(err);
+	err = account_set_mediaenc(acc, "dtls_srtp");
+	TEST_ERR(err);
+	err = account_set_medianat(acc, "ice");
+	TEST_ERR(err);
+	err = account_set_audio_codecs(acc, "pcmu");
+	TEST_ERR(err);
+	err = account_set_video_codecs(acc, "h266");
+	TEST_ERR(err);
+	err = account_set_mwi(acc, false);
+	TEST_ERR(err);
+	err = account_set_call_transfer(acc, false);
+	TEST_ERR(err);
+	err = account_set_rtcp_mux(acc, false);
+	TEST_ERR(err);
+	account_set_catchall(acc, true);
+	err = account_set_pubint(acc, 3600);
+	TEST_ERR(err);
+
+	ASSERT_EQ(120, account_fbregint(acc));
 
 	re_printf("%H\n", account_debug, acc);
 
  out:
+	module_unload("dtls_srtp");
 	module_unload("g711");
+	module_unload("ice");
 
 	mem_deref(acc);
 	return err;
