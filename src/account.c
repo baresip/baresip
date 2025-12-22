@@ -537,6 +537,7 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 
 	param_bool(&acc->mwi, &aor->params, "mwi");
 
+	acc->refer = true;
 	param_bool(&acc->refer, &aor->params, "call_transfer");
 
 	param_bool(&acc->autoredirect, &aor->params, "sip_autoredirect");
