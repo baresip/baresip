@@ -16,7 +16,7 @@
 #    ;autelev_pt=101
 #    ;auth_pass=password
 #    ;auth_user=username
-#    ;call_transfer=no
+#    ;call_transfer={yes, no}  # default: yes
 #    ;catchall={yes, no}  # default: no
 #    ;cert=cert.pem
 #    ;dtmfmode={rtpevent, info, auto}
@@ -25,7 +25,7 @@
 #    ;inreq_allowed={yes, no}  # default: yes
 #    ;mediaenc={srtp,srtp-mand,srtp-mandf,dtls_srtp,zrtp}
 #    ;medianat={stun,turn,ice}
-#    ;mwi=no
+#    ;mwi={yes, no}  # default: yes
 #    ;natpinhole={yes, no}  # default: no
 #    ;outbound2=sip:secondary.example.com
 #    ;outbound="sip:primary.example.com;transport=tcp"

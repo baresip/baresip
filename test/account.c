@@ -59,6 +59,8 @@ int test_account(void)
 {
 	struct account *acc = NULL;
 	struct sip_addr *addr;
+	struct odict *od = NULL;
+	struct odict *odcfg = NULL;
 	int err = 0;
 
 	err = module_load(".", "g711");
@@ -100,6 +102,8 @@ int test_account(void)
 	ASSERT_STREQ("stunserver.org", account_stun_host(acc));
 	ASSERT_TRUE(!account_mwi(acc));
 	ASSERT_TRUE(!account_call_transfer(acc));
+	ASSERT_STREQ("outbound", account_sipnat(acc));
+	ASSERT_STREQ("EXTRA", account_extra(acc));
 
 	err = account_set_auth_user(acc, "AUTH-USER");
 	TEST_ERR(err);
@@ -135,15 +139,50 @@ int test_account(void)
 	TEST_ERR(err);
 	err = account_set_call_transfer(acc, false);
 	TEST_ERR(err);
-	err = account_set_rtcp_mux(acc, false);
+	err = account_set_rtcp_mux(acc, true);
 	TEST_ERR(err);
 	account_set_catchall(acc, true);
 	err = account_set_pubint(acc, 3600);
 	TEST_ERR(err);
 
 	ASSERT_EQ(120, account_fbregint(acc));
+	ASSERT_EQ(19302, account_stun_port(acc));
+
+	err = account_set_display_name(acc, "Display");
+	TEST_ERR(err);
+
+
+	err = account_set_answermode(acc, ANSWERMODE_MANUAL);
+	TEST_ERR(err);
+
+	err = account_set_rel100_mode(acc, REL100_REQUIRED);
+	TEST_ERR(err);
+
+	err = account_set_dtmfmode(acc, DTMFMODE_RTP_EVENT);
+	TEST_ERR(err);
+
+	account_set_answerdelay(acc, 1000);
+
+	account_set_autelev_pt(acc, 101);
+
+	ASSERT_EQ(1000, account_answerdelay(acc));
+	ASSERT_EQ(101, account_autelev_pt(acc));
+
+	ASSERT_TRUE(account_rtcp_mux(acc));
+
+	err = account_set_inreq_mode(acc, INREQ_MODE_ON);
+	TEST_ERR(err);
+
+	err |= odict_alloc(&od, 8);
+	err |= odict_alloc(&odcfg, 8);
+	TEST_ERR(err);
+
+	err = account_json_api(od, odcfg, acc);
+	TEST_ERR(err);
 
 	re_printf("%H\n", account_debug, acc);
+	re_printf("%H\n", odict_debug, od);
+	re_printf("%H\n", odict_debug, odcfg);
 
  out:
 	module_unload("dtls_srtp");
@@ -151,6 +190,9 @@ int test_account(void)
 	module_unload("ice");
 
 	mem_deref(acc);
+	mem_deref(odcfg);
+	mem_deref(od);
+
 	return err;
 }
 

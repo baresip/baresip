@@ -2096,7 +2096,7 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 			  acc->autoredirect ? "yes" : "no");
 
 	if (!list_isempty(&acc->vidcodecl)) {
-		err |= re_hprintf(pf, " video_codecs:  ");
+		err |= re_hprintf(pf, " video_codecs:    ");
 		for (le = list_head(&acc->vidcodecl); le; le = le->next) {
 			const struct vidcodec *vc = le->data;
 			err |= re_hprintf(pf, " %s", vc->name);
