@@ -528,10 +528,7 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 				  "outbound");
 	}
 
-	if (0 != msg_param_decode(&aor->params, "check_origin", &tmp))
-		acc->check_origin = true;
-	else
-		pl_bool(&acc->check_origin, &tmp);
+	param_bool(&acc->check_origin, &aor->params, "check_origin");
 
 	value = NULL;
 	err |= param_dstr(&value, &aor->params, "sipnat");
