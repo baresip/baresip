@@ -278,11 +278,7 @@ static void autoanswer_decode(struct account *prm, const struct pl *pl)
 {
 	struct pl v;
 
-	if (0 == msg_param_decode(pl, "sip_autoanswer", &v)) {
-		if (0 == pl_strcasecmp(&v, "yes")) {
-			prm->sipans = true;
-		}
-	}
+	param_bool(&prm->sipans, pl, "sip_autoanswer");
 
 	if (0 == msg_param_decode(pl, "sip_autoanswer_beep", &v)) {
 		if (0 == pl_strcasecmp(&v, "on")) {
@@ -479,7 +475,7 @@ static void uasauth_decode(struct account *acc, const struct pl *prm)
 
 static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 {
-	struct pl auth_user, tmp;
+	struct pl auth_user;
 	size_t i;
 	uint32_t u32;
 	int err = 0;
@@ -539,20 +535,11 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 	if (pl_isset(&aor->dname))
 		err |= pl_strdup(&acc->dispname, &aor->dname);
 
-	if (0 != msg_param_decode(&aor->params, "mwi", &tmp))
-		acc->mwi = true;
-	else
-		acc->mwi = pl_strcasecmp(&tmp, "no") != 0;
+	param_bool(&acc->mwi, &aor->params, "mwi");
 
-	if (0 != msg_param_decode(&aor->params, "call_transfer", &tmp))
-		acc->refer = true;
-	else
-		acc->refer = pl_strcasecmp(&tmp, "no") != 0;
+	param_bool(&acc->refer, &aor->params, "call_transfer");
 
-	if (0 != msg_param_decode(&aor->params, "sip_autoredirect", &tmp))
-		acc->autoredirect = false;
-	else
-		acc->autoredirect = pl_strcasecmp(&tmp, "yes") == 0;
+	param_bool(&acc->autoredirect, &aor->params, "sip_autoredirect");
 
 	return err;
 }
@@ -2046,20 +2033,15 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 			  uri_encode, &acc->luri);
 	err |= re_hprintf(pf, " aor:          %s\n", acc->aor);
 	err |= re_hprintf(pf, " dispname:     %s\n", acc->dispname);
-	err |= re_hprintf(pf, " 100rel:       %s\n",
+
+	err |= re_hprintf(pf, " 100rel:           %s\n",
 			  rel100_mode_str(acc->rel100_mode));
-	err |= re_hprintf(pf, " answermode:   %s\n",
+	err |= re_hprintf(pf, " answerdelay:      %d\n", acc->adelay);
+	err |= re_hprintf(pf, " answermode:       %s\n",
 			  answermode_str(acc->answermode));
-	err |= re_hprintf(pf, " autoredirect:   %s\n",
-			  acc->autoredirect ? "yes" : "no");
-	err |= re_hprintf(pf, " sipans:       %s\n",
-			  acc->sipans ? "yes" : "no");
-	err |= re_hprintf(pf, " sipansbeep:   %s\n",
-			  sipansbeep_str(acc->sipansbeep));
-	err |= re_hprintf(pf, " dtmfmode:     %s\n",
-			  dtmfmode_str(acc->dtmfmode));
+
 	if (!list_isempty(&acc->aucodecl)) {
-		err |= re_hprintf(pf, " audio_codecs:");
+		err |= re_hprintf(pf, " audio_codecs:    ");
 		for (le = list_head(&acc->aucodecl); le; le = le->next) {
 			const struct aucodec *ac = le->data;
 			err |= re_hprintf(pf, " %s/%u/%u",
@@ -2067,50 +2049,62 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 		}
 		err |= re_hprintf(pf, "\n");
 	}
-	err |= re_hprintf(pf, " autelev_pt:   %u\n", acc->autelev_pt);
-	err |= re_hprintf(pf, " auth_user:    %s\n", acc->auth_user);
-	err |= re_hprintf(pf, " mediaenc:     %s\n",
+
+	err |= re_hprintf(pf, " autoredirect:     %s\n",
+			  acc->autoredirect ? "yes" : "no");
+	err |= re_hprintf(pf, " autelev_pt:       %u\n", acc->autelev_pt);
+	err |= re_hprintf(pf, " auth_user:        %s\n", acc->auth_user);
+	err |= re_hprintf(pf, " call_transfer:    %s\n",
+			  account_call_transfer(acc) ? "yes" : "no");
+	err |= re_hprintf(pf, " catchall:         %s\n",
+			  acc->catchall ? "yes" : "no");
+	err |= re_hprintf(pf, " cert:             %s\n", acc->cert);
+	err |= re_hprintf(pf, " dtmfmode:         %s\n",
+			  dtmfmode_str(acc->dtmfmode));
+	err |= re_hprintf(pf, " extra:            %s\n",
+			  acc->extra ? acc->extra : "none");
+	err |= re_hprintf(pf, " inreq_allowed:    %s\n",
+			  inreq_mode_str(acc->inreq_mode));
+	err |= re_hprintf(pf, " mediaenc:         %s\n",
 			  acc->mencid ? acc->mencid : "none");
-	err |= re_hprintf(pf, " medianat:     %s\n",
+	err |= re_hprintf(pf, " medianat:         %s\n",
 			  acc->mnatid ? acc->mnatid : "none");
-	err |= re_hprintf(pf, " natpinhole:   %s\n",
+	err |= re_hprintf(pf, " natpinhole:       %s\n",
 			  acc->pinhole ? "yes" : "no");
 	for (i=0; i<RE_ARRAY_SIZE(acc->outboundv); i++) {
 		if (acc->outboundv[i]) {
-			err |= re_hprintf(pf, " outbound%zu:    %s\n",
+			err |= re_hprintf(pf, " outbound%zu:        %s\n",
 					  i+1, acc->outboundv[i]);
 		}
 	}
-	err |= re_hprintf(pf, " mwi:          %s\n",
+	err |= re_hprintf(pf, " mwi:              %s\n",
 			  account_mwi(acc) ? "yes" : "no");
-	err |= re_hprintf(pf, " ptime:        %u\n", acc->ptime);
-	err |= re_hprintf(pf, " regint:       %u\n", acc->regint);
-	err |= re_hprintf(pf, " prio:         %u\n", acc->prio);
-	err |= re_hprintf(pf, " pubint:       %u\n", acc->pubint);
-	err |= re_hprintf(pf, " regq:         %s\n", acc->regq);
-	err |= re_hprintf(pf, " inreq_allowed:%s\n",
-			  inreq_mode_str(acc->inreq_mode));
-	err |= re_hprintf(pf, " sipnat:       %s\n", acc->sipnat);
-	err |= re_hprintf(pf, " stunuser:     %s\n", acc->stun_user);
-	err |= re_hprintf(pf, " stunserver:   %H\n",
-			  stunuri_print, acc->stun_host);
-	err |= re_hprintf(pf, " rtcp_mux:     %s\n",
+	err |= re_hprintf(pf, " ptime:            %u\n", acc->ptime);
+	err |= re_hprintf(pf, " prio:             %u\n", acc->prio);
+	err |= re_hprintf(pf, " pubint:           %u\n", acc->pubint);
+	err |= re_hprintf(pf, " regint:           %u\n", acc->regint);
+	err |= re_hprintf(pf, " regq:             %s\n", acc->regq);
+	err |= re_hprintf(pf, " rtcp_mux:         %s\n",
 			  acc->rtcp_mux ? "yes" : "no");
+	err |= re_hprintf(pf, " sipnat:           %s\n", acc->sipnat);
+	err |= re_hprintf(pf, " stunuser:         %s\n", acc->stun_user);
+	err |= re_hprintf(pf, " stunserver:       %H\n",
+			  stunuri_print, acc->stun_host);
+	err |= re_hprintf(pf, " sipans:           %s\n",
+			  acc->sipans ? "yes" : "no");
+	err |= re_hprintf(pf, " sipansbeep:       %s\n",
+			  sipansbeep_str(acc->sipansbeep));
+	err |= re_hprintf(pf, " sip_autoredirect: %s\n",
+			  acc->autoredirect ? "yes" : "no");
 
 	if (!list_isempty(&acc->vidcodecl)) {
-		err |= re_hprintf(pf, " video_codecs:");
+		err |= re_hprintf(pf, " video_codecs:  ");
 		for (le = list_head(&acc->vidcodecl); le; le = le->next) {
 			const struct vidcodec *vc = le->data;
 			err |= re_hprintf(pf, " %s", vc->name);
 		}
 		err |= re_hprintf(pf, "\n");
 	}
-	err |= re_hprintf(pf, " call_transfer:%s\n",
-			  account_call_transfer(acc) ? "yes" : "no");
-	err |= re_hprintf(pf, " catchall:%s\n", acc->catchall ? "yes" : "no");
-	err |= re_hprintf(pf, " cert:         %s\n", acc->cert);
-	err |= re_hprintf(pf, " extra:        %s\n",
-			  acc->extra ? acc->extra : "none");
 
 	return err;
 }

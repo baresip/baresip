@@ -16,20 +16,42 @@
 
 static const char str[] =
 	"\"Mr User\" <sip:user@domain.com>"
+	""
+	";100rel=yes"
+	";answerdelay=1000"
 	";answermode=auto"
-	";auth_user=xuser"
+	";audio_codecs=pcma"
+	";audio_source=null,null"
+	";autelev_pt=101"
 	";auth_pass=pass"
+	";auth_user=xuser"
+	";call_transfer=no"
+	";catchall=yes"
+	";cert=test/data/sni/server-interm.pem"
+	";dtmfmode=auto"
+	";extra=EXTRA"
+	";fbregint=120"
+	";inreq_allowed=yes"
+	";mwi=no"
+	";natpinhole=yes"
 	";outbound=\"sip:edge.domain.com\""
+	";prio=42"
 	";ptime=10"
-	";regint=600"
 	";pubint=700"
+	";regint=600"
+	";regq=0.5"
+	";rtcp_mux=yes"
+	";rwait=90"
+	";sip_autoanswer=yes"
+	";sip_autoanswer_beep=yes"
+	";sip_autoredirect=no"
 	";sipnat=outbound"
-	";stunuser=bob@bob.com"
 	";stunpass=taj:aa"
 	";stunserver=\"stun:stunserver.org\""
-	";mwi=no"
-	";call_transfer=no"
-	";audio_source=null,null"
+	";stunuser=bob@bob.com"
+	";tcpsrcport=49152"
+	";video_codecs=vp8"
+	";video_display=sdl,default"
 	";video_source=null,null"
 	;
 
@@ -39,6 +61,9 @@ int test_account(void)
 	struct account *acc = NULL;
 	struct sip_addr *addr;
 	int err = 0;
+
+	err = module_load(".", "g711");
+	TEST_ERR(err);
 
 	err = account_alloc(&acc, str);
 	TEST_ERR(err);
@@ -71,7 +96,11 @@ int test_account(void)
 	ASSERT_TRUE(!account_mwi(acc));
 	ASSERT_TRUE(!account_call_transfer(acc));
 
+	re_printf("%H\n", account_debug, acc);
+
  out:
+	module_unload("g711");
+
 	mem_deref(acc);
 	return err;
 }
