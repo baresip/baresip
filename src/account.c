@@ -2067,6 +2067,8 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 			  acc->mencid ? acc->mencid : "none");
 	err |= re_hprintf(pf, " medianat:         %s\n",
 			  acc->mnatid ? acc->mnatid : "none");
+	err |= re_hprintf(pf, " mwi:              %s\n",
+			  account_mwi(acc) ? "yes" : "no");
 	err |= re_hprintf(pf, " natpinhole:       %s\n",
 			  acc->pinhole ? "yes" : "no");
 	for (i=0; i<RE_ARRAY_SIZE(acc->outboundv); i++) {
@@ -2075,8 +2077,6 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 					  i+1, acc->outboundv[i]);
 		}
 	}
-	err |= re_hprintf(pf, " mwi:              %s\n",
-			  account_mwi(acc) ? "yes" : "no");
 	err |= re_hprintf(pf, " ptime:            %u\n", acc->ptime);
 	err |= re_hprintf(pf, " prio:             %u\n", acc->prio);
 	err |= re_hprintf(pf, " pubint:           %u\n", acc->pubint);

@@ -185,6 +185,8 @@ int test_account(void)
 	re_printf("%H\n", odict_debug, odcfg);
 
  out:
+	mock_vidcodec_unregister();
+
 	module_unload("dtls_srtp");
 	module_unload("g711");
 	module_unload("ice");
