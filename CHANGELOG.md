@@ -5,6 +5,26 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## v4.4.0 - 2025-12-23
+
+### What's Changed
+* call: remove SDP label attribute (not used) by @alfredh in https://github.com/baresip/baresip/pull/3543
+* pulse: cast usec to fit print format by @cspiel1 in https://github.com/baresip/baresip/pull/3563
+* menu: cleanup dialdir params by @cspiel1 in https://github.com/baresip/baresip/pull/3556
+* menu: add cuser parameter to dialdir command by @cspiel1 in https://github.com/baresip/baresip/pull/3564
+* README: update documentation by @alfredh in https://github.com/baresip/baresip/pull/3567
+* cmake: remove g726 module from default list by @alfredh in https://github.com/baresip/baresip/pull/3566
+* ci: remove unused packages by @alfredh in https://github.com/baresip/baresip/pull/3571
+* config: sync config template and example by @alfredh in https://github.com/baresip/baresip/pull/3575
+* menu: free allocated cparam_call at the end of cmd_answerdir by @cHuberCoffee in https://github.com/baresip/baresip/pull/3577
+* ci: update coverage job by @alfredh in https://github.com/baresip/baresip/pull/3578
+* menu, cparam: initialize stack variable, free memory by @cHuberCoffee in https://github.com/baresip/baresip/pull/3579
+* account: update account parameters template and example by @alfredh in https://github.com/baresip/baresip/pull/3585
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v4.3.0...v4.4.0
+
+
 ## v4.3.0 - 2025-11-19
 
 ### What's Changed
