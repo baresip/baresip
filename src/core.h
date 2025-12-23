@@ -33,14 +33,6 @@ struct stream_param;
  * Account
  */
 
-struct uasauth {
-	struct le he;
-
-	char *met;
-	bool deny;
-};
-
-
 struct account {
 	char *buf;                   /**< Buffer for the SIP address         */
 	struct sip_addr laddr;       /**< Decoded SIP address                */
