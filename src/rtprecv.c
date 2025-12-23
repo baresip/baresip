@@ -720,6 +720,7 @@ int rtprecv_debug(struct re_printf *pf, const struct rtp_receiver *rx)
 static void destructor(void *arg)
 {
 	struct rtp_receiver *rx = arg;
+	tmr_cancel(&rx->tmr_decode);
 
 	if (re_atomic_rlx(&rx->run)) {
 		rtprecv_enable(rx, false);
@@ -732,7 +733,6 @@ static void destructor(void *arg)
 		udp_thread_detach(rtcp_sock(rx->rtp));
 	}
 
-	tmr_cancel(&rx->tmr_decode);
 	mem_deref(rx->metric);
 	mem_deref(rx->name);
 	mem_deref(rx->mtx);
