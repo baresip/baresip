@@ -151,7 +151,6 @@ int test_account(void)
 	err = account_set_display_name(acc, "Display");
 	TEST_ERR(err);
 
-
 	err = account_set_answermode(acc, ANSWERMODE_MANUAL);
 	TEST_ERR(err);
 
@@ -173,8 +172,9 @@ int test_account(void)
 	err = account_set_inreq_mode(acc, INREQ_MODE_ON);
 	TEST_ERR(err);
 
-	err |= odict_alloc(&od, 8);
-	err |= odict_alloc(&odcfg, 8);
+	enum { HASH_SIZE = 32 };
+	err |= odict_alloc(&od, HASH_SIZE);
+	err |= odict_alloc(&odcfg, HASH_SIZE);
 	TEST_ERR(err);
 
 	err = account_json_api(od, odcfg, acc);
@@ -187,9 +187,9 @@ int test_account(void)
  out:
 	mock_vidcodec_unregister();
 
+	module_unload("ice");
 	module_unload("dtls_srtp");
 	module_unload("g711");
-	module_unload("ice");
 
 	mem_deref(acc);
 	mem_deref(odcfg);
