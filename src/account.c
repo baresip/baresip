@@ -275,7 +275,9 @@ static void autoanswer_decode(struct account *prm, const struct pl *pl)
 {
 	struct pl v;
 
-	param_bool(&prm->sipans, pl, "sip_autoanswer");
+	int err = param_bool(&prm->sipans, pl, "sip_autoanswer");
+	if (err)
+		return;
 
 	if (0 == msg_param_decode(pl, "sip_autoanswer_beep", &v)) {
 		if (0 == pl_strcasecmp(&v, "on")) {
@@ -532,12 +534,14 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 	if (pl_isset(&aor->dname))
 		err |= pl_strdup(&acc->dispname, &aor->dname);
 
-	param_bool(&acc->mwi, &aor->params, "mwi");
+	acc->mwi = true;
+	err |= param_bool(&acc->mwi, &aor->params, "mwi");
 
 	acc->refer = true;
-	param_bool(&acc->refer, &aor->params, "call_transfer");
+	err |= param_bool(&acc->refer, &aor->params, "call_transfer");
 
-	param_bool(&acc->autoredirect, &aor->params, "sip_autoredirect");
+	err |= param_bool(&acc->autoredirect, &aor->params,
+			  "sip_autoredirect");
 
 	return err;
 }

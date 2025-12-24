@@ -61,6 +61,7 @@ int test_account(void)
 	struct sip_addr *addr;
 	struct odict *od = NULL;
 	struct odict *odcfg = NULL;
+	char *debug = NULL;
 	int err = 0;
 
 	err = module_load(".", "g711");
@@ -180,9 +181,20 @@ int test_account(void)
 	err = account_json_api(od, odcfg, acc);
 	TEST_ERR(err);
 
-	re_printf("%H\n", account_debug, acc);
-	re_printf("%H\n", odict_debug, od);
-	re_printf("%H\n", odict_debug, odcfg);
+	err = re_sdprintf(&debug, "%H", account_debug, acc);
+	TEST_ERR(err);
+	ASSERT_TRUE(str_isset(debug));
+	debug = mem_deref(debug);
+
+	err = re_sdprintf(&debug, "%H", odict_debug, od);
+	TEST_ERR(err);
+	ASSERT_TRUE(str_isset(debug));
+	debug = mem_deref(debug);
+
+	err = re_sdprintf(&debug, "%H", odict_debug, odcfg);
+	TEST_ERR(err);
+	ASSERT_TRUE(str_isset(debug));
+	debug = mem_deref(debug);
 
  out:
 	mock_vidcodec_unregister();
@@ -194,6 +206,7 @@ int test_account(void)
 	mem_deref(acc);
 	mem_deref(odcfg);
 	mem_deref(od);
+	mem_deref(debug);
 
 	return err;
 }
