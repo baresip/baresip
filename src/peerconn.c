@@ -76,6 +76,17 @@ static void pc_summary(const struct peer_connection *pc)
 }
 
 
+static void pc_close(struct peer_connection *pc, int err)
+{
+	peerconnection_close_h *closeh = pc->closeh;
+
+	pc->closeh = NULL;
+
+	if (closeh)
+		closeh(err, pc->arg);
+}
+
+
 static void destructor(void *data)
 {
 	struct peer_connection *pc = data;
@@ -100,20 +111,11 @@ static void destructor(void *data)
 		mem_deref(media);
 	}
 
+	pc_close(pc, 0);
+
 	mem_deref(pc->sdp);
 	mem_deref(pc->mnats);
 	mem_deref(pc->mencs);
-}
-
-
-static void pc_close(struct peer_connection *pc, int err)
-{
-	peerconnection_close_h *closeh = pc->closeh;
-
-	pc->closeh = NULL;
-
-	if (closeh)
-		closeh(err, pc->arg);
 }
 
 
