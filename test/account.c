@@ -21,6 +21,7 @@ static const char str[] =
 	";answerdelay=1000"
 	";answermode=auto"
 	";audio_codecs=pcmu/8000/1,pcma"
+	";audio_player=alsa,default"
 	";audio_source=null,null"
 	";autelev_pt=101"
 	";auth_pass=pass"
@@ -32,6 +33,8 @@ static const char str[] =
 	";extra=EXTRA"
 	";fbregint=120"
 	";inreq_allowed=yes"
+	";mediaenc=dtls_srtp"
+	";medianat=ice"
 	";mwi=no"
 	";natpinhole=yes"
 	";outbound=\"sip:edge.domain.com\""
@@ -50,6 +53,8 @@ static const char str[] =
 	";stunserver=\"stun:stunserver.org\""
 	";stunuser=bob@bob.com"
 	";tcpsrcport=49152"
+	";uas_pass=UAS-PASSWORD"
+	";uas_user=UAS-USERNAME"
 	";video_codecs=h266"
 	";video_display=sdl,default"
 	";video_source=null,null"
@@ -90,23 +95,35 @@ int test_account(void)
 
 	/* verify all decoded parameters */
 	ASSERT_STREQ("Mr User", account_display_name(acc));
+
+	ASSERT_EQ(REL100_ENABLED, account_rel100_mode(acc));
+	ASSERT_EQ(1000, account_answerdelay(acc));
 	ASSERT_TRUE(ANSWERMODE_AUTO == account_answermode(acc));
+	ASSERT_EQ(2, list_count(account_aucodecl(acc)));
+	ASSERT_EQ(101, account_autelev_pt(acc));
 	ASSERT_STREQ("xuser", account_auth_user(acc));
 	ASSERT_STREQ("pass", account_auth_pass(acc));
+	ASSERT_TRUE(!account_call_transfer(acc));
+	ASSERT_TRUE(!account_check_origin(acc));
+	ASSERT_EQ(DTMFMODE_AUTO, account_dtmfmode(acc));
+	ASSERT_STREQ("EXTRA", account_extra(acc));
+	ASSERT_EQ(120, account_fbregint(acc));
+	ASSERT_EQ(INREQ_MODE_ON, account_inreq_mode(acc));
+	ASSERT_STREQ("dtls_srtp", account_mediaenc(acc));
+	ASSERT_STREQ("ice", account_medianat(acc));
+	ASSERT_TRUE(!account_mwi(acc));
 	ASSERT_STREQ("sip:edge.domain.com", account_outbound(acc, 0));
 	ASSERT_TRUE(NULL == account_outbound(acc, 1));
 	ASSERT_TRUE(NULL == account_outbound(acc, 333));
-	ASSERT_TRUE(!account_check_origin(acc));
 	ASSERT_EQ(10, account_ptime(acc));
 	ASSERT_EQ(600, account_regint(acc));
 	ASSERT_EQ(700, account_pubint(acc));
 	ASSERT_STREQ("bob@bob.com", account_stun_user(acc));
 	ASSERT_STREQ("taj:aa", account_stun_pass(acc));
 	ASSERT_STREQ("stunserver.org", account_stun_host(acc));
-	ASSERT_TRUE(!account_mwi(acc));
-	ASSERT_TRUE(!account_call_transfer(acc));
 	ASSERT_STREQ("outbound", account_sipnat(acc));
-	ASSERT_STREQ("EXTRA", account_extra(acc));
+	ASSERT_EQ(0, account_stun_port(acc));
+	ASSERT_TRUE(account_rtcp_mux(acc));
 
 	err = account_set_auth_user(acc, "AUTH-USER");
 	TEST_ERR(err);
@@ -147,33 +164,20 @@ int test_account(void)
 	account_set_catchall(acc, true);
 	err = account_set_pubint(acc, 3600);
 	TEST_ERR(err);
-
-	ASSERT_EQ(120, account_fbregint(acc));
-	ASSERT_EQ(19302, account_stun_port(acc));
-
 	err = account_set_display_name(acc, "Display");
 	TEST_ERR(err);
-
 	err = account_set_answermode(acc, ANSWERMODE_MANUAL);
 	TEST_ERR(err);
-
 	err = account_set_rel100_mode(acc, REL100_REQUIRED);
 	TEST_ERR(err);
-
 	err = account_set_dtmfmode(acc, DTMFMODE_RTP_EVENT);
 	TEST_ERR(err);
-
 	account_set_answerdelay(acc, 1000);
-
 	account_set_autelev_pt(acc, 101);
-
-	ASSERT_EQ(1000, account_answerdelay(acc));
-	ASSERT_EQ(101, account_autelev_pt(acc));
-
-	ASSERT_TRUE(account_rtcp_mux(acc));
-
 	err = account_set_inreq_mode(acc, INREQ_MODE_ON);
 	TEST_ERR(err);
+
+	/* debug */
 
 	enum { HASH_SIZE = 32 };
 	err |= odict_alloc(&od, HASH_SIZE);
