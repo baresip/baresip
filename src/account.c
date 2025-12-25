@@ -523,6 +523,8 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 				  "outbound");
 	}
 
+	param_bool(&acc->check_origin, &aor->params, "check_origin");
+
 	value = NULL;
 	err |= param_dstr(&value, &aor->params, "sipnat");
 	(void)account_set_sipnat(acc, value);
@@ -579,6 +581,7 @@ int account_alloc(struct account **accp, const char *sipaddr)
 		return ENOMEM;
 
 	acc->sipansbeep = SIPANSBEEP_ON;
+	acc->check_origin = true;
 	acc->videoen = true;
 	err = str_dup(&acc->buf, sipaddr);
 	if (err)
@@ -736,6 +739,21 @@ int account_set_outbound(struct account *acc, const char *ob, unsigned ix)
 		return str_dup(&(acc->outboundv[ix]), ob);
 
 	return 0;
+}
+
+
+/**
+ * Sets check origin capability on (value true) or off (value false)
+ *
+ * @param acc      User-Agent account
+ * @param value    true or false
+ */
+void account_set_check_origin(struct account *acc, bool value)
+{
+	if (!acc)
+		return;
+
+	acc->check_origin = value;
 }
 
 
@@ -1514,6 +1532,22 @@ const char *account_outbound(const struct account *acc, unsigned ix)
 
 
 /**
+ * Get check_origin capability of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return true or false
+ */
+bool account_check_origin(const struct account *acc)
+{
+	if (!acc)
+		return false;
+
+	return acc->check_origin;
+}
+
+
+/**
  * Get sipnat protocol of an account
  *
  * @param acc User-Agent account
@@ -2061,6 +2095,8 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 	err |= re_hprintf(pf, " catchall:         %s\n",
 			  acc->catchall ? "yes" : "no");
 	err |= re_hprintf(pf, " cert:             %s\n", acc->cert);
+	err |= re_hprintf(pf, " check_origin  %s\n",
+			  account_check_origin(acc) ? "yes" : "no");
 	err |= re_hprintf(pf, " dtmfmode:         %s\n",
 			  dtmfmode_str(acc->dtmfmode));
 	err |= re_hprintf(pf, " extra:            %s\n",

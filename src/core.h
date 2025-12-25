@@ -58,6 +58,7 @@ struct account {
 	const struct mnat *mnat;     /**< MNAT module                        */
 	const struct menc *menc;     /**< MENC module                        */
 	char *outboundv[2];          /**< Optional SIP outbound proxies      */
+	bool check_origin;           /**< Check origin of incoming request   */
 	uint32_t ptime;              /**< Configured packet time in [ms]     */
 	uint32_t regint;             /**< Registration interval in [seconds] */
 	uint32_t fbregint;           /**< Fallback R. interval in [seconds]  */

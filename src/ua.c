@@ -2325,8 +2325,9 @@ bool ua_req_allowed(const struct ua *ua, const struct sip_msg *msg)
 
 
 /**
- * Return false if filter_registrar is active for the message transport and the
- * SIP request IP does not match the server IP
+ * Return false if filter_registrar is active for the message transport,
+ * UA's account has ;check_origin=yes, and the SIP request IP does not
+ * match the server IP
  *
  * @param ua  User-Agent
  * @param msg SIP message
@@ -2341,6 +2342,9 @@ bool ua_req_check_origin(const struct ua *ua, const struct sip_msg *msg)
 		return false;
 
 	if (!u32mask_enabled(uag_cfg()->reg_filt, msg->tp))
+		return true;
+
+	if (!ua->acc->check_origin)
 		return true;
 
 	for (le = ua->regl.head; le; le = le->next) {

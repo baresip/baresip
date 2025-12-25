@@ -27,6 +27,7 @@ static const char str[] =
 	";auth_user=xuser"
 	";call_transfer=no"
 	";catchall=yes"
+	";check_origin=no"
 	";dtmfmode=auto"
 	";extra=EXTRA"
 	";fbregint=120"
@@ -95,6 +96,7 @@ int test_account(void)
 	ASSERT_STREQ("sip:edge.domain.com", account_outbound(acc, 0));
 	ASSERT_TRUE(NULL == account_outbound(acc, 1));
 	ASSERT_TRUE(NULL == account_outbound(acc, 333));
+	ASSERT_TRUE(!account_check_origin(acc));
 	ASSERT_EQ(10, account_ptime(acc));
 	ASSERT_EQ(600, account_regint(acc));
 	ASSERT_EQ(700, account_pubint(acc));
