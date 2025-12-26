@@ -1756,7 +1756,7 @@ void account_set_autelev_pt(struct account *acc, uint32_t pt)
  *
  * @return Telephone-event payload type
  */
-uint32_t account_autelev_pt(struct account *acc)
+uint32_t account_autelev_pt(const struct account *acc)
 {
 	return acc ? acc->autelev_pt : 0;
 }
