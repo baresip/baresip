@@ -16,30 +16,105 @@
 
 static const char str[] =
 	"\"Mr User\" <sip:user@domain.com>"
+	""
+	";100rel=yes"
+	";answerdelay=1000"
 	";answermode=auto"
-	";auth_user=xuser"
+	";audio_codecs=pcmu/8000/1,pcma"
+	";audio_player=alsa,default"
+	";audio_source=null,null"
+	";autelev_pt=101"
 	";auth_pass=pass"
+	";auth_user=xuser"
+	";call_transfer=no"
+	";catchall=yes"
+	";check_origin=yes"
+	";dtmfmode=auto"
+	";extra="
+	";fbregint=0"
+	";inreq_allowed=yes"
+	";mediaenc=dtls_srtp"
+	";medianat=ice"
+	";mwi=no"
+	";natpinhole=yes"
 	";outbound=\"sip:edge.domain.com\""
-	";check_origin=no"
-	";ptime=10"
-	";regint=600"
+	";prio=42"
+	";ptime=20"
 	";pubint=700"
+	";regint=600"
+	";regq=0.5"
+	";rtcp_mux=yes"
+	";rwait=3600"
+	";sip_autoanswer=yes"
+	";sip_autoanswer_beep=yes"
+	";sip_autoredirect=no"
 	";sipnat=outbound"
-	";stunuser=bob@bob.com"
 	";stunpass=taj:aa"
 	";stunserver=\"stun:stunserver.org\""
-	";mwi=no"
-	";call_transfer=no"
-	";audio_source=null,null"
+	";stunuser=bob@bob.com"
+	";tcpsrcport=49152"
+	";uas_pass=UAS-PASSWORD"
+	";uas_user=UAS-USERNAME"
+	";video_codecs=h266"
+	";video_display=sdl,default"
 	";video_source=null,null"
 	;
+
+
+static int verify_account(const struct account *acc)
+{
+	int err = 0;
+
+	ASSERT_EQ(REL100_ENABLED, account_rel100_mode(acc));
+	ASSERT_EQ(1000, account_answerdelay(acc));
+	ASSERT_EQ(ANSWERMODE_AUTO, account_answermode(acc));
+	ASSERT_EQ(2, list_count(account_aucodecl(acc)));
+	ASSERT_EQ(101, account_autelev_pt(acc));
+	ASSERT_STREQ("xuser", account_auth_user(acc));
+	ASSERT_STREQ("pass", account_auth_pass(acc));
+	ASSERT_TRUE(!account_call_transfer(acc));
+	ASSERT_TRUE(account_check_origin(acc));
+	ASSERT_EQ(DTMFMODE_AUTO, account_dtmfmode(acc));
+	ASSERT_EQ(0, account_fbregint(acc));
+	ASSERT_EQ(INREQ_MODE_ON, account_inreq_mode(acc));
+	ASSERT_STREQ("dtls_srtp", account_mediaenc(acc));
+	ASSERT_STREQ("ice", account_medianat(acc));
+	ASSERT_TRUE(!account_mwi(acc));
+	ASSERT_STREQ("sip:edge.domain.com", account_outbound(acc, 0));
+	ASSERT_TRUE(NULL == account_outbound(acc, 1));
+	ASSERT_TRUE(NULL == account_outbound(acc, 333));
+	ASSERT_EQ(20, account_ptime(acc));
+	ASSERT_EQ(600, account_regint(acc));
+	ASSERT_EQ(700, account_pubint(acc));
+	ASSERT_STREQ("bob@bob.com", account_stun_user(acc));
+	ASSERT_STREQ("taj:aa", account_stun_pass(acc));
+	ASSERT_STREQ("stunserver.org", account_stun_host(acc));
+	ASSERT_STREQ("outbound", account_sipnat(acc));
+	ASSERT_EQ(0, account_stun_port(acc));
+	ASSERT_TRUE(account_rtcp_mux(acc));
+
+ out:
+	return err;
+}
 
 
 int test_account(void)
 {
 	struct account *acc = NULL;
 	struct sip_addr *addr;
+	struct odict *od = NULL;
+	struct odict *odcfg = NULL;
+	char *debug = NULL;
 	int err = 0;
+
+	err = module_load(".", "g711");
+	TEST_ERR(err);
+	err = module_load(".", "dtls_srtp");
+	TEST_ERR(err);
+	err = module_load(".", "ice");
+	TEST_ERR(err);
+
+	mock_vidcodec_register();
 
 	err = account_alloc(&acc, str);
 	TEST_ERR(err);
@@ -57,24 +132,107 @@ int test_account(void)
 
 	/* verify all decoded parameters */
 	ASSERT_STREQ("Mr User", account_display_name(acc));
-	ASSERT_TRUE(ANSWERMODE_AUTO == account_answermode(acc));
-	ASSERT_STREQ("xuser", account_auth_user(acc));
-	ASSERT_STREQ("pass", account_auth_pass(acc));
-	ASSERT_STREQ("sip:edge.domain.com", account_outbound(acc, 0));
-	ASSERT_TRUE(NULL == account_outbound(acc, 1));
-	ASSERT_TRUE(NULL == account_outbound(acc, 333));
-	ASSERT_TRUE(!account_check_origin(acc));
-	ASSERT_EQ(10, account_ptime(acc));
-	ASSERT_EQ(600, account_regint(acc));
-	ASSERT_EQ(700, account_pubint(acc));
-	ASSERT_STREQ("bob@bob.com", account_stun_user(acc));
-	ASSERT_STREQ("taj:aa", account_stun_pass(acc));
-	ASSERT_STREQ("stunserver.org", account_stun_host(acc));
-	ASSERT_TRUE(!account_mwi(acc));
-	ASSERT_TRUE(!account_call_transfer(acc));
+
+	err = verify_account(acc);
+	TEST_ERR(err);
+
+	acc = mem_deref(acc);
+
+	err = account_alloc(&acc, "sip:user@domain.com");
+	TEST_ERR(err);
+
+	err = account_set_rel100_mode(acc, REL100_ENABLED);
+	TEST_ERR(err);
+	account_set_answerdelay(acc, 1000);
+	err = account_set_answermode(acc, ANSWERMODE_AUTO);
+	TEST_ERR(err);
+	err = account_set_audio_codecs(acc, "pcmu/8000/1,pcma");
+	TEST_ERR(err);
+	err = account_set_ausrc_dev(acc, "default");
+	TEST_ERR(err);
+	err = account_set_auplay_dev(acc, "default");
+	TEST_ERR(err);
+	account_set_autelev_pt(acc, 101);
+	err = account_set_auth_pass(acc, "pass");
+	TEST_ERR(err);
+	err = account_set_auth_user(acc, "xuser");
+	TEST_ERR(err);
+	err = account_set_call_transfer(acc, false);
+	TEST_ERR(err);
+	account_set_catchall(acc, true);
+	err = account_set_dtmfmode(acc, DTMFMODE_AUTO);
+	TEST_ERR(err);
+	err = account_set_inreq_mode(acc, INREQ_MODE_ON);
+	TEST_ERR(err);
+	err = account_set_mediaenc(acc, "dtls_srtp");
+	TEST_ERR(err);
+	err = account_set_medianat(acc, "ice");
+	TEST_ERR(err);
+	err = account_set_mwi(acc, false);
+	TEST_ERR(err);
+	err = account_set_outbound(acc, "sip:edge.domain.com", 0);
+	TEST_ERR(err);
+	err = account_set_pubint(acc, 700);
+	TEST_ERR(err);
+	err = account_set_regint(acc, 600);
+	TEST_ERR(err);
+	err = account_set_rtcp_mux(acc, true);
+	TEST_ERR(err);
+	err = account_set_stun_uri(acc, "stun:stunserver.org");
+	TEST_ERR(err);
+	err = account_set_stun_host(acc, "stunserver.org");
+	TEST_ERR(err);
+	err = account_set_stun_port(acc, 0);
+	TEST_ERR(err);
+	err = account_set_stun_user(acc, "bob@bob.com");
+	TEST_ERR(err);
+	err = account_set_stun_pass(acc, "taj:aa");
+	TEST_ERR(err);
+	err = account_set_video_codecs(acc, "h266");
+	TEST_ERR(err);
+	err = account_set_sipnat(acc, "outbound");
+	TEST_ERR(err);
+
+	err = verify_account(acc);
+	TEST_ERR(err);
+
+	/* debug */
+
+	enum { HASH_SIZE = 32 };
+	err |= odict_alloc(&od, HASH_SIZE);
+	err |= odict_alloc(&odcfg, HASH_SIZE);
+	TEST_ERR(err);
+
+	err = account_json_api(od, odcfg, acc);
+	TEST_ERR(err);
+
+	err = re_sdprintf(&debug, "%H", account_debug, acc);
+	TEST_ERR(err);
+	ASSERT_TRUE(str_isset(debug));
+	debug = mem_deref(debug);
+
+	err = re_sdprintf(&debug, "%H", odict_debug, od);
+	TEST_ERR(err);
+	ASSERT_TRUE(str_isset(debug));
+	debug = mem_deref(debug);
+
+	err = re_sdprintf(&debug, "%H", odict_debug, odcfg);
+	TEST_ERR(err);
+	ASSERT_TRUE(str_isset(debug));
+	debug = mem_deref(debug);
 
  out:
+	mock_vidcodec_unregister();
+
+	module_unload("ice");
+	module_unload("dtls_srtp");
+	module_unload("g711");
+
 	mem_deref(acc);
+	mem_deref(odcfg);
+	mem_deref(od);
+	mem_deref(debug);
+
 	return err;
 }
 

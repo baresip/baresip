@@ -58,7 +58,7 @@ jobs:
       run: sudo ldconfig
 
     - name: make baresip selftest
-      run: cmake -B build -DHAVE_THREADS= -DSTATIC=1 -DMODULES="g711;ausine;fakevideo;auconv;auresamp;dtls_srtp;srtp;aufile" && cmake --build build -j
+      run: cmake -B build -DHAVE_THREADS= -DSTATIC=1 -DMODULES="g711;ausine;fakevideo;auconv;auresamp;dtls_srtp;srtp;aufile;ice" && cmake --build build -j
 
     - name: run selftest
       run: ./build/test/selftest

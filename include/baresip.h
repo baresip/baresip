@@ -164,7 +164,7 @@ void account_set_sip_autoredirect(struct account *acc, bool allow);
 enum sipansbeep account_sipansbeep(const struct account *acc);
 void account_set_sipansbeep(struct account *acc, enum sipansbeep beep);
 void account_set_autelev_pt(struct account *acc, uint32_t pt);
-uint32_t account_autelev_pt(struct account *acc);
+uint32_t account_autelev_pt(const struct account *acc);
 const char* account_uas_user(const struct account *acc);
 const char* account_uas_pass(const struct account *acc);
 bool account_uas_isset(const struct account *acc);
