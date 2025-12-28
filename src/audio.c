@@ -774,8 +774,8 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 		goto out;
 	}
 
-	if (acc && acc->autelev_pt)
-		a->cfg.telev_pt = acc->autelev_pt;
+	if (acc && account_autelev_pt(acc))
+		a->cfg.telev_pt = account_autelev_pt(acc);
 
 	err = telev_alloc(&a->telev, ptime);
 	if (err)

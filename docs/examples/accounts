@@ -16,20 +16,20 @@
 #    ;autelev_pt=101
 #    ;auth_pass=password
 #    ;auth_user=username
-#    ;call_transfer=no
+#    ;call_transfer={yes, no}  # default: yes
 #    ;catchall={yes, no}  # default: no
 #    ;cert=cert.pem
+#    ;check_origin={yes, no}  # default: yes
 #    ;dtmfmode={rtpevent, info, auto}
 #    ;extra=EXTRA-STRING
 #    ;fbregint=120
 #    ;inreq_allowed={yes, no}  # default: yes
 #    ;mediaenc={srtp,srtp-mand,srtp-mandf,dtls_srtp,zrtp}
 #    ;medianat={stun,turn,ice}
-#    ;mwi=no
+#    ;mwi={yes, no}  # default: yes
 #    ;natpinhole={yes, no}  # default: no
 #    ;outbound2=sip:secondary.example.com
 #    ;outbound="sip:primary.example.com;transport=tcp"
-#    ;check_origin={yes, no}  # default: yes
 #    ;prio={0,1,2,3,...}
 #    ;ptime={10,20,30,40,...}
 #    ;pubint=0 (publishing off)
@@ -40,7 +40,7 @@
 #    ;sip_autoanswer={yes, no}
 #    ;sip_autoanswer_beep={off, on, local}
 #    ;sip_autoredirect={yes, no}  # default: no
-#    ;sipnat={outbound}
+#    ;sipnat=outbound
 #    ;stunpass=STUN/TURN/ICE-password
 #    ;stunserver=stun:[user]@host[:port]
 #    ;stunuser=STUN/TURN/ICE-username
