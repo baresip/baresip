@@ -134,7 +134,7 @@ jobs:
     - name: baresip static
       run: |
         rm -Rf build-static
-        cmake -B build-static -DSTATIC=1 -DCMAKE_C_FLAGS="-Werror" -DMODULES="g711;ausine;fakevideo;auconv;auresamp;dtls_srtp;srtp;aufile"
+        cmake -B build-static -DSTATIC=1 -DCMAKE_C_FLAGS="-Werror" -DMODULES="g711;ausine;fakevideo;auconv;auresamp;dtls_srtp;srtp;aufile;ice"
         cmake --build build-static -j
 
     - name: selftest

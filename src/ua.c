@@ -281,7 +281,7 @@ int ua_register(struct ua *ua)
  */
 int ua_fallback(struct ua *ua)
 {
-	if (!ua || !ua_account(ua)->fbregint)
+	if (!ua || !account_fbregint(ua_account(ua)))
 		return 0;
 
 	debug("ua: ua_fallback %s\n", account_aor(ua->acc));
