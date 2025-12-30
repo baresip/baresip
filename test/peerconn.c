@@ -93,7 +93,8 @@ static void peerconnection_gather_handler(void *arg)
 		TEST_ERR(err);
 	}
 
-	agent_handle_sdp(ag->peer, type, mb);
+	err = agent_handle_sdp(ag->peer, type, mb);
+	TEST_ERR(err);
 
  out:
 	mem_deref(mb);
@@ -179,8 +180,10 @@ static int agent_init(struct agent *ag, const struct mnat *mnat,
 
 static void agent_reset(struct agent *ag)
 {
-	mem_deref(ag->pc);
-	mem_deref(ag->mq);
+	ag->pc = mem_deref(ag->pc);
+	ag->pc = mem_deref(ag->mq);
+
+	ag->media = NULL;
 }
 
 
