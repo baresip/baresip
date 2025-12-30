@@ -71,7 +71,7 @@ int mediatrack_start_audio(struct media_track *media,
 
 		err = audio_decoder_set(au, ac, fmt->pt, fmt->params);
 		if (err) {
-			warning("mediatrack: start:"
+			warning("mediatrack: start_audio:"
 				" audio_decoder_set error: %m\n", err);
 			return err;
 		}
