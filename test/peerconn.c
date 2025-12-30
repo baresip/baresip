@@ -21,6 +21,17 @@ struct agent {
 };
 
 
+static void agent_close(struct agent *ag, int err)
+{
+	peerconnection_close(ag->pc);
+
+	ag->media = NULL;
+	ag->err = err;
+
+	re_cancel();
+}
+
+
 static bool agents_are_complete(const struct agent *ag)
 {
 	const struct agent *peer = ag->peer;
@@ -65,7 +76,7 @@ static void peerconnection_gather_handler(void *arg)
 	enum sdp_type type = SDP_NONE;
 	int err;
 
-	if (ag->err || ag->peer->err)
+	if (ag->err)
 		return;
 
 	switch (peerconnection_signaling(ag->pc)) {
@@ -100,8 +111,7 @@ static void peerconnection_gather_handler(void *arg)
 	mem_deref(mb);
 
 	if (err) {
-		ag->err = err;
-		re_cancel();
+		agent_close(ag, err);
 	}
 }
 
@@ -120,13 +130,8 @@ static void peerconnection_estab_handler(struct media_track *media, void *arg)
 		warning("estab: could not start audio (%m)\n", err);
 	}
 
-	if (err) {
-		ag->err = err;
-		re_cancel();
-	}
-
-	if (agents_are_complete(ag)) {
-		re_cancel();
+	if (err || agents_are_complete(ag)) {
+		agent_close(ag, err);
 	}
 }
 
@@ -137,8 +142,7 @@ static void peerconnection_close_handler(int err, void *arg)
 
 	info("[ %s ] peer connection closed\n", ag->name);
 
-	ag->err = err;
-	re_cancel();
+	agent_close(ag, err);
 }
 
 
@@ -187,6 +191,7 @@ static void agent_reset(struct agent *ag)
 }
 
 
+/* NOTE: called from main-thread or worker-threads */
 static void auframe_handler(struct auframe *af, const char *dev, void *arg)
 {
 	struct agent *ag = arg;

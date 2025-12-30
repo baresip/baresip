@@ -82,14 +82,14 @@ int mediatrack_start_audio(struct media_track *media,
 
 		err = audio_encoder_set(au, ac, fmt->pt, fmt->params);
 		if (err) {
-			warning("mediatrack: start:"
+			warning("mediatrack: start_audio:"
 				" audio_encoder_set error: %m\n", err);
 			return err;
 		}
 
 		err = audio_start_source(au, ausrcl, aufiltl);
 		if (err) {
-			warning("mediatrack: start:"
+			warning("mediatrack: start_audio:"
 				" audio_start_source error: %m\n", err);
 			return err;
 		}
