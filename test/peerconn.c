@@ -275,17 +275,18 @@ static int test_peerconn_param(bool use_audio, bool use_video)
 	b.peer = &a;
 
 	if (use_audio) {
+		err = mock_auplay_register(&auplay, baresip_auplayl(),
+					   auframe_handler, &b);
+		TEST_ERR(err);
+
 		err = module_load(".", "g711");
 		TEST_ERR(err);
 		err = module_load(".", "ausine");
 		TEST_ERR(err);
-
-		err = mock_auplay_register(&auplay, baresip_auplayl(),
-					   auframe_handler, &b);
-		TEST_ERR(err);
 	}
 
 	if (use_video) {
+		/* NOTE: must be loaded before 'fakevideo' */
 		err = mock_vidisp_register(&vidisp, mock_vidisp_handler, &b);
 		TEST_ERR(err);
 
@@ -321,16 +322,15 @@ static int test_peerconn_param(bool use_audio, bool use_video)
 	agent_reset(&b);
 	agent_reset(&a);
 
-	mem_deref(vidisp);
-	mem_deref(auplay);
-
 	if (use_audio) {
 		module_unload("ausine");
 		module_unload("g711");
+		mem_deref(auplay);
 	}
 	if (use_video) {
 		module_unload("fakevideo");
 		mock_vidcodec_unregister();
+		mem_deref(vidisp);
 	}
 
 	return err;
@@ -349,6 +349,8 @@ int test_peerconn(void)
 	err = test_peerconn_param(1, 0);
 	TEST_ERR(err);
 	err = test_peerconn_param(0, 1);
+	TEST_ERR(err);
+	err = test_peerconn_param(1, 1);
 	TEST_ERR(err);
 
  out:
