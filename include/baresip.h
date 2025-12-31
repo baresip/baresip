@@ -1473,7 +1473,6 @@ int  audio_decoder_set(struct audio *a, const struct aucodec *ac,
 		       int pt_rx, const char *params);
 const struct aucodec *audio_codec(const struct audio *au, bool tx);
 struct config_audio *audio_config(struct audio *au);
-bool audio_txtelev_empty(const struct audio *au);
 void audio_call_telev_handler(const struct audio *au, int key, bool end);
 
 
