@@ -173,6 +173,8 @@ static void rtprecv_periodic(void *arg)
 {
 	struct rtp_receiver *rx = arg;
 
+	MAGIC_CHECK(rx);
+
 	if (re_atomic_rlx(&rx->run)) {
 		mtx_lock(rx->mtx);
 		bool pinhole    = rx->pinhole;
@@ -211,7 +213,12 @@ static int rtprecv_thread(void *arg)
 	struct rtp_receiver *rx = arg;
 	int err;
 
-	re_thread_init();
+	MAGIC_CHECK(rx);
+
+	err = re_thread_init();
+	if (err)
+		return err;
+
 	info("rtp_receiver: RTP RX thread started\n");
 	tmr_start(&rx->tmr, 10, rtprecv_periodic, rx);
 
@@ -230,6 +237,8 @@ static int rtprecv_thread(void *arg)
 	}
 
 	err = re_main(NULL);
+
+	MAGIC_CHECK(rx);
 
 	tmr_cancel(&rx->tmr);
 	re_thread_close();

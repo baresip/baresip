@@ -17,7 +17,8 @@ struct agent {
 	bool use_audio;
 	bool use_video;
 	bool got_sdp;
-	bool got_estab;
+	bool got_estab_audio;
+	bool got_estab_video;
 	bool got_audio;
 	bool got_video;
 	int err;
@@ -39,10 +40,27 @@ static bool agents_are_complete(const struct agent *ag)
 {
 	const struct agent *peer = ag->peer;
 
-	bool got_audio = ag->use_audio && (ag->got_audio || peer->got_audio);
-	bool got_video = ag->use_video && (ag->got_video || peer->got_video);
+	if (ag->use_audio) {
 
-	return ag->got_estab && peer->got_estab && (got_audio || got_video);
+		if (!ag->got_estab_audio)
+			return false;
+
+		bool got_audio = (ag->got_audio || peer->got_audio);
+		if (!got_audio)
+			return false;
+	}
+
+	if (ag->use_video) {
+
+		if (!ag->got_estab_video)
+			return false;
+
+		bool got_video = (ag->got_video || peer->got_video);
+		if (!got_video)
+			return false;
+	}
+
+	return true;
 }
 
 
@@ -125,11 +143,10 @@ static void peerconnection_estab_handler(struct media_track *media, void *arg)
 	struct agent *ag = arg;
 	int err = 0;
 
-	ag->got_estab = true;
-
 	switch (mediatrack_kind(media)) {
 
 	case MEDIA_KIND_AUDIO:
+		ag->got_estab_audio = true;
 		ag->media = media;
 
 		err = mediatrack_start_audio(media, baresip_ausrcl(),
@@ -138,6 +155,8 @@ static void peerconnection_estab_handler(struct media_track *media, void *arg)
 		break;
 
 	case MEDIA_KIND_VIDEO:
+		ag->got_estab_video = true;
+
 		err = mediatrack_start_video(media);
 		TEST_ERR(err);
 		break;
@@ -315,8 +334,17 @@ static int test_peerconn_param(bool use_audio, bool use_video)
 
 	ASSERT_TRUE(a.got_sdp);
 	ASSERT_TRUE(b.got_sdp);
-	ASSERT_TRUE(a.got_estab);
-	ASSERT_TRUE(b.got_estab);
+
+	if (use_audio) {
+		ASSERT_TRUE(a.got_estab_audio);
+		ASSERT_TRUE(b.got_estab_audio);
+		ASSERT_TRUE(a.got_audio || b.got_audio);
+	}
+	if (use_video) {
+		ASSERT_TRUE(a.got_estab_video);
+		ASSERT_TRUE(b.got_estab_video);
+		ASSERT_TRUE(a.got_video || b.got_video);
+	}
 
  out:
 	agent_reset(&b);
