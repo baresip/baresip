@@ -8,11 +8,18 @@
 #include "test.h"
 
 
+struct fixture {
+	struct agent *a;
+	struct agent *b;
+	struct mqueue *mq;
+	bool terminated;
+};
+
+
 struct agent {
 	struct agent *peer;          /* pointer */
 	struct media_track *media;   /* pointer */
 	struct peer_connection *pc;
-	struct mqueue *mq;
 	const char *name;
 	bool use_audio;
 	bool use_video;
@@ -22,6 +29,8 @@ struct agent {
 	bool got_audio;
 	bool got_video;
 	int err;
+
+	struct fixture *fix;  /* pointer */
 };
 
 
@@ -185,32 +194,46 @@ static void peerconnection_close_handler(int err, void *arg)
 /* called in the context of the main thread */
 static void mqueue_handler(int id, void *data, void *arg)
 {
+	struct fixture *fix = arg;
+
 	(void)id;
 	(void)data;
-	(void)arg;
+	(void)fix;
 
 	re_cancel();
 }
 
 
-static int agent_init(struct agent *ag,
-		      const struct mnat *mnat, const struct menc *menc,
-		      bool use_audio, bool use_video, bool offerer)
+static void destructor(void *arg)
+{
+	struct agent *ag = arg;
+
+	mem_deref(ag->pc);
+
+	ag->media = NULL;
+}
+
+
+static int agent_alloc(struct agent **agp, struct fixture *fix,
+		       const char *name,
+		       const struct mnat *mnat, const struct menc *menc,
+		       bool use_audio, bool use_video, bool offerer)
 {
 	struct rtc_configuration config = {
 		.offerer = offerer
 	};
 
+	struct agent *ag = mem_zalloc(sizeof(*ag), destructor);
+
+	ag->fix = fix;
+	ag->name = name;
 	ag->use_audio = use_audio;
 	ag->use_video = use_video;
 
-	int err = mqueue_alloc(&ag->mq, mqueue_handler, ag);
-	TEST_ERR(err);
-
-	err = peerconnection_new(&ag->pc, &config, mnat, menc,
-				 peerconnection_gather_handler,
-				 peerconnection_estab_handler,
-				 peerconnection_close_handler, ag);
+	int err = peerconnection_new(&ag->pc, &config, mnat, menc,
+				     peerconnection_gather_handler,
+				     peerconnection_estab_handler,
+				     peerconnection_close_handler, ag);
 	TEST_ERR(err);
 
 	if (use_audio) {
@@ -228,25 +251,32 @@ static int agent_init(struct agent *ag,
 	}
 
  out:
+	if (err)
+		mem_deref(ag);
+	else
+		*agp = ag;
+
 	return err;
-}
-
-
-static void agent_reset(struct agent *ag)
-{
-	ag->pc = mem_deref(ag->pc);
-	ag->pc = mem_deref(ag->mq);
-
-	ag->media = NULL;
 }
 
 
 /* NOTE: called from main-thread or worker-threads */
 static void auframe_handler(struct auframe *af, const char *dev, void *arg)
 {
-	struct agent *ag = arg;
+	struct fixture *fix = arg;
 	(void)af;
 	(void)dev;
+
+	if (fix->terminated)
+		return;
+
+	struct agent *ag = fix->b;
+
+	if (!ag)
+		return;
+
+
+	re_printf("[ %s ] auframe handler\n", ag->name);
 
 	struct audio *au = media_get_audio(ag->media);
 
@@ -260,7 +290,7 @@ static void auframe_handler(struct auframe *af, const char *dev, void *arg)
 	ag->got_audio = true;
 
 	if (agents_are_complete(ag)) {
-		mqueue_push(ag->mq, 0, NULL);
+		mqueue_push(fix->mq, 0, NULL);
 	}
 }
 
@@ -269,7 +299,8 @@ static void mock_vidisp_handler(const struct vidframe *frame,
 				uint64_t timestamp, const char *title,
 				void *arg)
 {
-	struct agent *ag = arg;
+	struct fixture *fix = arg;
+	struct agent *ag = fix->b;
 	(void)frame;
 	(void)timestamp;
 	(void)title;
@@ -277,25 +308,21 @@ static void mock_vidisp_handler(const struct vidframe *frame,
 	ag->got_video = true;
 
 	if (agents_are_complete(ag)) {
-		mqueue_push(ag->mq, 0, NULL);
+		mqueue_push(fix->mq, 0, NULL);
 	}
 }
 
 
 static int test_peerconn_param(bool use_audio, bool use_video)
 {
-	struct agent a = { .name = "A" };
-	struct agent b = { .name = "B" };
+	struct fixture fix = {0};
 	struct auplay *auplay = NULL;
 	struct vidisp *vidisp = NULL;
-	int err;
-
-	a.peer = &b;
-	b.peer = &a;
+	int err = 0;
 
 	if (use_audio) {
 		err = mock_auplay_register(&auplay, baresip_auplayl(),
-					   auframe_handler, &b);
+					   auframe_handler, &fix);
 		TEST_ERR(err);
 
 		err = module_load(".", "g711");
@@ -306,7 +333,7 @@ static int test_peerconn_param(bool use_audio, bool use_video)
 
 	if (use_video) {
 		/* NOTE: must be loaded before 'fakevideo' */
-		err = mock_vidisp_register(&vidisp, mock_vidisp_handler, &b);
+		err = mock_vidisp_register(&vidisp, mock_vidisp_handler, &fix);
 		TEST_ERR(err);
 
 		mock_vidcodec_register();
@@ -321,34 +348,46 @@ static int test_peerconn_param(bool use_audio, bool use_video)
 	const struct menc *menc = menc_find(baresip_mencl(), "dtls_srtp");
 	ASSERT_TRUE(menc != NULL);
 
-	err = agent_init(&a, mnat, menc, use_audio, use_video, true);
+	err = mqueue_alloc(&fix.mq, mqueue_handler, &fix);
 	TEST_ERR(err);
-	err = agent_init(&b, mnat, menc, use_audio, use_video, false);
+
+	err = agent_alloc(&fix.a, &fix, "A", mnat, menc,
+			  use_audio, use_video, true);
 	TEST_ERR(err);
+
+	err = agent_alloc(&fix.b, &fix, "B", mnat, menc,
+			  use_audio, use_video, false);
+	TEST_ERR(err);
+
+	fix.a->peer = fix.b;
+	fix.b->peer = fix.a;
 
 	err = re_main_timeout(10000);
 	TEST_ERR(err);
 
-	TEST_ERR(a.err);
-	TEST_ERR(b.err);
+	fix.terminated = true;
 
-	ASSERT_TRUE(a.got_sdp);
-	ASSERT_TRUE(b.got_sdp);
+	TEST_ERR(fix.a->err);
+	TEST_ERR(fix.b->err);
+
+	ASSERT_TRUE(fix.a->got_sdp);
+	ASSERT_TRUE(fix.b->got_sdp);
 
 	if (use_audio) {
-		ASSERT_TRUE(a.got_estab_audio);
-		ASSERT_TRUE(b.got_estab_audio);
-		ASSERT_TRUE(a.got_audio || b.got_audio);
+		ASSERT_TRUE(fix.a->got_estab_audio);
+		ASSERT_TRUE(fix.b->got_estab_audio);
+		ASSERT_TRUE(fix.a->got_audio || fix.b->got_audio);
 	}
 	if (use_video) {
-		ASSERT_TRUE(a.got_estab_video);
-		ASSERT_TRUE(b.got_estab_video);
-		ASSERT_TRUE(a.got_video || b.got_video);
+		ASSERT_TRUE(fix.a->got_estab_video);
+		ASSERT_TRUE(fix.b->got_estab_video);
+		ASSERT_TRUE(fix.a->got_video || fix.b->got_video);
 	}
 
  out:
-	agent_reset(&b);
-	agent_reset(&a);
+	fix.b = mem_deref(fix.b);
+	fix.a = mem_deref(fix.a);
+	mem_deref(fix.mq);
 
 	if (use_audio) {
 		module_unload("ausine");

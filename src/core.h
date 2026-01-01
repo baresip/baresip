@@ -484,7 +484,6 @@ struct media_track {
 struct media_track *media_track_add(struct list *lst,
 				    enum media_kind kind,
 				    mediatrack_close_h *closeh, void *arg);
-void mediatrack_stop(struct media_track *media);
 void mediatrack_set_handlers(struct media_track *media);
 void mediatrack_summary(const struct media_track *media);
 int  mediatrack_debug(struct re_printf *pf, const struct media_track *media);
