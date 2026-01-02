@@ -17,7 +17,6 @@ struct fixture {
 
 
 struct agent {
-	struct agent *peer;          /* pointer */
 	struct media_track *media;   /* pointer */
 	struct peer_connection *pc;
 	const char *name;
@@ -34,6 +33,22 @@ struct agent {
 };
 
 
+static struct agent *agent_peer(const struct agent *ag)
+{
+	const struct fixture *fix = ag->fix;
+
+	if (!fix)
+		return NULL;
+
+	if (ag == fix->a)
+		return fix->b;
+	else if (ag == fix->b)
+		return fix->a;
+	else
+		return NULL;
+}
+
+
 static void agent_close(struct agent *ag, int err)
 {
 	peerconnection_close(ag->pc);
@@ -47,7 +62,7 @@ static void agent_close(struct agent *ag, int err)
 
 static bool agents_are_complete(const struct agent *ag)
 {
-	const struct agent *peer = ag->peer;
+	const struct agent *peer = agent_peer(ag);
 
 	if (ag->use_audio) {
 
@@ -86,12 +101,14 @@ static int agent_handle_sdp(struct agent *ag, enum sdp_type type,
 
 	ag->got_sdp = true;
 
-	if (ag->peer->got_sdp) {
+	struct agent *peer = agent_peer(ag);
+
+	if (peer && peer->got_sdp) {
 
 		err = peerconnection_start_ice(ag->pc);
 		TEST_ERR(err);
 
-		err = peerconnection_start_ice(ag->peer->pc);
+		err = peerconnection_start_ice(peer->pc);
 		TEST_ERR(err);
 	}
 
@@ -135,7 +152,7 @@ static void peerconnection_gather_handler(void *arg)
 		TEST_ERR(err);
 	}
 
-	err = agent_handle_sdp(ag->peer, type, mb);
+	err = agent_handle_sdp(agent_peer(ag), type, mb);
 	TEST_ERR(err);
 
  out:
@@ -209,8 +226,6 @@ static void destructor(void *arg)
 	struct agent *ag = arg;
 
 	mem_deref(ag->pc);
-
-	ag->media = NULL;
 }
 
 
@@ -274,7 +289,6 @@ static void auframe_handler(struct auframe *af, const char *dev, void *arg)
 
 	if (!ag)
 		return;
-
 
 	re_printf("[ %s ] auframe handler\n", ag->name);
 
@@ -359,9 +373,6 @@ static int test_peerconn_param(bool use_audio, bool use_video)
 			  use_audio, use_video, false);
 	TEST_ERR(err);
 
-	fix.a->peer = fix.b;
-	fix.b->peer = fix.a;
-
 	err = re_main_timeout(10000);
 	TEST_ERR(err);
 
@@ -407,6 +418,9 @@ static int test_peerconn_param(bool use_audio, bool use_video)
 int test_peerconn(void)
 {
 	int err;
+
+	if (conf_config()->avt.rxmode == RECEIVE_MODE_THREAD)
+		return 0;
 
 	err = module_load(".", "dtls_srtp");
 	TEST_ERR(err);
