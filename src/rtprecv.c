@@ -211,11 +211,8 @@ static void rtprecv_periodic(void *arg)
 static int rtprecv_thread(void *arg)
 {
 	struct rtp_receiver *rx = arg;
-	int err;
 
-	MAGIC_CHECK(rx);
-
-	err = re_thread_init();
+	int err = re_thread_init();
 	if (err)
 		return err;
 
