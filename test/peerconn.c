@@ -17,6 +17,7 @@ struct fixture {
 
 
 struct agent {
+	struct fixture *fix;         /* pointer */
 	struct media_track *media;   /* pointer */
 	struct peer_connection *pc;
 	const char *name;
@@ -28,8 +29,6 @@ struct agent {
 	bool got_audio;
 	bool got_video;
 	int err;
-
-	struct fixture *fix;  /* pointer */
 };
 
 
@@ -289,8 +288,6 @@ static void auframe_handler(struct auframe *af, const char *dev, void *arg)
 
 	if (!ag)
 		return;
-
-	re_printf("[ %s ] auframe handler\n", ag->name);
 
 	struct audio *au = media_get_audio(ag->media);
 
