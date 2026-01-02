@@ -493,6 +493,22 @@ static void check_telev(struct audio *a, struct autx *tx)
 }
 
 
+bool audio_txtelev_empty(const struct audio *au)
+{
+	const struct autx *tx;
+	bool empty;
+
+	if (!au)
+		return true;
+
+	tx = &au->tx;
+	mtx_lock(tx->mtx);
+	empty = telev_is_empty(au->telev);
+	mtx_unlock(tx->mtx);
+	return empty;
+}
+
+
 void audio_call_telev_handler(const struct audio *au, int key, bool end)
 {
 	if (!au)
