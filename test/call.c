@@ -901,7 +901,7 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 		ASSERT_EQ(dtmf_digits[ag->n_dtmf_recv], prm[0]);
 		++ag->n_dtmf_recv;
 
-		if (ag->n_dtmf_recv >= str_len(dtmf_digits)) {
+		if (audio_txtelev_empty(call_audio(call))) {
 			re_cancel();
 		}
 		break;
@@ -1503,6 +1503,9 @@ int test_call_dtmf(void)
 		TEST_ERR(err);
 	}
 
+	struct audio *audio = call_audio(ua_call(f->a.ua));
+	ASSERT_TRUE(audio && !audio_txtelev_empty(audio));
+
 	/* run main-loop with timeout, wait for events */
 	err = re_main_timeout(5000);
 	TEST_ERR(err);
@@ -1510,6 +1513,9 @@ int test_call_dtmf(void)
 
 	ASSERT_EQ(0, fix.a.n_dtmf_recv);
 	ASSERT_EQ(n, fix.b.n_dtmf_recv);
+	audio = call_audio(ua_call(f->a.ua));
+	ASSERT_TRUE(audio!=NULL);
+	ASSERT_TRUE(audio && audio_txtelev_empty(audio));
 
  out:
 	fixture_close(f);
