@@ -18,8 +18,8 @@
 		warning("selftest: ASSERT_EQ: %s:%u: %s():"	\
 			" expected=%d(0x%x), actual=%d(0x%x)\n",\
 			__FILE__, __LINE__, __func__,		\
-			(expected), (expected),			\
-			(actual), (actual));			\
+			(int)(expected), (int)(expected),	\
+			(int)(actual), (int)(actual));		\
 		err = EINVAL;					\
 		goto out;					\
 	}
