@@ -238,6 +238,8 @@ static int agent_alloc(struct agent **agp, struct fixture *fix,
 	};
 
 	struct agent *ag = mem_zalloc(sizeof(*ag), destructor);
+	if (!ag)
+		return ENOMEM;
 
 	ag->fix = fix;
 	ag->name = name;
