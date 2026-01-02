@@ -71,7 +71,7 @@ int mediatrack_start_audio(struct media_track *media,
 
 		err = audio_decoder_set(au, ac, fmt->pt, fmt->params);
 		if (err) {
-			warning("mediatrack: start:"
+			warning("mediatrack: start_audio:"
 				" audio_decoder_set error: %m\n", err);
 			return err;
 		}
@@ -82,14 +82,14 @@ int mediatrack_start_audio(struct media_track *media,
 
 		err = audio_encoder_set(au, ac, fmt->pt, fmt->params);
 		if (err) {
-			warning("mediatrack: start:"
+			warning("mediatrack: start_audio:"
 				" audio_encoder_set error: %m\n", err);
 			return err;
 		}
 
 		err = audio_start_source(au, ausrcl, aufiltl);
 		if (err) {
-			warning("mediatrack: start:"
+			warning("mediatrack: start_audio:"
 				" audio_start_source error: %m\n", err);
 			return err;
 		}
@@ -131,7 +131,7 @@ int mediatrack_start_video(struct media_track *media)
 	if (dir & SDP_SENDONLY) {
 		err = video_encoder_set(vid, vc, fmt->pt, fmt->params);
 		if (err) {
-			warning("mediatrack: start:"
+			warning("mediatrack: start_video:"
 				" video_encoder_set error: %m\n",
 				err);
 			return err;
@@ -139,7 +139,7 @@ int mediatrack_start_video(struct media_track *media)
 
 		err = video_start_source(vid);
 		if (err) {
-			warning("mediatrack: start:"
+			warning("mediatrack: start_video:"
 				" video_start_source error: %m\n",
 				err);
 			return err;
@@ -150,7 +150,7 @@ int mediatrack_start_video(struct media_track *media)
 	if (dir & SDP_RECVONLY) {
 		err = video_start_display(vid, "webrtc");
 		if (err) {
-			warning("mediatrack: start:"
+			warning("mediatrack: start_video:"
 				" video_start_display error: %m\n",
 				err);
 			return err;

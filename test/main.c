@@ -71,6 +71,7 @@ static const struct test tests[] = {
 	TEST(test_jbuf_gnack),
 	TEST(test_message),
 	TEST(test_network),
+	TEST(test_peerconn),
 	TEST(test_play),
 	TEST(test_stunuri),
 	TEST(test_ua_alloc),
