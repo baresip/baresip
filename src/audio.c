@@ -127,7 +127,6 @@ struct audio {
 	struct config_audio cfg;      /**< Audio configuration             */
 	bool started;                 /**< Stream is started flag          */
 	bool level_enabled;           /**< Audio level RTP ext. enabled    */
-	bool hold;                    /**< Local hold flag                 */
 	RE_ATOMIC bool conference;    /**< Local conference flag           */
 	uint8_t extmap_aulevel;       /**< ID Range 1-14 inclusive         */
 	audio_event_h *eventh;        /**< Event handler                   */
@@ -1051,7 +1050,7 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 	}
 
 	/* Start Audio Source */
-	if (!tx->ausrc && ausrc_find(ausrcl, NULL) && !a->hold) {
+	if (!tx->ausrc && ausrc_find(ausrcl, NULL)) {
 
 		size_t sz;
 		size_t psize_alloc;
@@ -1854,21 +1853,6 @@ bool audio_rxaubuf_started(const struct audio *au)
 		return false;
 
 	return aurecv_started(au->aur);
-}
-
-
-/**
- * Set the audio stream on hold
- *
- * @param au    Audio object
- * @param hold  True to hold, false to resume
- */
-void audio_set_hold(struct audio *au, bool hold)
-{
-	if (!au)
-		return;
-
-	au->hold = hold;
 }
 
 
