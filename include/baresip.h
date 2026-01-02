@@ -1464,7 +1464,6 @@ int  audio_start_source(struct audio *a, struct list *ausrcl,
 			struct list *aufiltl);
 void audio_stop(struct audio *a);
 bool audio_started(const struct audio *a);
-void audio_set_hold(struct audio *au, bool hold);
 int  audio_set_conference(struct audio *au, bool conference);
 bool audio_is_conference(const struct audio *au);
 int  audio_encoder_set(struct audio *a, const struct aucodec *ac,
