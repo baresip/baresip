@@ -10,16 +10,17 @@ include_directories(${RE_INCLUDE_DIRS} ${BARESIP_INCLUDE_DIRS})
 
 add_executable(${PROJECT_NAME}
   account.c
+  bevent.c
   call.c
   cmd.c
   contact.c
-  bevent.c
+  cparam.c
+  dial_number.c
   jbuf.c
   jbuf_gnack.c
-  dial_number.c
   message.c
   net.c
-  cparam.c
+  peerconn.c
   play.c
   stunuri.c
   ua.c
