@@ -209,9 +209,11 @@ static void rtprecv_periodic(void *arg)
 static int rtprecv_thread(void *arg)
 {
 	struct rtp_receiver *rx = arg;
-	int err;
 
-	re_thread_init();
+	int err = re_thread_init();
+	if (err)
+		return err;
+
 	info("rtp_receiver: RTP RX thread started\n");
 	tmr_start(&rx->tmr, 10, rtprecv_periodic, rx);
 
