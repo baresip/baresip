@@ -60,6 +60,7 @@ set(MODULES
   presence
   pulse
   rtcpsummary
+  rtsp
   sdl
   selfview
   serreg
