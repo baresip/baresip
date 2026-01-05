@@ -7,7 +7,7 @@
 
 #define ASSERT_TRUE(cond)					\
 	if (!(cond)) {						\
-		warning("selftest: ASSERT_TRUE: %s:%u:\n",	\
+		_warning(false,"selftest: ASSERT_TRUE: %s:%u:\n",\
 			__FILE__, __LINE__);			\
 		err = EINVAL;					\
 		goto out;					\
@@ -15,7 +15,7 @@
 
 #define ASSERT_EQ(expected, actual)				\
 	if ((expected) != (actual)) {				\
-		warning("selftest: ASSERT_EQ: %s:%u: %s():"	\
+		_warning(false,"selftest: ASSERT_EQ: %s:%u: %s():"\
 			" expected=%d(0x%x), actual=%d(0x%x)\n",\
 			__FILE__, __LINE__, __func__,		\
 			(expected), (expected),			\
@@ -26,7 +26,7 @@
 
 #define ASSERT_DOUBLE_EQ(expected, actual, prec)			\
 	if (!test_cmp_double((expected), (actual), (prec))) {		\
-		warning("selftest: ASSERT_DOUBLE_EQ: %s:%u:"		\
+		_warning(false,"selftest: ASSERT_DOUBLE_EQ: %s:%u:"	\
 			" expected=%f, actual=%f\n",			\
 			__FILE__, __LINE__,				\
 			(double)(expected), (double)(actual));		\
@@ -36,7 +36,7 @@
 
 #define ASSERT_STREQ(expected, actual)					\
 	if (0 != str_cmp((expected), (actual))) {			\
-		warning("selftest: ASSERT_STREQ: %s:%u:"		\
+		_warning(false,"selftest: ASSERT_STREQ: %s:%u:"		\
 			" expected = '%s', actual = '%s'\n",		\
 			__FILE__, __LINE__,				\
 			(expected), (actual));				\
@@ -46,7 +46,7 @@
 
 #define ASSERT_PLEQ(expected, actual)					\
 	if (0 != pl_cmp((expected), (actual))) {			\
-		warning("selftest: ASSERT_PLEQ: %s:%u:"			\
+		_warning(false,"selftest: ASSERT_PLEQ: %s:%u:"		\
 			" expected = '%r', actual = '%r'\n",		\
 			__FILE__, __LINE__,				\
 			(expected), (actual));				\
@@ -57,7 +57,7 @@
 #define TEST_ERR(err)							\
 	if ((err)) {							\
 		(void)re_fprintf(stderr, "\n");				\
-		warning("TEST_ERR: %s:%u:"			\
+		_warning(false,"TEST_ERR: %s:%u:"			\
 			      " (%m)\n",				\
 			      __FILE__, __LINE__,			\
 			      (err));					\
@@ -67,7 +67,7 @@
 #define TEST_ERR_TXT(err,txt)						\
 	if ((err)) {							\
 		(void)re_fprintf(stderr, "\n");				\
-		warning("TEST_ERR: %s:%u: %s"				\
+		_warning(false,"TEST_ERR: %s:%u: %s"			\
 			      " (%m)\n",				\
 			      __FILE__, __LINE__,			\
 			      (txt), (err));				\
@@ -78,7 +78,7 @@
 	if (expn != actn ||						\
 	    0 != memcmp((expected), (actual), (expn))) {		\
 		(void)re_fprintf(stderr, "\n");				\
-		warning("TEST_MEMCMP: %s:%u:"				\
+		_warning(false,"TEST_MEMCMP: %s:%u:"			\
 			" %s(): failed\n",				\
 			__FILE__, __LINE__, __func__);			\
 		test_hexdump_dual(stderr,				\
@@ -92,7 +92,7 @@
 	if (expn != actn ||						\
 	    0 != memcmp((expected), (actual), (expn))) {		\
 		(void)re_fprintf(stderr, "\n");				\
-		warning("TEST_STRCMP: %s:%u:"				\
+		_warning(false,"TEST_STRCMP: %s:%u:"			\
 			" failed\n",					\
 			__FILE__, __LINE__);				\
 		(void)re_fprintf(stderr,				\
