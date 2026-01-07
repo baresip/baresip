@@ -1,5 +1,5 @@
 /**
- * @file call_fixture.c  Call tests -- Cancel rules
+ * @file call_cancelrule.c  Call tests -- Cancel rules
  *
  * Copyright (C) 2026 Alfred E. Heggestad, Christian Spielberger
  */
@@ -88,10 +88,10 @@ struct cancel_rule *cancel_rule_and_alloc(struct cancel_rule *cr,
 }
 
 
-#define UINTSET(u) (u) != (unsigned) -1
+#define uint_is_set(u) (u) != (unsigned) -1
 
 #define cr_debug_nbr(fld) \
-	(UINTSET(cr->fld) ? \
+	(uint_is_set(cr->fld) ? \
 		re_hprintf(pf, "    " #fld ":    %u\n", cr->fld) : 0)
 
 
@@ -209,8 +209,6 @@ static void cancel_rules_reset(struct fixture *f)
 	}
 }
 
-#define UINTSET(u) (u) != (unsigned) -1
-
 
 void check_ack(void *arg)
 {
@@ -296,7 +294,7 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 		return false;
 	}
 
-	if (UINTSET(rule->n_incoming) &&
+	if (uint_is_set(rule->n_incoming) &&
 	    ag->n_incoming != rule->n_incoming) {
 		info("test: event %s n_incoming=%u (expected %u)\n",
 		     bevent_str(ev),
@@ -304,7 +302,7 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 		return false;
 	}
 
-	if (UINTSET(rule->n_progress) &&
+	if (uint_is_set(rule->n_progress) &&
 	    ag->n_progress < rule->n_progress) {
 		info("test: event %s n_progress=%u (expected %u)\n",
 		     bevent_str(ev),
@@ -312,7 +310,7 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 		return false;
 	}
 
-	if (UINTSET(rule->n_established) &&
+	if (uint_is_set(rule->n_established) &&
 	    ag->n_established != rule->n_established) {
 		info("test: event %s n_established=%u (expected %u)\n",
 		     bevent_str(ev),
@@ -320,7 +318,7 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 		return false;
 	}
 
-	if (UINTSET(rule->n_audio_estab) &&
+	if (uint_is_set(rule->n_audio_estab) &&
 	    ag->n_audio_estab != rule->n_audio_estab) {
 		info("test: event %s n_audio_estab=%u (expected %u)\n",
 		     bevent_str(ev),
@@ -328,7 +326,7 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 		return false;
 	}
 
-	if (UINTSET(rule->n_video_estab) &&
+	if (uint_is_set(rule->n_video_estab) &&
 	    ag->n_video_estab != rule->n_video_estab) {
 		info("test: event %s n_video_estab=%u (expected %u)\n",
 		     bevent_str(ev),
@@ -336,7 +334,7 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 		return false;
 	}
 
-	if (UINTSET(rule->n_offer_cnt) &&
+	if (uint_is_set(rule->n_offer_cnt) &&
 	    ag->n_offer_cnt != rule->n_offer_cnt) {
 		info("test: event %s n_offer_cnt=%u (expected %u)\n",
 		     bevent_str(ev),
@@ -344,7 +342,7 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 		return false;
 	}
 
-	if (UINTSET(rule->n_answer_cnt) &&
+	if (uint_is_set(rule->n_answer_cnt) &&
 	    ag->n_answer_cnt != rule->n_answer_cnt) {
 		info("test: event %s n_answer_cnt=%u (expected %u)\n",
 		     bevent_str(ev),
@@ -352,23 +350,23 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 		return false;
 	}
 
-	if (UINTSET(rule->n_vidframe) &&
+	if (uint_is_set(rule->n_vidframe) &&
 	    ag->n_vidframe < rule->n_vidframe)
 		return false;
 
-	if (UINTSET(rule->n_auframe) &&
+	if (uint_is_set(rule->n_auframe) &&
 	    ag->n_auframe < rule->n_auframe)
 		return false;
 
-	if (UINTSET(rule->n_audebug) &&
+	if (uint_is_set(rule->n_audebug) &&
 	    ag->n_audebug < rule->n_audebug)
 		return false;
 
-	if (UINTSET(rule->n_rtcp) &&
+	if (uint_is_set(rule->n_rtcp) &&
 	    ag->n_rtcp < rule->n_rtcp)
 		return false;
 
-	if (UINTSET(rule->n_closed) &&
+	if (uint_is_set(rule->n_closed) &&
 	    ag->n_closed < rule->n_closed)
 		return false;
 
