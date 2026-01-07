@@ -161,6 +161,8 @@ void mock_aucodec_register(void);
 void mock_aucodec_unregister(void);
 int mock_auplay_register(struct auplay **auplayp, struct list *auplayl,
 			 mock_sample_h *sampleh, void *arg);
+int mock_ausrc_register(struct ausrc **ausrcp, struct list *ausrcl,
+			mock_sample_h *sampleh, void *arg);
 
 
 /*
@@ -208,6 +210,7 @@ int test_call_format_float(void);
 int test_call_max(void);
 int test_call_mediaenc(void);
 int test_call_medianat(void);
+int test_call_mixausrc(void);
 int test_call_multiple(void);
 int test_call_progress(void);
 int test_call_reject(void);
