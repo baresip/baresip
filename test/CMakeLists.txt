@@ -41,6 +41,7 @@ add_executable(${PROJECT_NAME}
 
   mock/mock_aucodec.c
   mock/mock_auplay.c
+  mock/mock_ausrc.c
   mock/mock_mnat.c
   mock/mock_vidcodec.c
   mock/mock_vidisp.c
