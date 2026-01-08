@@ -235,14 +235,12 @@ static void packet_handler(struct ausrc_st *st, GstBuffer *buffer)
 
     /* Empty buffer now */
     while (st->run) {
-        const struct timespec delay = {0, st->prm.ptime*1000000/2};
-
         play_packet(st);
 
         if (aubuf_cur_size(st->aubuf) < st->psize)
             break;
 
-        (void)nanosleep(&delay, NULL);
+	sys_usleep(st->prm.ptime * 1000 / 2);
     }
 }
 
