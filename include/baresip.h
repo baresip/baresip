@@ -1895,9 +1895,9 @@ int peerconnection_add_video_track(struct peer_connection *pc,
 				   struct list *vidcodecl, enum sdp_dir dir);
 int  peerconnection_set_remote_descr(struct peer_connection *pc,
 				    const struct session_description *sd);
-int  peerconnection_create_offer(struct peer_connection *sess,
+int  peerconnection_create_offer(struct peer_connection *pc,
 				struct mbuf **mb);
-int  peerconnection_create_answer(struct peer_connection *sess,
+int  peerconnection_create_answer(struct peer_connection *pc,
 				 struct mbuf **mb);
 int  peerconnection_start_ice(struct peer_connection *pc);
 void peerconnection_close(struct peer_connection *pc);

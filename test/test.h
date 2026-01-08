@@ -245,6 +245,7 @@ int test_jbuf_video(void);
 int test_jbuf_gnack(void);
 int test_message(void);
 int test_network(void);
+int test_peerconn(void);
 int test_play(void);
 int test_stunuri(void);
 int test_ua_alloc(void);
