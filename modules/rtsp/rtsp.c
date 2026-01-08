@@ -50,7 +50,7 @@ struct ausrc_st {
     int16_t *buf;
     struct tmr tmr;
 
-    char * uri;
+    char *uri;
 
     GstElement *pipeline;
     GstElement *rtspsrc;
@@ -76,7 +76,7 @@ struct backchannel_t {
     volatile GstElement *rtsp;
     gint        stream_id;
     unsigned       options_num;
-    GstCaps      * options_caps[8];
+    GstCaps       *options_caps[8];
     int            options_streams[8];
     int            option;
     unsigned       src_rate;
@@ -166,7 +166,7 @@ static void auplay_destructor(void *arg)
 static void format_check(struct ausrc_st *st, GstStructure *s)
 {
     int rate, channels;
-    const char * fmt = NULL;
+    const char *fmt = NULL;
 
     if (!st || !s)
         return;
@@ -262,8 +262,8 @@ static void handoff_handler(GstElement *sink, GstBuffer *buffer,
 }
 
 
-static GstFlowReturn new_out_sample(GstElement * appsink,
-		                    void * userdata)
+static GstFlowReturn new_out_sample(GstElement *appsink,
+		                    void *userdata)
 {
     GstObject *rtsp;
     GstSample *sample;
@@ -305,7 +305,7 @@ static void *write_thread(void *arg)
 
     while (st->run) {
         struct auframe af;
-        GstObject * src;
+        GstObject *src;
         mtx_lock(&backchannel.lock);
         src = (backchannel.src)?gst_object_ref((GstObject*)backchannel.src):NULL;
         mtx_unlock(&backchannel.lock);
@@ -313,7 +313,7 @@ static void *write_thread(void *arg)
         if (src) {
             GstFlowReturn ret;
             GstMapInfo meminfo;
-            GstBuffer* buffer = gst_buffer_new_allocate(NULL, backchannel.blocksize, NULL);
+            GstBuffer *buffer = gst_buffer_new_allocate(NULL, backchannel.blocksize, NULL);
             gst_buffer_map(buffer, &meminfo, GST_MAP_WRITE);
             auframe_init(&af, st->prm.fmt, meminfo.data, st->sampc, st->prm.srate, st->prm.ch);
             sample_time = tmr_jiffies();
@@ -344,13 +344,13 @@ static void *write_thread(void *arg)
 
 static void backchannel_init(void)
 {
-    const gchar * outfmt;
-    gchar * pipe_str;
+    const gchar *outfmt;
+    gchar *pipe_str;
     gint rate = 8000;
     guint channels = 1;
-    const gchar * schannels = NULL;
+    const gchar *schannels = NULL;
 
-    GstElement * src = NULL, * sink = NULL, *pipeline = NULL;
+    GstElement *src = NULL, *sink = NULL, *pipeline = NULL;
 
     GError *error = NULL;
     const GstStructure *s;
@@ -454,7 +454,7 @@ out:
 
 
 static gboolean
-remove_extra_fields (const GstIdStr * fieldname, GValue * value G_GNUC_UNUSED,
+remove_extra_fields (const GstIdStr *fieldname, GValue *value G_GNUC_UNUSED,
                      gpointer user_data G_GNUC_UNUSED)
 {
     return !g_str_has_prefix (gst_id_str_as_str (fieldname), "a-");
@@ -462,11 +462,11 @@ remove_extra_fields (const GstIdStr * fieldname, GValue * value G_GNUC_UNUSED,
 
 
 static gboolean
-find_backchannel (GstElement * rtspsrc, guint idx, GstCaps * caps,
+find_backchannel (GstElement *rtspsrc, guint idx, GstCaps *caps,
                   gpointer user_data G_GNUC_UNUSED)
 {
     GstStructure *s;
-    char * channel_details;
+    char *channel_details;
     (void)rtspsrc;
     s = gst_caps_get_structure (caps, 0);
 
@@ -527,7 +527,7 @@ static int rtsp_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 {
     struct ausrc_st *st;
     int err = 0;
-    gchar * pipe_str;
+    gchar *pipe_str;
 
     info("rtsp: Trying sourcing fron rtsp : %s\n", device);
     if (!stp || !as || !prm)
