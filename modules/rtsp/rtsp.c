@@ -25,7 +25,8 @@
  *
  * Audio source/player module using gstreamer 1.0
  *
- * The module 'rtsp' is using the Gstreamer framework to do audio bi-directionally to rtsp
+ * The module 'rtsp' is using the Gstreamer framework to do audio
+ * bi-directionally to rtsp
  *
  * Example config:
  \verbatim
@@ -111,8 +112,9 @@ static void backchannel_unlink(void)
 		gst_object_unref(backchannel.sink);
 		backchannel.sink = NULL;
 	}
-	for(unsigned n = 0; n < backchannel.options_num; n++)
+	for (unsigned n = 0; n < backchannel.options_num; n++) {
 		gst_caps_unref(backchannel.options_caps[n]);
+	}
 	backchannel.option = -1;
 	backchannel.options_num = 0;
 	mtx_unlock(&backchannel.lock);
@@ -190,20 +192,25 @@ static void format_check(struct ausrc_st *st, GstStructure *s)
 }
 
 
-static void play_packet(struct ausrc_st *st)                                       {
+static void play_packet(struct ausrc_st *st)
+{
 	struct auframe af;
 
-	auframe_init(&af, AUFMT_S16LE, st->buf, st->sampc, st->prm.srate, st->prm.ch);
+	auframe_init(&af, AUFMT_S16LE,
+			st->buf, st->sampc,
+			st->prm.srate, st->prm.ch);
 
 	/* timed read from audio-buffer */
-	if (st->prm.ptime && aubuf_get_samp(st->aubuf, st->prm.ptime, st->buf, st->sampc))
+	if (st->prm.ptime && aubuf_get_samp(st->aubuf,
+				st->prm.ptime, st->buf, st->sampc))
 		return;
 
 	/* immediate read from audio-buffer */
 	if (!st->prm.ptime)
 		aubuf_read_samp(st->aubuf, st->buf, st->sampc);
 
-	/* call read handler */                                                            if (st->rh)
+	/* call read handler */
+	if (st->rh)
 		st->rh(&af, st->arg);
 }
 
@@ -267,7 +274,7 @@ static GstFlowReturn new_out_sample(GstElement *appsink,
 {
 	GstObject *rtsp;
 	GstSample *sample;
-	GstFlowReturn r; //Avoid warning, but we don't need use.
+	GstFlowReturn r; /* Avoid warning, but we don't need use. */
 	(void)userdata;
 
 	g_signal_emit_by_name (appsink, "pull-sample", &sample);
@@ -278,7 +285,8 @@ static GstFlowReturn new_out_sample(GstElement *appsink,
 	}
 
 	mtx_lock(&backchannel.lock);
-	rtsp = (backchannel.rtsp)?gst_object_ref((GstObject*)backchannel.rtsp):NULL;
+	rtsp = (backchannel.rtsp)?gst_object_ref(
+			(GstObject*)backchannel.rtsp):NULL;
 	mtx_unlock(&backchannel.lock);
 
 	if (rtsp) {
@@ -307,25 +315,30 @@ static void *write_thread(void *arg)
 		struct auframe af;
 		GstObject *src;
 		mtx_lock(&backchannel.lock);
-		src = (backchannel.src)?gst_object_ref((GstObject*)backchannel.src):NULL;
+		src = (backchannel.src)?gst_object_ref(
+				(GstObject*)backchannel.src):NULL;
 		mtx_unlock(&backchannel.lock);
 
 		if (src) {
 			GstFlowReturn ret;
 			GstMapInfo meminfo;
-			GstBuffer *buffer = gst_buffer_new_allocate(NULL, backchannel.blocksize, NULL);
+			GstBuffer *buffer = gst_buffer_new_allocate(
+					NULL, backchannel.blocksize, NULL);
 			gst_buffer_map(buffer, &meminfo, GST_MAP_WRITE);
-			auframe_init(&af, st->prm.fmt, meminfo.data, st->sampc, st->prm.srate, st->prm.ch);
+			auframe_init(&af, st->prm.fmt, meminfo.data,
+					st->sampc, st->prm.srate, st->prm.ch);
 			sample_time = tmr_jiffies();
 			af.timestamp = sample_time * 1000;
 			st->wh(&af, st->arg);
 			gst_buffer_unmap(buffer, &meminfo);
-			g_signal_emit_by_name (src, "push-buffer", buffer, &ret);
+			g_signal_emit_by_name (src, "push-buffer",
+					buffer, &ret);
 			gst_buffer_unref(buffer);
 			gst_object_unref(src);
 		}
 		else {
-			auframe_init(&af, st->prm.fmt, st->buf, st->sampc, st->prm.srate, st->prm.ch);
+			auframe_init(&af, st->prm.fmt, st->buf,
+					st->sampc, st->prm.srate, st->prm.ch);
 			sample_time = tmr_jiffies();
 			af.timestamp = sample_time * 1000;
 			st->wh(&af, st->arg);
@@ -355,11 +368,20 @@ static void backchannel_init(void)
 	GError *error = NULL;
 	const GstStructure *s;
 
-	const gchar *encoding;
+	const gchar *encoding = NULL;
+
+	const char * encodings[] = {
+		"MPEG4-GENERIC", "voaacenc ! aacparse ! rtpmp4gpay",
+		"MPEG4GENERIC", "voaacenc ! aacparse ! rtpmp4gpay",
+		"PCMU", "mulawenc ! rtppcmupay",
+		"PCMA", "alawenc ! rtppcmapay"
+	};
 
 	mtx_lock(&backchannel.lock);
 	printf("Trying to setup backchannel.\n");
-	if (!backchannel.options_num || backchannel.option < 0 || (unsigned)backchannel.option >= backchannel.options_num) {
+	if (!backchannel.options_num ||
+		backchannel.option < 0 ||
+		(unsigned)backchannel.option >= backchannel.options_num) {
 		info("rtsp: Backchannel not ready for init.\n");
 		goto out;
 	}
@@ -370,8 +392,10 @@ static void backchannel_init(void)
 		goto out;
 	}
 
-	backchannel.stream_id = backchannel.options_streams[backchannel.option];
-	s = gst_caps_get_structure (backchannel.options_caps[backchannel.option], 0);
+	backchannel.stream_id =
+		backchannel.options_streams[backchannel.option];
+	s = gst_caps_get_structure (
+			backchannel.options_caps[backchannel.option], 0);
 	encoding = gst_structure_get_string (s, "encoding-name");
 
 	schannels = gst_structure_get_string (s, "channels");
@@ -382,28 +406,34 @@ static void backchannel_init(void)
 	info("rtsp: Setting up backchannel %u\n", backchannel.stream_id);
 
 	if (encoding == NULL) {
-		warning("rtsp: Could not setup backchannel pipeline: Missing encoding-name field");
+		warning("rtsp: Could not setup backchannel pipeline: "
+			"Missing encoding-name field");
 		goto out;
 	}
 	if (!gst_structure_get_int (s, "clock-rate", &rate)) {
-		warning("rtsp: Could not setup backchannel pipeline: Missing clock-rate field");
+		warning("rtsp: Could not setup backchannel pipeline: "
+			"Missing clock-rate field");
 		goto out;
 	}
 
-	if ((g_str_equal(encoding, "MPEG4-GENERIC")) || (g_str_equal(encoding, "MPEG4GENERIC"))) {
-		outfmt = "voaacenc ! aacparse ! rtpmp4gpay";
-	} else if (g_str_equal(encoding, "PCMU")) {
-		outfmt = "mulawenc ! rtppcmupay";
-	} else if (g_str_equal(encoding, "PCMA")) {
-		outfmt = "alawenc ! rtppcmapay";
-	} else {
-		warning("rtsp: Could not setup backchannel pipeline: Unsupported encoding %s", encoding);
+	for (unsigned n = 0; n < RE_ARRAY_SIZE(encodings); n+=2) {
+		if (g_str_equal(encoding, encodings[n + 0])) {
+			outfmt = encodings[n + 1];
+			break;
+		}
+	}
+	if (!outfmt) {
+		warning("rtsp: Could not setup backchannel pipeline: "
+			"Unsupported encoding %s", encoding);
 		goto out;
 	}
 	pipe_str = g_strdup_printf(
-	               "appsrc name=datawell blocksize=%u max-bytes=%u caps=audio/x-raw,rate=(int)%u,channels=(int)%u,format=(string)S16LE,layout=(string)interleaved ! "
-	               "audioconvert ! audioresample ! audio/x-raw,rate=(int)%u,channels=(int)%u,format=(string)S16LE,layout=(string)interleaved ! %s ! "
-	               "appsink name=out",
+	               "appsrc name=datawell blocksize=%u max-bytes=%u "
+		       "caps=audio/x-raw,rate=(int)%u,channels=(int)%u,"
+		       "format=(string)S16LE,layout=(string)interleaved ! "
+	               "audioconvert ! audioresample ! audio/x-raw,"
+		       "rate=(int)%u,channels=(int)%u,format=(string)S16LE,"
+		       "layout=(string)interleaved ! %s ! appsink name=out",
 	               backchannel.blocksize,
 	               backchannel.blocksize * 2,
 	               backchannel.src_rate,
@@ -433,7 +463,8 @@ static void backchannel_init(void)
 	}
 
 	g_object_set(G_OBJECT(sink), "emit-signals", TRUE, NULL);
-	g_signal_connect (G_OBJECT(sink), "new-sample", G_CALLBACK (new_out_sample), NULL);
+	g_signal_connect (G_OBJECT(sink), "new-sample",
+			G_CALLBACK (new_out_sample), NULL);
 
 	backchannel.pipeline = pipeline;
 	backchannel.sink = sink;
@@ -479,8 +510,9 @@ find_backchannel (GstElement *rtspsrc, guint idx, GstCaps *caps,
 		caps = gst_caps_new_empty ();
 		s = gst_structure_copy (s);
 		gst_structure_set_name (s, "application/x-rtp");
-		gst_structure_filter_and_map_in_place_id_str (s, remove_extra_fields, NULL);
-		gst_caps_append_structure (caps, s);
+		gst_structure_filter_and_map_in_place_id_str(
+				s, remove_extra_fields, NULL);
+		gst_caps_append_structure(caps, s);
 
 		info("rtsp: Backchannel channel %u\n", idx);
 
@@ -578,8 +610,12 @@ static int rtsp_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		goto out;
 	}
 
-
-	pipe_str = g_strdup_printf ("rtspsrc name=pipestart backchannel=onvif latency=%u protocols=udp location=%s ! rtpmp4gdepay ! decodebin ! audioconvert ! audioresample ! audio/x-raw,format=S16LE,rate=%u,channels=%u !fakesink name=pipeend", st->ptime, device, prm->srate, prm->ch);
+	pipe_str = g_strdup_printf ("rtspsrc name=pipestart backchannel=onvif"
+			" latency=%u protocols=udp location=%s ! rtpmp4gdepay"
+			" ! decodebin ! audioconvert ! audioresample ! "
+			"audio/x-raw,format=S16LE,rate=%u,channels=%u "
+			"!fakesink name=pipeend",
+			st->ptime, device, prm->srate, prm->ch);
 
 	info("rtsp: src gst launch : %s\n", pipe_str);
 	st->pipeline = gst_parse_launch (pipe_str, NULL);
@@ -616,14 +652,16 @@ static int rtsp_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	gst_element_set_state(st->pipeline, GST_STATE_PLAYING);
 	tmr_start(&st->tmr, st->ptime, timeout, st);
 
-	g_signal_connect(st->fakesink, "handoff", G_CALLBACK(handoff_handler), st);
+	g_signal_connect(st->fakesink, "handoff",
+			G_CALLBACK(handoff_handler), st);
 	/* Override audio-sink handoff handler */
 	g_object_set(G_OBJECT(st->fakesink),
 	             "signal-handoffs", TRUE,
 	             "async", FALSE,
 	             NULL);
 
-	g_signal_connect (st->rtspsrc, "select-stream", G_CALLBACK (find_backchannel), NULL);
+	g_signal_connect (st->rtspsrc, "select-stream",
+			G_CALLBACK (find_backchannel), NULL);
 
 out:
 	if (err)
@@ -703,11 +741,12 @@ static int mod_rtsp_init(void)
 	info("rtsp: gst version : %s\n", s);
 	g_free(s);
 
-	err = mtx_init(&backchannel.lock, mtx_plain);
+	err = mtx_init(&backchannel.lock, mtx_plain) != thrd_success;
 	if (err)
 		return err;
 
-	err = ausrc_register(&ausrc, baresip_ausrcl(), "rtsp", rtsp_src_alloc);
+	err = ausrc_register(&ausrc, baresip_ausrcl(),
+			"rtsp", rtsp_src_alloc);
 	if (err)
 		return err;
 	return auplay_register(&auplay, baresip_auplayl(),
