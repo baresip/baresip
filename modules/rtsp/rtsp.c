@@ -12,7 +12,6 @@
 #include <string.h>
 #include <time.h>
 #include <gst/gst.h>
-#include <gst/app/gstappsrc.h>
 #include <unistd.h>
 #include <re.h>
 #include <rem.h>
