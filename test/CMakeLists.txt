@@ -11,6 +11,8 @@ include_directories(${RE_INCLUDE_DIRS} ${BARESIP_INCLUDE_DIRS})
 add_executable(${PROJECT_NAME}
   account.c
   call.c
+  call_cancelrule.c
+  call_fixture.c
   cmd.c
   contact.c
   bevent.c
