@@ -554,13 +554,11 @@ int test_call_max(void)
 int test_call_dtmf(void)
 {
 	struct fixture fix, *f = &fix;
-	size_t i, n;
 	int err = 0;
 
 	/* Use a low packet time, so the test completes quickly */
 	fixture_init_prm(f, ";ptime=1");
 	f->dtmf_digits = "1234";
-	n = str_len(f->dtmf_digits);
 
 	/* audio-source is needed for dtmf/telev to work */
 	err = module_load(".", "ausine");
@@ -578,10 +576,18 @@ int test_call_dtmf(void)
 	TEST_ERR(fix.err);
 
 	/* send some DTMF digits from A to B .. */
-	for (i=0; i<n; i++) {
+	size_t n = str_len(f->dtmf_digits);
+	for (size_t i=0; i<n; i++) {
 		err  = call_send_digit(ua_call(f->a.ua), f->dtmf_digits[i]);
 		TEST_ERR(err);
 	}
+
+	err = call_send_digit(ua_call(f->a.ua), KEYCODE_REL);
+	TEST_ERR(err);
+
+	struct audio *audio = call_audio(ua_call(f->a.ua));
+	ASSERT_TRUE(audio != NULL);
+	ASSERT_TRUE(!audio_txtelev_empty(audio));
 
 	/* run main-loop with timeout, wait for events */
 	err = re_main_timeout(5000);
@@ -589,7 +595,10 @@ int test_call_dtmf(void)
 	TEST_ERR(fix.err);
 
 	ASSERT_EQ(0, fix.a.n_dtmf_recv);
-	ASSERT_EQ(n, fix.b.n_dtmf_recv);
+	ASSERT_EQ((unsigned) n, fix.b.n_dtmf_recv);
+	audio = call_audio(ua_call(f->a.ua));
+	ASSERT_TRUE(audio != NULL);
+	ASSERT_TRUE(audio_txtelev_empty(audio));
 
  out:
 	fixture_close(f);
