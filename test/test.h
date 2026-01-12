@@ -154,6 +154,7 @@ int dns_server_add_srv(struct dns_server *srv, const char *name,
  */
 
 struct auplay;
+struct ausrc;
 
 typedef void (mock_sample_h)(struct auframe *af, const char *dev, void *arg);
 
