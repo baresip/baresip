@@ -579,6 +579,13 @@ int test_call_mixausrc(void)
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
+	fixture_delayed_command(f, 0,
+				"mixausrc_dec_start mock-ausrc "
+				"vol=500,freq=1000 50 100");
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
  out:
 	fixture_close(f);
 	mem_deref(ausrc);
