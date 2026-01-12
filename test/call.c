@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 - 2015 Alfred E. Heggestad
  */
+#include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
 #include <re.h>
@@ -455,15 +456,17 @@ static void ausrc_square_handler(struct auframe *af, const char *dev,
 }
 
 
-static void mixdetect_handler(struct auframe *af, const char *dev, void *arg)
+static int fixture_auframe_handle(struct fixture *fix, struct auframe *af,
+				   const char *dev,
+				   struct agent **pag)
 {
-	struct fixture *fix = arg;
 	struct agent *ag = NULL;
 	struct ua *ua;
 	int err = 0;
-	(void)dev;
+	(void)af;
 
 	ASSERT_EQ(MAGIC, fix->magic);
+
 	if (!str_cmp(dev, "a")) {
 		ag = &fix->a;
 	}
@@ -472,7 +475,7 @@ static void mixdetect_handler(struct auframe *af, const char *dev, void *arg)
 	}
 	else {
 		warning("test: received audio frame - agent unclear\n");
-		return;
+		return EINVAL;
 	}
 
 	ua = ag->ua;
@@ -480,29 +483,52 @@ static void mixdetect_handler(struct auframe *af, const char *dev, void *arg)
 	if (!audio_rxaubuf_started(call_audio(ua_call(ua)))) {
 		debug("test: [%s] no audio received from decoder yet\n",
 		      account_aor(ua_account(ua)));
-		return;
+		goto out;
 	}
 
 	++ag->n_auframe;
-	if (ag->n_auframe <= 3)
-		bevent_ua_emit(BEVENT_CUSTOM, ua, "auframe %u", ag->n_auframe);
+	(void)audio_level_get(call_audio(ua_call(ua)), &ag->aulvl);
 
-	if (ag == &fix->a)
-		return;
-
-	int16_t *sampv = af->sampv;
-	re_printf("test: mixed %zu samples =", af->sampc);
-
-	for (size_t i = 0; i < af->sampc; i++) {
-		re_printf("%d ", sampv[i]);
-	}
-
-	re_printf("\n");
-	/* bevent_ua_emit(BEVENT_CUSTOM, ua, "mixed", ag->n_auframe); */
+	bevent_ua_emit(BEVENT_CUSTOM, ua, "auframe %u", ag->n_auframe);
 
  out:
 	if (err)
 		fixture_abort(fix, err);
+	else if (pag)
+		*pag = ag;
+
+	return err;
+}
+
+
+static void mixdetect_handler(struct auframe *af, const char *dev, void *arg)
+{
+	struct fixture *fix = arg;
+	struct agent *ag = NULL;
+	int err = 0;
+
+	err = fixture_auframe_handle(arg, af, dev, &ag);
+	if (err)
+		return;
+
+	if (ag == &fix->a)
+		return;
+
+	struct ua *ua = ag->ua;
+	int16_t *sampv = af->sampv;
+
+	uint32_t changes = 0;
+	int16_t last_v = sampv[0] << 3;
+	for (size_t i = 0; i < af->sampc; i++) {
+		int16_t v = sampv[i] << 3;
+		if (v != last_v) {
+			changes++;
+			last_v = v;
+		}
+	}
+
+	if (changes > 2)
+		bevent_ua_emit(BEVENT_CUSTOM, ua, "mixed", ag->n_auframe);
 }
 
 
@@ -532,6 +558,10 @@ int test_call_mixausrc(void)
 	fixture_init_prm(f, ";ptime=2"
 		       ";audio_source=mock-ausrc,freq=500"
 		       ";audio_player=mock-auplay,a");
+	mem_deref(f->b.ua);
+	err = ua_alloc(&f->b.ua, "B <sip:b@127.0.0.1>;regint=0;ptime=2"
+		       ";audio_source=mock-ausrc,freq=500"
+		       ";audio_player=mock-auplay,b");
 	TEST_ERR(err);
 
 	conf_config()->avt.rtp_stats = true;
@@ -563,11 +593,11 @@ int test_call_mixausrc(void)
 	TEST_ERR(fix.err);
 
 	cancel_rule_pop();
-	cancel_rule_new(BEVENT_CUSTOM, f->b.ua, 1, 0, 0);
+	cancel_rule_new(BEVENT_CUSTOM, f->b.ua, 1, 0, 1);
 	cr->prm = "mixed";
 
 	tmr_start(&f->a.tmr, 0, delayed_mixausrc_start, f);
-	err = re_main_timeout(500);
+	err = re_main_timeout(5000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
@@ -1082,40 +1112,8 @@ int test_call_100rel_video(void)
 static void auframe_handler(struct auframe *af, const char *dev, void *arg)
 {
 	struct fixture *fix = arg;
-	struct agent *ag = NULL;
-	struct ua *ua;
-	int err = 0;
-	(void)af;
 
-	ASSERT_EQ(MAGIC, fix->magic);
-
-	if (!str_cmp(dev, "a")) {
-		ag = &fix->a;
-	}
-	else if (!str_cmp(dev, "b")) {
-		ag = &fix->b;
-	}
-	else {
-		warning("test: received audio frame - agent unclear\n");
-		return;
-	}
-
-	ua = ag->ua;
-	/* Does auframe come from the decoder ? */
-	if (!audio_rxaubuf_started(call_audio(ua_call(ua)))) {
-		debug("test: [%s] no audio received from decoder yet\n",
-		      account_aor(ua_account(ua)));
-		return;
-	}
-
-	++ag->n_auframe;
-	(void)audio_level_get(call_audio(ua_call(ua)), &ag->aulvl);
-
-	bevent_ua_emit(BEVENT_CUSTOM, ua, "auframe %u", ag->n_auframe);
-
- out:
-	if (err)
-		fixture_abort(fix, err);
+	fixture_auframe_handle(fix, af, dev, NULL);
 }
 
 
