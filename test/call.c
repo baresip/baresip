@@ -414,15 +414,6 @@ static bool linenum_are_sequential(const struct ua *ua)
 }
 
 
-static int vprintf_null(const char *p, size_t size, void *arg)
-{
-	(void)p;
-	(void)size;
-	(void)arg;
-	return 0;
-}
-
-
 static void ausrc_square_handler(struct auframe *af, const char *dev,
 				 void *arg)
 {
@@ -532,21 +523,6 @@ static void mixdetect_handler(struct auframe *af, const char *dev, void *arg)
 }
 
 
-static void delayed_mixausrc_start(void *arg)
-{
-	struct fixture *fix = arg;
-	const char *cmd = "mixausrc_enc_start mock-ausrc vol=500,freq=1000 "
-			  "50 100";
-	struct re_printf pf_null = {vprintf_null, 0};
-	int err = 0;
-
-	err = cmd_process_long(baresip_commands(),
-			       cmd, str_len(cmd), &pf_null, NULL);
-	if (err)
-		fixture_abort(fix, err);
-}
-
-
 int test_call_mixausrc(void)
 {
 	struct fixture fix, *f = &fix;
@@ -596,7 +572,9 @@ int test_call_mixausrc(void)
 	cancel_rule_new(BEVENT_CUSTOM, f->b.ua, 1, 0, 1);
 	cr->prm = "mixed";
 
-	tmr_start(&f->a.tmr, 0, delayed_mixausrc_start, f);
+	fixture_delayed_command(f, 0,
+				"mixausrc_enc_start mock-ausrc "
+				"vol=500,freq=1000 50 100");
 	err = re_main_timeout(5000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);

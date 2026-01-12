@@ -415,6 +415,7 @@ void fixture_close(struct fixture *f)
 	tmr_cancel(&f->a.tmr);
 	tmr_cancel(&f->b.tmr);
 	tmr_cancel(&f->c.tmr);
+	mem_deref(f->command);
 	mem_deref(f->c.ua);
 	mem_deref(f->b.ua);
 	mem_deref(f->a.ua);
@@ -436,4 +437,37 @@ void fixture_abort(struct fixture *f, int err)
 {
 	f->err = err;
 	re_cancel();
+}
+
+
+static int vprintf_null(const char *p, size_t size, void *arg)
+{
+	(void)p;
+	(void)size;
+	(void)arg;
+	return 0;
+}
+
+
+static void delayed_command(void *arg)
+{
+	struct fixture *fix = arg;
+	const char *cmd = fix->command;
+	struct re_printf pf_null = {vprintf_null, 0};
+	int err = 0;
+
+	err = cmd_process_long(baresip_commands(),
+			       cmd, str_len(cmd), &pf_null, NULL);
+	fix->command = mem_deref(fix->command);
+	if (err)
+		fixture_abort(fix, err);
+}
+
+
+void fixture_delayed_command(struct fixture *f,
+			     uint32_t delay_ms, const char *cmd)
+{
+	f->command = mem_deref(f->command);
+	str_dup(&f->command, cmd);
+	tmr_start(&f->a.tmr, delay_ms, delayed_command, f);
 }
