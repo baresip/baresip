@@ -463,18 +463,21 @@ static void mixdetect_handler(struct auframe *af, const char *dev, void *arg)
 	struct ua *ua = ag->ua;
 	int16_t *sampv = af->sampv;
 
+	/* The mixed ausrc is a square wave with double frequency.
+	 * Count how often the sample value changes. */
 	uint32_t changes = 0;
-	int16_t last_v = sampv[0] << 3;
+	int16_t last_v = sampv[0];
 	for (size_t i = 0; i < af->sampc; i++) {
-		int16_t v = sampv[i] << 3;
+		int16_t v = sampv[i];
 		if (v != last_v) {
 			++changes;
 			last_v = v;
 		}
 	}
 
-	if (changes > 2)
-		bevent_ua_emit(BEVENT_CUSTOM, ua, "mixed", ag->n_auframe);
+	bevent_ua_emit(BEVENT_CUSTOM, ua, changes > 2 ? "mixed" :
+		       abs(last_v) > 900 ? "original" : "low",
+		       ag->n_auframe);
 }
 
 
@@ -534,9 +537,11 @@ int test_call_mixausrc(void)
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
-	fixture_delayed_command(f, 0,
-				"mixausrc_dec_start mock-ausrc "
-				"vol=500,freq=1000 50 100");
+	cancel_rule_pop();
+	cancel_rule_new(BEVENT_CUSTOM, f->b.ua, 1, 0, 1);
+	cr->prm = "original";
+	fixture_delayed_command(f, 0, "mixausrc_enc_stop");
+
 	err = re_main_timeout(5000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
