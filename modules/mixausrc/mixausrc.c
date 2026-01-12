@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2019 commend.com - Christian Spielberger
  */
+#include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
 #include <re.h>
