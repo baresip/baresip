@@ -468,7 +468,7 @@ static void mixdetect_handler(struct auframe *af, const char *dev, void *arg)
 	for (size_t i = 0; i < af->sampc; i++) {
 		int16_t v = sampv[i] << 3;
 		if (v != last_v) {
-			changes++;
+			++changes;
 			last_v = v;
 		}
 	}
