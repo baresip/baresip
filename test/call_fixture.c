@@ -304,7 +304,8 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 		break;
 
 	case BEVENT_CALL_DTMF_END:
-		tmr_start(&ag->tmr, 2, delayed_dtmf_check, ag->peer);
+		if (str_len(f->dtmf_digits) == ag->n_dtmf_recv)
+			tmr_start(&ag->tmr, 0, delayed_dtmf_check, ag->peer);
 		break;
 
 	case BEVENT_CALL_RTPESTAB:
