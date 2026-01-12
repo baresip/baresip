@@ -118,6 +118,9 @@ struct fixture {
 int fixture_init_priv(struct fixture *f, const char *prm);
 void fixture_close(struct fixture *f);
 void fixture_abort(struct fixture *f, int err);
+int fixture_auframe_handle(struct fixture *fix, struct auframe *af,
+			   const char *dev,
+			   struct agent **pag);
 
 
 #define fixture_init_prm(f, prm) \

@@ -440,6 +440,51 @@ void fixture_abort(struct fixture *f, int err)
 }
 
 
+int fixture_auframe_handle(struct fixture *fix, struct auframe *af,
+			   const char *dev,
+			   struct agent **pag)
+{
+	struct agent *ag = NULL;
+	struct ua *ua;
+	int err = 0;
+	(void)af;
+
+	ASSERT_EQ(MAGIC, fix->magic);
+
+	if (!str_cmp(dev, "a")) {
+		ag = &fix->a;
+	}
+	else if (!str_cmp(dev, "b")) {
+		ag = &fix->b;
+	}
+	else {
+		warning("test: received audio frame - agent unclear\n");
+		return EINVAL;
+	}
+
+	ua = ag->ua;
+	/* Does auframe come from the decoder ? */
+	if (!audio_rxaubuf_started(call_audio(ua_call(ua)))) {
+		debug("test: [%s] no audio received from decoder yet\n",
+		      account_aor(ua_account(ua)));
+		goto out;
+	}
+
+	++ag->n_auframe;
+	(void)audio_level_get(call_audio(ua_call(ua)), &ag->aulvl);
+
+	bevent_ua_emit(BEVENT_CUSTOM, ua, "auframe %u", ag->n_auframe);
+
+ out:
+	if (err)
+		fixture_abort(fix, err);
+	else if (pag)
+		*pag = ag;
+
+	return err;
+}
+
+
 static int vprintf_null(const char *p, size_t size, void *arg)
 {
 	(void)p;
