@@ -15,6 +15,18 @@
 #define DEBUG_LEVEL 5
 #include <re_dbg.h>
 
+static void delayed_dtmf_check(void *arg)
+{
+	struct agent *ag = arg;
+	struct call *call = ua_call(ag->ua);
+
+	if (audio_txtelev_empty(call_audio(call)))
+		re_cancel();
+	else
+		tmr_start(&ag->tmr, 2, delayed_dtmf_check, ag);
+}
+
+
 static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 {
 	struct fixture *f = arg;
@@ -289,10 +301,11 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 		ASSERT_EQ(1, str_len(prm));
 		ASSERT_EQ(f->dtmf_digits[ag->n_dtmf_recv], prm[0]);
 		++ag->n_dtmf_recv;
+		break;
 
-		if (ag->n_dtmf_recv >= str_len(f->dtmf_digits)) {
-			re_cancel();
-		}
+	case BEVENT_CALL_DTMF_END:
+		if (str_len(f->dtmf_digits) == ag->n_dtmf_recv)
+			tmr_start(&ag->tmr, 0, delayed_dtmf_check, ag->peer);
 		break;
 
 	case BEVENT_CALL_RTPESTAB:
