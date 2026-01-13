@@ -166,6 +166,7 @@ static void peerconnection_gather_handler(void *arg)
 static void peerconnection_estab_handler(struct media_track *media, void *arg)
 {
 	struct agent *ag = arg;
+	struct audio *au;
 	int err = 0;
 
 	switch (mediatrack_kind(media)) {
@@ -173,6 +174,20 @@ static void peerconnection_estab_handler(struct media_track *media, void *arg)
 	case MEDIA_KIND_AUDIO:
 		ag->got_estab_audio = true;
 		ag->media = media;
+
+		au = media_get_audio(media);
+
+		err = audio_set_devicename(au, "440", "default");
+		TEST_ERR(err);
+
+		err = audio_set_source(au, "ausine", "440");
+		TEST_ERR(err);
+
+		err = audio_set_player(au, "mock-auplay", "default");
+		TEST_ERR(err);
+
+		err = audio_set_bitrate(au, 64000);
+		TEST_ERR(err);
 
 		err = mediatrack_start_audio(media, baresip_ausrcl(),
 					     baresip_aufiltl());
