@@ -510,10 +510,15 @@ static void delayed_command(void *arg)
 }
 
 
-void fixture_delayed_command(struct fixture *f,
+int fixture_delayed_command(struct fixture *f,
 			     uint32_t delay_ms, const char *cmd)
 {
+	int err;
 	f->command = mem_deref(f->command);
-	str_dup(&f->command, cmd);
+	err = str_dup(&f->command, cmd);
+	if (err)
+		return err;
+
 	tmr_start(&f->a.tmr, delay_ms, delayed_command, f);
+	return 0;
 }
