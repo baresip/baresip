@@ -467,6 +467,7 @@ int fixture_auframe_handle(struct fixture *fix, struct auframe *af,
 	if (!audio_rxaubuf_started(call_audio(ua_call(ua)))) {
 		debug("test: [%s] no audio received from decoder yet\n",
 		      account_aor(ua_account(ua)));
+		err = ENOENT;
 		goto out;
 	}
 
@@ -476,7 +477,7 @@ int fixture_auframe_handle(struct fixture *fix, struct auframe *af,
 	bevent_ua_emit(BEVENT_CUSTOM, ua, "auframe %u", ag->n_auframe);
 
  out:
-	if (err)
+	if (err && err != ENOENT)
 		fixture_abort(fix, err);
 	else if (pag)
 		*pag = ag;
