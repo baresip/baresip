@@ -450,8 +450,9 @@ static void mixdetect_handler(struct auframe *af, const char *dev, void *arg)
 		last_v = v;
 	}
 
+	double aulvl = auframe_level(af);
 #if 0
-	debug(" crosses=%u aulevel=%lf\n", crosses, ag->aulvl);
+	debug(" crosses=%u aulevel=%lf\n", crosses, aulvl);
 #endif
 	if (!crosses && audio_rxaubuf_started(call_audio(ua_call(ua)))) {
 		debug("test: mixdetect_handler: "
@@ -460,8 +461,7 @@ static void mixdetect_handler(struct auframe *af, const char *dev, void *arg)
 	}
 
 	bevent_ua_emit(BEVENT_CUSTOM, ua, crosses > 11 ? "mixed" :
-		       ag->aulvl > -3.0 ? "original" : "low",
-		       ag->n_auframe);
+		       aulvl > -3.0 ? "original" : "low", ag->n_auframe);
 }
 
 
@@ -492,7 +492,6 @@ static int test_call_mixausrc_priv(bool dec)
 	TEST_ERR(err);
 
 	conf_config()->avt.rtp_stats = true;
-	conf_config()->audio.level = true;
 	conf_config()->avt.audio.jbuf_del.min = 10;
 
 	cancel_rule_new(BEVENT_CUSTOM, f->b.ua, 1, 0, -1);
@@ -550,7 +549,6 @@ static int test_call_mixausrc_priv(bool dec)
 	TEST_ERR(fix.err);
 
  out:
-	conf_config()->audio.level = false;
 	conf_config()->avt.audio.jbuf_del.min = 100;
 	fixture_close(f);
 	mem_deref(ausrc);
