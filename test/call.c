@@ -414,39 +414,6 @@ static bool linenum_are_sequential(const struct ua *ua)
 }
 
 
-static void ausrc_square_handler(struct auframe *af, const char *dev,
-				 void *arg)
-{
-	struct fixture *fix = arg;
-	int err = 0;
-
-	ASSERT_EQ(MAGIC, fix->magic);
-
-	if (af->sampc == 0 || af->fmt != AUFMT_S16LE)
-		return;
-
-	struct pl plv = PL_INIT;
-	re_regex(dev, str_len(dev), "vol=[0-9]+", &plv);
-
-	struct pl plf = PL_INIT;
-	re_regex(dev, str_len(dev), "freq=[0-9]+", &plf);
-
-	int16_t *sampv = af->sampv;
-	int16_t v = pl_isset(&plv) ? (int16_t) pl_u32(&plv) : 1000;
-	uint32_t freq = pl_isset(&plf) ? pl_u32(&plf) : 1000;
-	size_t di = af->srate * af->ch / (2 * freq);
-	for (size_t i = 0; i < af->sampc; i++) {
-		sampv[i] = v;
-
-		if ((i+1) % di == 0)
-			v = -v;
-	}
- out:
-	if (err)
-		fixture_abort(fix, err);
-}
-
-
 static void mixdetect_handler(struct auframe *af, const char *dev, void *arg)
 {
 	struct fixture *fix = arg;
@@ -465,26 +432,35 @@ static void mixdetect_handler(struct auframe *af, const char *dev, void *arg)
 	int16_t *sampv = af->sampv;
 
 	/* The mixed ausrc is a square wave with double frequency.
-	 * Count edges, but scale down to be robust against the fading */
-	uint32_t edges = 0;
-	int16_t last_v = sampv[0] >> 4;
+	 * Count zero crosses */
+	uint32_t crosses = 0;
+	int16_t last_v = sampv[0];
 	for (size_t i = 0; i < af->sampc; i++) {
-		int16_t v = sampv[i] >> 4;
-		if (v==0 && audio_rxaubuf_started(call_audio(ua_call(ua)))) {
-			warning("test: mixdetect_handler: "
-				"detected a buffer underrun\n");
-			fixture_abort(fix, EINVAL);
-			return;
+		int16_t v = sampv[i];
+#if 0
+		debug("%d ", v);
+#endif
+		if (v * last_v < 0) {
+			++crosses;
+#if 0
+			debug("%zu:%d-->%d ", i, last_v, v);
+#endif
 		}
 
-		if (v != last_v) {
-			++edges;
-			last_v = v;
-		}
+		last_v = v;
 	}
 
-	bevent_ua_emit(BEVENT_CUSTOM, ua, edges > 2 ? "mixed" :
-		       abs(last_v) > (900 >> 4) ? "original" : "low",
+#if 0
+	debug(" crosses=%u aulevel=%lf\n", crosses, ag->aulvl);
+#endif
+	if (!crosses && audio_rxaubuf_started(call_audio(ua_call(ua)))) {
+		debug("test: mixdetect_handler: "
+		      "detected a buffer underrun or EOS\n");
+		return;
+	}
+
+	bevent_ua_emit(BEVENT_CUSTOM, ua, crosses > 11 ? "mixed" :
+		       ag->aulvl > -3.0 ? "original" : "low",
 		       ag->n_auframe);
 }
 
@@ -495,27 +471,36 @@ static int test_call_mixausrc_priv(bool dec)
 	struct cancel_rule *cr;
 	struct ausrc *ausrc = NULL;
 	struct auplay *auplay = NULL;
+	const char *dp = test_datapath();
+	char *prm;
 	int err = 0;
 
-	fixture_init_prm(f, ";ptime=2"
-		       ";audio_source=mock-ausrc,freq=500"
-		       ";audio_player=mock-auplay,a");
+	err = re_sdprintf(&prm, ";ptime=10"
+			  ";audio_source=aufile,%s/wav/square_500Hz_0.8.wav"
+			  ";audio_player=mock-auplay,a", dp);
+	TEST_ERR(err);
+	fixture_init_prm(f, prm);
+	mem_deref(prm);
 	mem_deref(f->b.ua);
-	err = ua_alloc(&f->b.ua, "B <sip:b@127.0.0.1>;regint=0;ptime=2"
-		       ";audio_source=mock-ausrc,"
-		       ";audio_player=mock-auplay,b");
+
+	err = re_sdprintf(&prm, "B <sip:b@127.0.0.1>;regint=0;ptime=10"
+			  ";audio_source=aufile,%s/wav/square_500Hz_0.8.wav"
+			  ";audio_player=mock-auplay,b", dp);
+	TEST_ERR(err);
+	err = ua_alloc(&f->b.ua, prm);
+	mem_deref(prm);
 	TEST_ERR(err);
 
 	conf_config()->avt.rtp_stats = true;
+	conf_config()->audio.level = true;
 
 	cancel_rule_new(BEVENT_CUSTOM, f->b.ua, 1, 0, -1);
 	cr->prm = "auframe";
 	cr->n_auframe = 3;
 
-	err = module_load(".", "mixausrc");
+	err = module_load(".", "aufile");
 	TEST_ERR(err);
-	err = mock_ausrc_register(&ausrc, baresip_ausrcl(),
-				  ausrc_square_handler, f);
+	err = module_load(".", "mixausrc");
 	TEST_ERR(err);
 
 	err = mock_auplay_register(&auplay, baresip_auplayl(),
@@ -539,32 +524,37 @@ static int test_call_mixausrc_priv(bool dec)
 	cancel_rule_new(BEVENT_CUSTOM, f->b.ua, 1, 0, -1);
 	cr->prm = "mixed";
 
-	fixture_delayed_command(f, 0,
-				dec ?
-				"mixausrc_dec_start mock-ausrc "
-				"vol=500,freq=1000 25 100 cname=b@" :
-				"mixausrc_enc_start mock-ausrc "
-				"vol=500,freq=1000 25 100 cname=a@");
-	err = re_main_timeout(500);
+	err = re_sdprintf(&prm,	"mixausrc_%s_start aufile "
+				"%s/wav/square_1kHz_0.4.wav 25 100 cname=%s "
+				"fadetime=10",
+				dec ? "dec" : "enc", dp, dec ? "b@" : "a@");
+	TEST_ERR(err);
+	err = fixture_delayed_command(f, 0, prm);
+	mem_deref(prm);
+	TEST_ERR(err);
+	err = re_main_timeout(1000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
 	cancel_rule_pop();
 	cancel_rule_new(BEVENT_CUSTOM, f->b.ua, 1, 0, 1);
 	cr->prm = "original";
-	fixture_delayed_command(f, 0, dec ?
-				"mixausrc_dec_stop cname=b@" :
-				"mixausrc_enc_stop cname=a@");
+	err = fixture_delayed_command(f, 0, dec ?
+				      "mixausrc_dec_stop cname=b@" :
+				      "mixausrc_enc_stop cname=a@");
+	TEST_ERR(err);
 
-	err = re_main_timeout(500);
+	err = re_main_timeout(1000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
  out:
+	conf_config()->audio.level = false;
 	fixture_close(f);
 	mem_deref(ausrc);
 	mem_deref(auplay);
 	module_unload("mixausrc");
+	module_unload("aufile");
 	if (fix.err && !err)
 		err = fix.err;
 

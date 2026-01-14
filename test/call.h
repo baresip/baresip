@@ -172,5 +172,5 @@ int agent_wait_for_ack(struct agent *ag, unsigned n_incoming,
 #define cancel_rule_pop()						  \
 	mem_deref(list_tail(&f->rules)->data);
 
-void fixture_delayed_command(struct fixture *f,
+int fixture_delayed_command(struct fixture *f,
 			     uint32_t delay_ms, const char *cmd);
