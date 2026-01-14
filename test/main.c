@@ -179,6 +179,10 @@ static int run_tests(void)
 				err);
 			return err;
 		}
+
+		/* Flush mainloop after each test */
+		re_fhs_flush();
+
 		mem_get_stat(&mstat_after);
 		if (mstat_after.bytes_cur != mstat_before.bytes_cur) {
 #if 1
