@@ -457,6 +457,7 @@ static void mixdetect_handler(struct auframe *af, const char *dev, void *arg)
 	if (err)
 		return;
 
+	/* only check for agent B */
 	if (ag == &fix->a)
 		return;
 
@@ -464,24 +465,31 @@ static void mixdetect_handler(struct auframe *af, const char *dev, void *arg)
 	int16_t *sampv = af->sampv;
 
 	/* The mixed ausrc is a square wave with double frequency.
-	 * Count how often the sample value changes. */
-	uint32_t changes = 0;
-	int16_t last_v = sampv[0];
+	 * Count edges, but scale down to be robust against the fading */
+	uint32_t edges = 0;
+	int16_t last_v = sampv[0] >> 4;
 	for (size_t i = 0; i < af->sampc; i++) {
-		int16_t v = sampv[i];
+		int16_t v = sampv[i] >> 4;
+		if (v==0 && audio_rxaubuf_started(call_audio(ua_call(ua)))) {
+			warning("test: mixdetect_handler: "
+				"detected a buffer underrun\n");
+			fixture_abort(fix, EINVAL);
+			return;
+		}
+
 		if (v != last_v) {
-			++changes;
+			++edges;
 			last_v = v;
 		}
 	}
 
-	bevent_ua_emit(BEVENT_CUSTOM, ua, changes > 2 ? "mixed" :
-		       abs(last_v) > 900 ? "original" : "low",
+	bevent_ua_emit(BEVENT_CUSTOM, ua, edges > 2 ? "mixed" :
+		       abs(last_v) > (900 >> 4) ? "original" : "low",
 		       ag->n_auframe);
 }
 
 
-int test_call_mixausrc(void)
+static int test_call_mixausrc_priv(bool dec)
 {
 	struct fixture fix, *f = &fix;
 	struct cancel_rule *cr;
@@ -494,13 +502,13 @@ int test_call_mixausrc(void)
 		       ";audio_player=mock-auplay,a");
 	mem_deref(f->b.ua);
 	err = ua_alloc(&f->b.ua, "B <sip:b@127.0.0.1>;regint=0;ptime=2"
-		       ";audio_source=mock-ausrc,freq=500"
+		       ";audio_source=mock-ausrc,"
 		       ";audio_player=mock-auplay,b");
 	TEST_ERR(err);
 
 	conf_config()->avt.rtp_stats = true;
 
-	cancel_rule_new(BEVENT_CUSTOM, f->b.ua, 1, 0, 1);
+	cancel_rule_new(BEVENT_CUSTOM, f->b.ua, 1, 0, -1);
 	cr->prm = "auframe";
 	cr->n_auframe = 3;
 
@@ -518,7 +526,8 @@ int test_call_mixausrc(void)
 	f->estab_action = ACTION_NOTHING;
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+	err = ua_connect(f->a.ua, 0, NULL,f->buri, VIDMODE_OFF);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -527,22 +536,27 @@ int test_call_mixausrc(void)
 	TEST_ERR(fix.err);
 
 	cancel_rule_pop();
-	cancel_rule_new(BEVENT_CUSTOM, f->b.ua, 1, 0, 1);
+	cancel_rule_new(BEVENT_CUSTOM, f->b.ua, 1, 0, -1);
 	cr->prm = "mixed";
 
 	fixture_delayed_command(f, 0,
+				dec ?
+				"mixausrc_dec_start mock-ausrc "
+				"vol=500,freq=1000 25 100 cname=b@" :
 				"mixausrc_enc_start mock-ausrc "
-				"vol=500,freq=1000 50 100");
-	err = re_main_timeout(5000);
+				"vol=500,freq=1000 25 100 cname=a@");
+	err = re_main_timeout(500);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
 	cancel_rule_pop();
 	cancel_rule_new(BEVENT_CUSTOM, f->b.ua, 1, 0, 1);
 	cr->prm = "original";
-	fixture_delayed_command(f, 0, "mixausrc_enc_stop");
+	fixture_delayed_command(f, 0, dec ?
+				"mixausrc_dec_stop cname=b@" :
+				"mixausrc_enc_stop cname=a@");
 
-	err = re_main_timeout(5000);
+	err = re_main_timeout(500);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
@@ -551,6 +565,22 @@ int test_call_mixausrc(void)
 	mem_deref(ausrc);
 	mem_deref(auplay);
 	module_unload("mixausrc");
+	if (fix.err && !err)
+		err = fix.err;
+
+	return err;
+}
+
+
+int test_call_mixausrc(void)
+{
+	int err;
+	err = test_call_mixausrc_priv(false);
+	TEST_ERR(err);
+	err = test_call_mixausrc_priv(true);
+	TEST_ERR(err);
+
+out:
 	return err;
 }
 
