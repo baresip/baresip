@@ -106,6 +106,7 @@ struct mixstatus {
 
 struct mixausrc_enc {
 	struct aufilt_enc_st af;  /* inheritance */
+	char *cname;
 
 	struct mixstatus st;
 	struct le le_priv;
@@ -114,6 +115,7 @@ struct mixausrc_enc {
 
 struct mixausrc_dec {
 	struct aufilt_dec_st af;  /* inheritance */
+	char *cname;
 
 	struct mixstatus st;
 	struct le le_priv;
@@ -367,6 +369,7 @@ static void destruct(struct mixstatus *st)
 static void enc_destructor(void *arg)
 {
 	struct mixausrc_enc *enc = (struct mixausrc_enc *) arg;
+	mem_deref(enc->cname);
 
 	list_unlink(&enc->le_priv);
 	destruct(&enc->st);
@@ -376,6 +379,7 @@ static void enc_destructor(void *arg)
 static void dec_destructor(void *arg)
 {
 	struct mixausrc_dec *dec = (struct mixausrc_dec *)arg;
+	mem_deref(dec->cname);
 
 	list_unlink(&dec->le_priv);
 	destruct(&dec->st);
@@ -426,6 +430,7 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 	if (!enc)
 		return ENOMEM;
 
+	str_dup(&enc->cname, stream_cname(audio_strm(au)));
 	list_append(&encs, &enc->le_priv, enc);
 	*stp = (struct aufilt_enc_st *) enc;
 
@@ -452,6 +457,7 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 	if (!dec)
 		return ENOMEM;
 
+	str_dup(&dec->cname, stream_cname(audio_strm(au)));
 	list_append(&decs, &dec->le_priv, dec);
 	*stp = (struct aufilt_dec_st *) dec;
 
@@ -701,13 +707,14 @@ static float conv_volume(const struct pl *pl)
 static void print_usage(const char *name)
 {
 	info("mixausrc: Missing parameters. Usage:\n"
-			"%s <module> <param> [minvol] [ausvol]\n"
-			"module  The audio source module.\n"
-			"param   The audio source parameter. If this is an"
-			" audio file,\n"
-			"        then you have to specify the full path.\n"
-			"minvol  The minimum fade out mic volume (0-100).\n"
-			"ausvol  The audio source volume (0-100).\n", name);
+		"%s <module> <param> [minvol] [ausvol] [cname=string]\n"
+		"module  The audio source module\n"
+		"param   The audio source parameter. If this is an"
+		" audio file,\n"
+		"        then you have to specify the full path\n"
+		"minvol  The minimum fade out mic volume (0-100)\n"
+		"ausvol  The audio source volume (0-100)\n", name,
+		"cname   Canonical end-point identifier\n");
 }
 
 
@@ -796,10 +803,66 @@ static const struct cmd cmdv[] = {
 	" stream.", enc_mix_start},
 {"mixausrc_dec_start", 0, CMD_PRM, "Start mixing audio source into decoding"
 	" stream.", dec_mix_start},
-{"mixausrc_enc_stop",  0, 0, "Stop mixing of encoding stream.", enc_mix_stop},
-{"mixausrc_dec_stop",  0, 0, "Stop mixing of decoding stream.", dec_mix_stop},
+{"mixausrc_enc_stop",  0, CMD_PRM, "Stop mixing of encoding stream.",
+	enc_mix_stop},
+{"mixausrc_dec_stop",  0, CMD_PRM, "Stop mixing of decoding stream.",
+	dec_mix_stop},
 
 };
+
+
+static struct mixausrc_enc *enc_find(const struct cmd_arg *carg)
+{
+	struct pl cname = PL_INIT;
+	cparam_decode(carg->prm, "cname", &cname);
+
+	if (!pl_isset(&cname))
+		return decs.head ? decs.head->data : NULL;
+
+	char *cname_str;
+	int err = pl_strdup(&cname_str, &cname);
+	if (err)
+		return NULL;
+
+	struct mixausrc_enc *enc = NULL;
+	for (struct le *le = encs.head; le; le = le->next) {
+		enc = le->data;
+		if (!re_regex(enc->cname, str_len(enc->cname), cname_str))
+			goto out;
+	}
+
+	warning("mixausrc: no encoding stream with cname=%r\n",	&cname);
+out:
+	mem_deref(cname_str);
+	return enc;
+}
+
+
+static struct mixausrc_dec *dec_find(const struct cmd_arg *carg)
+{
+	struct pl cname = PL_INIT;
+	cparam_decode(carg->prm, "cname", &cname);
+
+	if (!pl_isset(&cname))
+		return decs.head ? decs.head->data : NULL;
+
+	char *cname_str;
+	int err = pl_strdup(&cname_str, &cname);
+	if (err)
+		return NULL;
+
+	struct mixausrc_dec *dec = NULL;
+	for (struct le *le = decs.head; le; le = le->next) {
+		dec = le->data;
+		if (!re_regex(dec->cname, str_len(dec->cname), cname_str))
+			goto out;
+	}
+
+	warning("mixausrc: no decoding stream with cname=%r\n",	&cname);
+out:
+	mem_deref(cname_str);
+	return dec;
+}
 
 
 /**
@@ -821,7 +884,9 @@ static int enc_mix_start(struct re_printf *pf, void *arg)
 		return EINVAL;
 	}
 
-	enc = encs.head->data;
+	enc = enc_find(carg);
+	if (!enc)
+		return EINVAL;
 
 	debug("mixausrc: %s\n", __func__);
 	return start_process(&enc->st, cmdv[0].name, carg);
@@ -847,7 +912,9 @@ static int dec_mix_start(struct re_printf *pf, void *arg)
 		return EINVAL;
 	}
 
-	dec = decs.head->data;
+	dec = dec_find(carg);
+	if (!dec)
+		return EINVAL;
 
 	debug("mixausrc: %s\n", __func__);
 	return start_process(&dec->st, cmdv[1].name, carg);
@@ -858,20 +925,22 @@ static int dec_mix_start(struct re_printf *pf, void *arg)
  * Stop mixing of encoding stream.
  *
  * @param pf		Print handler for debug output
- * @param unused	Not used.
+ * @param arg		Command argument. See \ref cmdv !
  *
  * @return	0 if success, otherwise error code.
  */
-static int enc_mix_stop(struct re_printf *pf, void *unused)
+static int enc_mix_stop(struct re_printf *pf, void *arg)
 {
+	const struct cmd_arg *carg = arg;
 	struct mixausrc_enc *enc;
 	(void)pf;
-	(void)unused;
 
 	if (!list_count(&encs))
 		return EINVAL;
 
-	enc = encs.head->data;
+	enc = enc_find(carg);
+	if (!enc)
+		return EINVAL;
 
 	debug("mixausrc: %s\n", __func__);
 	switch_mode_locked(&enc->st, FM_FADEIN);
@@ -883,20 +952,22 @@ static int enc_mix_stop(struct re_printf *pf, void *unused)
  * Stop mixing of decoding stream.
  *
  * @param pf		Print handler for debug output
- * @param unused	Not used.
+ * @param arg		Command argument. See \ref cmdv !
  *
  * @return	0 if success, otherwise error code.
  */
-static int dec_mix_stop(struct re_printf *pf, void *unused)
+static int dec_mix_stop(struct re_printf *pf, void *arg)
 {
+	const struct cmd_arg *carg = arg;
 	struct mixausrc_dec *dec;
 	(void)pf;
-	(void)unused;
 
 	if (!list_count(&decs))
 		return EINVAL;
 
-	dec = decs.head->data;
+	dec = dec_find(carg);
+	if (!dec)
+		return EINVAL;
 
 	debug("mixausrc: %s\n", __func__);
 	switch_mode_locked(&dec->st, FM_FADEIN);
