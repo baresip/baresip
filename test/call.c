@@ -493,6 +493,7 @@ static int test_call_mixausrc_priv(bool dec)
 
 	conf_config()->avt.rtp_stats = true;
 	conf_config()->audio.level = true;
+	conf_config()->avt.audio.jbuf_del.min = 10;
 
 	cancel_rule_new(BEVENT_CUSTOM, f->b.ua, 1, 0, -1);
 	cr->prm = "auframe";
@@ -550,6 +551,7 @@ static int test_call_mixausrc_priv(bool dec)
 
  out:
 	conf_config()->audio.level = false;
+	conf_config()->avt.audio.jbuf_del.min = 100;
 	fixture_close(f);
 	mem_deref(ausrc);
 	mem_deref(auplay);
