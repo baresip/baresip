@@ -23,6 +23,7 @@ jobs:
       CXXFLAGS: "-fsanitize=${{ matrix.sanitizer }} -fno-sanitize-recover=all -fno-sanitize=function"
       CFLAGS: "-fsanitize=${{ matrix.sanitizer }} -fno-sanitize-recover=all -fno-sanitize=function"
       ASAN_OPTIONS: fast_unwind_on_malloc=0
+      TSAN_OPTIONS: second_deadlock_stack=1
 
     steps:
     - uses: actions/checkout@v5
