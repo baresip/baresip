@@ -18,6 +18,8 @@ struct test {
 	test_exec_h *exec;
 	const char *name;
 };
+static struct memstat mstat_before;
+static struct memstat mstat_after;
 
 #define TEST(a) {a, #a}
 
@@ -169,12 +171,23 @@ static int run_tests(void)
 		re_printf("[ RUN      ] %s (rx %s)\n",
 			  tests[i].name, rtp_receive_mode_str(rxmode));
 
+		mem_get_stat(&mstat_before);
 		err = tests[i].exec();
 		if (err) {
 			warning("%s (rx %s): test failed (%m)\n",
 				tests[i].name, rtp_receive_mode_str(rxmode),
 				err);
 			return err;
+		}
+		mem_get_stat(&mstat_after);
+		if (mstat_after.bytes_cur != mstat_before.bytes_cur) {
+#if 1
+			warning("--- memory not cleaned up: before %zu bytes "
+				"after %zu bytes ---\n",
+				mstat_before.bytes_cur, mstat_after.bytes_cur);
+#else
+			return EFAULT;
+#endif
 		}
 
 		re_printf("[       OK ]\n");
@@ -273,7 +286,6 @@ static const char *modconfig =
 
 int main(int argc, char *argv[])
 {
-	struct memstat mstat;
 	struct config *config;
 	size_t ntests;
 	struct sa sa;
@@ -372,11 +384,19 @@ int main(int argc, char *argv[])
 			const char *name = argv[optind + i];
 			const struct test *test;
 
+
 			test = find_test(name);
 			if (test) {
+				mem_get_stat(&mstat_before);
 				err = run_one_test_rxmode(test, &rxmode);
 				if (err)
 					goto out;
+				mem_get_stat(&mstat_after);
+				if (mstat_after.bytes_cur !=
+				    mstat_before.bytes_cur) {
+					err = EFAULT;
+					goto out;
+				}
 			}
 			else {
 				re_fprintf(stderr,
@@ -405,7 +425,14 @@ int main(int argc, char *argv[])
 	re_printf("\x1b[32mOK. %zu tests passed successfully\x1b[;m\n",
 		  ntests);
 
- out:
+out:
+	if (err == EFAULT) {
+		warning("memory not cleaned up: before %zu bytes "
+			"after %zu bytes\n",
+			mstat_before.bytes_cur, mstat_after.bytes_cur);
+
+		mem_debug();
+	}
 	if (err) {
 		warning("test failed (%m)\n", err);
 		re_printf("%H\n", re_debug, NULL);
@@ -423,11 +450,6 @@ int main(int argc, char *argv[])
 	libre_close();
 
 	mem_debug();
-
-	if (0 == mem_get_stat(&mstat)) {
-		if (mstat.bytes_cur || mstat.blocks_cur)
-			return 2;
-	}
 
 	return err;
 }
