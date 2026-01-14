@@ -234,6 +234,28 @@ static void ausrc_prm_aufilt(struct ausrc_prm *ausprm,
 }
 
 
+static void switch_mode(struct mixstatus *st, enum mixmode mode)
+{
+	if (!st || st->mode == mode)
+		return;
+
+	debug("mixausrc: mode %s --> %s\n", str_mixmode(st->mode),
+	      str_mixmode(mode));
+	st->mode = mode;
+}
+
+
+static void ausrc_error_handler(int err, const char *str, void *arg)
+{
+	struct mixstatus *st = arg;
+	(void)str;
+
+	/* reached EOS of ausrc */
+	debug("mixausrc: reached EOS of ausrc (%m)\n", err);
+	st->nextmode = FM_FADEIN;
+}
+
+
 static void ausrc_read_handler(struct auframe *afsrc, void *arg)
 {
 	struct mixstatus *st = arg;
@@ -279,7 +301,7 @@ static int start_ausrc(struct mixstatus *st)
 	auresamp_init(&st->resamp);
 	err = ausrc_alloc(&st->ausrc, baresip_ausrcl(), st->module,
 			  &st->ausrc_prm, st->param, ausrc_read_handler,
-			  NULL, st);
+			  ausrc_error_handler, st);
 
 	if (!st->ausrc) {
 		warning("mixausrc: Could not start audio source %s with "
@@ -571,15 +593,10 @@ static int process(struct mixstatus *st, struct auframe *af)
 	else if (st->nextmode != FM_NONE) {
 		/* a command was invoked */
 		/* process nextmode */
-		if (st->mode != st->nextmode) {
-			debug("mixausrc: mode %s --> %s\n",
-					str_mixmode(st->mode),
-					str_mixmode(st->nextmode));
-			if (st->mode == FM_MIX)
-				stop_ausrc(st);
-		}
+		if (st->mode != st->nextmode && st->mode == FM_MIX)
+			stop_ausrc(st);
 
-		st->mode = st->nextmode;
+		switch_mode(st, st->nextmode);
 		st->nextmode = FM_NONE;
 	}
 
@@ -588,7 +605,7 @@ static int process(struct mixstatus *st, struct auframe *af)
 		err = fadeframe(st, af, st->mode);
 		if (st->i_fade >= st->n_fade) {
 			st->i_fade = 0;
-			st->mode = FM_IDLE;
+			switch_mode(st, FM_IDLE);
 		}
 	}
 	break;
@@ -596,7 +613,7 @@ static int process(struct mixstatus *st, struct auframe *af)
 		err = fadeframe(st, af, st->mode);
 		if (st->i_fade >= st->n_fade) {
 			st->i_fade = 0;
-			st->mode = FM_MIX;
+			switch_mode(st, FM_MIX);
 		}
 	}
 	break;
@@ -630,11 +647,6 @@ static int process(struct mixstatus *st, struct auframe *af)
 			aubuf_read_auframe(st->aubuf, &afmix);
 			/* now mix */
 			err = mixframe(st, af);
-			if (aubuf_cur_size(st->aubuf) == 0) {
-				/* reached EOS of ausrc */
-				stop_ausrc(st);
-				st->mode = FM_FADEIN;
-			}
 		}
 	}
 	break;
