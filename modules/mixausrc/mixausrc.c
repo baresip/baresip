@@ -89,6 +89,7 @@ struct mixstatus {
 	uint16_t n_fade;                /**< Fade-in/-out steps              */
 	float delta_fade;               /**< linear delta accumulation       */
 	int16_t *mixbuf;		/**< Mixer buffer                    */
+	uint32_t fadetime;	        /**< Fade time in milliseconds       */
 
 	enum mixmode mode;              /**< Current mix mode                */
 	enum mixmode nextmode;          /**< Next mix mode                   */
@@ -416,6 +417,7 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 			 const struct audio *au)
 {
 	struct mixausrc_enc *enc;
+	int err;
 	(void)au;
 	(void)af;
 	(void)ctx;
@@ -430,7 +432,11 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 	if (!enc)
 		return ENOMEM;
 
-	str_dup(&enc->cname, stream_cname(audio_strm(au)));
+	enc->st.fadetime = DEFAULT_FADE_TIME;
+	err = str_dup(&enc->cname, stream_cname(audio_strm(au)));
+	if (err)
+		return err;
+
 	list_append(&encs, &enc->le_priv, enc);
 	*stp = (struct aufilt_enc_st *) enc;
 
@@ -443,6 +449,7 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 			 const struct audio *au)
 {
 	struct mixausrc_dec *dec;
+	int err;
 	(void)au;
 	(void)af;
 	(void)ctx;
@@ -457,7 +464,11 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 	if (!dec)
 		return ENOMEM;
 
-	str_dup(&dec->cname, stream_cname(audio_strm(au)));
+	dec->st.fadetime = DEFAULT_FADE_TIME;
+	err = str_dup(&dec->cname, stream_cname(audio_strm(au)));
+	if (err)
+		return err;
+
 	list_append(&decs, &dec->le_priv, dec);
 	*stp = (struct aufilt_dec_st *) dec;
 
@@ -707,25 +718,28 @@ static float conv_volume(const struct pl *pl)
 static void print_usage(const char *name)
 {
 	info("mixausrc: Missing parameters. Usage:\n"
-		"%s <module> <param> [minvol] [ausvol] [cname=string]\n"
-		"module  The audio source module\n"
-		"param   The audio source parameter. If this is an"
-		" audio file,\n"
-		"        then you have to specify the full path\n"
-		"minvol  The minimum fade out mic volume (0-100)\n"
-		"ausvol  The audio source volume (0-100)\n", name,
-		"cname   Canonical end-point identifier\n");
+		"%s <module> <param> [minvol] [ausvol] [cname=string] "
+				     "[fadetime=ms]\n"
+		"module   The audio source module\n"
+		"param    The audio source parameter. If this is an audio "
+			  "file,\n"
+		"         then you have to specify the full path\n"
+		"minvol   The minimum fade out mic volume (0-100)\n"
+		"ausvol   The audio source volume (0-100)\n"
+		"cname    Canonical end-point identifier\n"
+		"fadetime Sets the fade-out/-in time in [ms]", name);
 }
 
 
 static int start_process(struct mixstatus* st, const char *name,
-		const struct cmd_arg *carg)
+			 const struct cmd_arg *carg)
 {
 	int err = 0;
 	struct pl pl1 = PL_INIT;
 	struct pl pl2 = PL_INIT;
 	struct pl pl3 = PL_INIT;
 	struct pl pl4 = PL_INIT;
+	struct pl pl5 = PL_INIT;
 
 	if (!carg || !str_isset(carg->prm)) {
 		print_usage(name);
@@ -765,7 +779,14 @@ static int start_process(struct mixstatus* st, const char *name,
 	st->minvol = pl_isset(&pl3) ? conv_volume(&pl3) : 0.0f;
 	st->ausvol = pl_isset(&pl4) ? conv_volume(&pl4) : 1.0f;
 	st->i_fade = 0;
-	st->n_fade = (DEFAULT_FADE_TIME * st->prm.srate) / 1000;
+	cparam_decode(carg->prm, "fadetime", &pl5);
+	if (pl_isset(&pl5)) {
+		uint32_t v = pl_u32(&pl5);
+		if (v > 0)
+			st->fadetime = v;
+	}
+
+	st->n_fade = (st->fadetime * st->prm.srate) / 1000;
 	st->delta_fade = (1.0f - st->minvol) / st->n_fade;
 
 	stop_ausrc(st);
