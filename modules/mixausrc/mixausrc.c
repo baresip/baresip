@@ -256,9 +256,7 @@ static void ausrc_error_handler(int err, const char *str, void *arg)
 
 	/* reached EOS of ausrc */
 	debug("mixausrc: reached EOS of ausrc (%m)\n", err);
-	mtx_lock(st->mtx);
 	st->nextmode = FM_FADEIN;
-	mtx_unlock(st->mtx);
 }
 
 
@@ -596,34 +594,26 @@ static void aufilt_prm_update(struct mixstatus *st, struct auframe *af)
 
 static int process(struct mixstatus *st, struct auframe *af)
 {
-	enum mixmode nextmode;
 	int err = 0;
 
 	aufilt_prm_update(st, af);
-	mtx_lock(st->mtx);
-	nextmode = st->nextmode;
-	mtx_unlock(st->mtx);
 
 	/* process nextmode */
-	if (st->mode == FM_MIX && nextmode == FM_FADEOUT)
-		nextmode = FM_NONE;
+	if (st->mode == FM_MIX && st->nextmode == FM_FADEOUT)
+		st->nextmode = FM_NONE;
 
-	else if (st->mode == FM_IDLE && nextmode == FM_FADEIN)
-		nextmode = FM_NONE;
+	else if (st->mode == FM_IDLE && st->nextmode == FM_FADEIN)
+		st->nextmode = FM_NONE;
 
-	else if (nextmode != FM_NONE) {
+	else if (st->nextmode != FM_NONE) {
 		/* a command was invoked */
 		/* process nextmode */
-		if (st->mode != nextmode && st->mode == FM_MIX)
+		if (st->mode != st->nextmode && st->mode == FM_MIX)
 			stop_ausrc(st);
 
-		switch_mode(st, nextmode);
-		nextmode = FM_NONE;
+		switch_mode(st, st->nextmode);
+		st->nextmode = FM_NONE;
 	}
-
-	mtx_lock(st->mtx);
-	st->nextmode = nextmode;
-	mtx_unlock(st->mtx);
 
 	switch (st->mode) {
 	case FM_FADEIN: {
@@ -784,10 +774,8 @@ static int start_process(struct mixstatus* st, const char *name,
 
 	stop_ausrc(st);
 	ausrc_prm_aufilt(&st->ausrc_prm, &st->prm);
-
-	mtx_lock(st->mtx);
 	st->nextmode = FM_FADEOUT;
-	mtx_unlock(st->mtx);
+
 	return 0;
 }
 
@@ -937,9 +925,8 @@ static int dec_mix_start(struct re_printf *pf, void *arg)
 
 static int stop_process(struct mixstatus *st)
 {
-	mtx_lock(st->mtx);
+
 	st->nextmode = FM_FADEIN;
-	mtx_unlock(st->mtx);
 	return 0;
 }
 
