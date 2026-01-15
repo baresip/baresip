@@ -586,13 +586,13 @@ static int process(struct mixstatus *st, struct auframe *af)
 
 	/* process nextmode */
 	if (re_atomic_rlx(&st->mode) == FM_MIX &&
-	    re_atomic_rlx(&st->nextmode) == FM_FADEOUT)
+	    re_atomic_rlx(&st->nextmode) == FM_FADEOUT) {
 		re_atomic_rlx_set(&st->nextmode, FM_NONE);
-
+	}
 	else if (re_atomic_rlx(&st->mode) == FM_IDLE &&
-		 re_atomic_rlx(&st->nextmode) == FM_FADEIN)
+		 re_atomic_rlx(&st->nextmode) == FM_FADEIN) {
 		re_atomic_rlx_set(&st->nextmode, FM_NONE);
-
+	}
 	else if (re_atomic_rlx(&st->nextmode) != FM_NONE) {
 		/* a command was invoked */
 		/* process nextmode */
@@ -716,9 +716,10 @@ static int start_process(struct mixstatus* st, const char *name,
 	}
 
 	enum mixmode mode = re_atomic_rlx(&st->mode);
-	if (mode != FM_IDLE) {
-		warning("mixausrc: %s is not possible while mode is %s\n",
-				name, str_mixmode(mode));
+	enum mixmode nextmode = re_atomic_rlx(&st->nextmode);
+	if (mode != FM_IDLE || nextmode != FM_NONE) {
+		warning("mixausrc: %s is not possible while mode is %s/%s\n",
+			name, str_mixmode(mode), str_mixmode(nextmode));
 		return EINVAL;
 	}
 
