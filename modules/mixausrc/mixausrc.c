@@ -81,7 +81,7 @@ struct mixstatus {
 
 	char *module;                   /**< Audio source module name        */
 	char *param;                    /**< Parameter for audio source      */
-	enum mixmode mode;              /**< Current mix mode                */
+	RE_ATOMIC enum mixmode mode;    /**< Current mix mode                */
 	RE_ATOMIC enum mixmode nextmode;  /**< Next mix mode                 */
 	float minvol;                   /**< Minimum audio stream volume     */
 	float ausvol;                   /**< Volume for mixed audio source   */
@@ -236,12 +236,12 @@ static void ausrc_prm_aufilt(struct ausrc_prm *ausprm,
 
 static void switch_mode(struct mixstatus *st, enum mixmode mode)
 {
-	if (!st || st->mode == mode)
+	if (!st || re_atomic_rlx(&st->mode) == mode)
 		return;
 
-	debug("mixausrc: mode %s --> %s\n", str_mixmode(st->mode),
-	      str_mixmode(mode));
-	st->mode = mode;
+	debug("mixausrc: mode %s --> %s\n",
+	      str_mixmode(re_atomic_rlx(&st->mode)), str_mixmode(mode));
+	re_atomic_rlx_set(&st->mode, mode);
 }
 
 
@@ -380,7 +380,7 @@ static int mixstatus_init(struct mixstatus *st, struct aufilt_prm *prm)
 
 	stop_ausrc(st);
 
-	st->mode = FM_IDLE;
+	re_atomic_rlx_set(&st->mode, FM_IDLE);
 	st->minvol = 1.0f;
 	st->ausvol = 1.0f;
 	st->i_fade = 0;
@@ -585,23 +585,25 @@ static int process(struct mixstatus *st, struct auframe *af)
 		st->mode = FM_MIX;
 
 	/* process nextmode */
-	if (st->mode == FM_MIX && re_atomic_rlx(&st->nextmode) == FM_FADEOUT)
+	if (re_atomic_rlx(&st->mode) == FM_MIX &&
+	    re_atomic_rlx(&st->nextmode) == FM_FADEOUT)
 		re_atomic_rlx_set(&st->nextmode, FM_NONE);
 
-	else if (st->mode == FM_IDLE &&
+	else if (re_atomic_rlx(&st->mode) == FM_IDLE &&
 		 re_atomic_rlx(&st->nextmode) == FM_FADEIN)
 		re_atomic_rlx_set(&st->nextmode, FM_NONE);
 
-	else if (st->nextmode != FM_NONE) {
+	else if (re_atomic_rlx(&st->nextmode) != FM_NONE) {
 		/* a command was invoked */
 		/* process nextmode */
 		switch_mode(st, re_atomic_rlx(&st->nextmode));
 		re_atomic_rlx_set(&st->nextmode, FM_NONE);
 	}
 
-	switch (st->mode) {
+	enum mixmode mode = re_atomic_rlx(&st->mode);
+	switch (mode) {
 	case FM_FADEIN: {
-		err = fadeframe(st, af, st->mode);
+		err = fadeframe(st, af, mode);
 		if (st->i_fade >= st->n_fade) {
 			st->i_fade = 0;
 			switch_mode(st, FM_IDLE);
@@ -609,7 +611,7 @@ static int process(struct mixstatus *st, struct auframe *af)
 	}
 	break;
 	case FM_FADEOUT: {
-		err = fadeframe(st, af, st->mode);
+		err = fadeframe(st, af, mode);
 		if (st->i_fade >= st->n_fade) {
 			st->i_fade = 0;
 			switch_mode(st, FM_MIX);
@@ -713,9 +715,10 @@ static int start_process(struct mixstatus* st, const char *name,
 		return EINVAL;
 	}
 
-	if (st->mode != FM_IDLE && st->mode != FM_FADEIN) {
+	enum mixmode mode = re_atomic_rlx(&st->mode);
+	if (mode != FM_IDLE) {
 		warning("mixausrc: %s is not possible while mode is %s\n",
-				name, str_mixmode(st->mode));
+				name, str_mixmode(mode));
 		return EINVAL;
 	}
 
