@@ -83,7 +83,7 @@ struct autx {
 	struct auenc_state *enc;      /**< Audio encoder state (optional)  */
 	struct aubuf *aubuf;          /**< Packetize outgoing stream       */
 	size_t aubuf_maxsz;           /**< Maximum aubuf size in [bytes]   */
-	volatile bool aubuf_started;  /**< Aubuf was started flag          */
+	RE_ATOMIC bool aubuf_started; /**< Aubuf was started flag          */
 	struct list filtl;            /**< Audio filters in encoding order */
 	struct mbuf *mb;              /**< Buffer for outgoing RTP packets */
 	char *module;                 /**< Audio source module name        */
@@ -529,11 +529,11 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 {
 	struct audio *a = arg;
 	struct autx *tx = &a->tx;
-	enum aufmt fmt;
-	unsigned i;
 
 	mtx_lock(tx->mtx);
-	fmt = tx->src_fmt;
+	enum aufmt fmt = tx->src_fmt;
+	bool muted = tx->muted;
+	size_t psize = tx->psize;
 	mtx_unlock(tx->mtx);
 
 	if (fmt != af->fmt) {
@@ -544,7 +544,7 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 		return;
 	}
 
-	if (tx->muted)
+	if (muted)
 		auframe_mute(af);
 
 	if (aubuf_cur_size(tx->aubuf) >= tx->aubuf_maxsz) {
@@ -557,18 +557,16 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 
 	(void)aubuf_write_auframe(tx->aubuf, af);
 
-	mtx_lock(tx->mtx);
-	if (!tx->aubuf_started &&
-	    (aubuf_cur_size(tx->aubuf) >= tx->psize))
-		tx->aubuf_started = true;
-
-	mtx_unlock(tx->mtx);
+	if (!re_atomic_rlx(&tx->aubuf_started) &&
+	    (aubuf_cur_size(tx->aubuf) >= psize)) {
+		re_atomic_rlx_set(&tx->aubuf_started, true);
+	}
 
 	if (a->cfg.txmode != AUDIO_MODE_POLL)
 		return;
 
-	for (i=0; i<16; i++) {
-		if (aubuf_cur_size(tx->aubuf) < tx->psize)
+	for (unsigned i=0; i<16; i++) {
+		if (aubuf_cur_size(tx->aubuf) < psize)
 			break;
 
 		poll_aubuf_tx(a);
@@ -883,7 +881,7 @@ static int tx_thread(void *arg)
 		sys_msleep(4);
 		mtx_lock(tx->mtx);
 
-		if (!tx->aubuf_started) {
+		if (!re_atomic_rlx(&tx->aubuf_started)) {
 			mtx_unlock(tx->mtx);
 			goto loop;
 		}
