@@ -838,7 +838,7 @@ static struct mixausrc_enc *enc_find(const struct cmd_arg *carg)
 	cparam_decode(carg->prm, "cname", &cname);
 
 	if (!pl_isset(&cname))
-		return decs.head ? decs.head->data : NULL;
+		return encs.head ? encs.head->data : NULL;
 
 	char *cname_str;
 	int err = pl_strdup(&cname_str, &cname);
