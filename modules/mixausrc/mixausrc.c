@@ -253,6 +253,7 @@ static void ausrc_error_handler(int err, const char *str, void *arg)
 	/* reached EOS of ausrc */
 	debug("mixausrc: reached EOS of ausrc (%m)\n", err);
 	re_atomic_rlx_set(&st->nextmode, FM_FADEIN);
+	stop_ausrc(st);
 }
 
 
@@ -564,8 +565,8 @@ static void aufilt_prm_update(struct mixstatus *st, struct auframe *af)
 	    st->prm.fmt   == (int) af->fmt)
 		return;
 
-	info("mixausrc: auframe parameters do not match filter parameters\n");
-	stop_ausrc(st);
+	warning("mixausrc: auframe parameters do not match filter "
+		"parameters\n");
 	mtx_lock(st->mtx);
 	st->prm.srate = af->srate;
 	st->prm.ch    = af->ch;
@@ -594,10 +595,6 @@ static int process(struct mixstatus *st, struct auframe *af)
 	else if (st->nextmode != FM_NONE) {
 		/* a command was invoked */
 		/* process nextmode */
-		if (st->mode != re_atomic_rlx(&st->nextmode)
-		    && st->mode == FM_MIX)
-			stop_ausrc(st);
-
 		switch_mode(st, re_atomic_rlx(&st->nextmode));
 		re_atomic_rlx_set(&st->nextmode, FM_NONE);
 	}
