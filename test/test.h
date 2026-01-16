@@ -154,6 +154,7 @@ int dns_server_add_srv(struct dns_server *srv, const char *name,
  */
 
 struct auplay;
+struct ausrc;
 
 typedef void (mock_sample_h)(struct auframe *af, const char *dev, void *arg);
 
@@ -208,6 +209,7 @@ int test_call_format_float(void);
 int test_call_max(void);
 int test_call_mediaenc(void);
 int test_call_medianat(void);
+int test_call_mixausrc(void);
 int test_call_multiple(void);
 int test_call_progress(void);
 int test_call_reject(void);
