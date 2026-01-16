@@ -2650,6 +2650,10 @@ int test_call_sni(void)
 	err |= dns_server_add_a(dns_srv, "retest.server.org", IP_127_0_0_1);
 	err |= dns_server_add_a(dns_srv, "retest.unknown.org", IP_127_0_0_1);
 	err |= dnsc_alloc(&dnsc, NULL, &dns_srv->addr, 1);
+	TEST_ERR(err);
+
+	dnsc_cache_max(dnsc, 0);
+
 	err |= net_set_dnsc(baresip_network(), dnsc);
 	TEST_ERR(err);
 
