@@ -83,7 +83,7 @@ struct autx {
 	struct auenc_state *enc;      /**< Audio encoder state (optional)  */
 	struct aubuf *aubuf;          /**< Packetize outgoing stream       */
 	size_t aubuf_maxsz;           /**< Maximum aubuf size in [bytes]   */
-	volatile bool aubuf_started;  /**< Aubuf was started flag          */
+	RE_ATOMIC bool aubuf_started; /**< Aubuf was started flag          */
 	struct list filtl;            /**< Audio filters in encoding order */
 	struct mbuf *mb;              /**< Buffer for outgoing RTP packets */
 	char *module;                 /**< Audio source module name        */
@@ -416,9 +416,12 @@ static void poll_aubuf_tx(struct audio *a)
 	uint8_t ch;
 	int err = 0;
 
+	mtx_lock(tx->mtx);
 	sz = aufmt_sample_size(tx->src_fmt);
-	if (!sz)
+	if (!sz) {
+		mtx_unlock(tx->mtx);
 		return;
+	}
 
 	sampc = tx->psize / sz;
 	srate = tx->ausrc_prm.srate;
@@ -428,7 +431,6 @@ static void poll_aubuf_tx(struct audio *a)
 	auframe_init(&af, tx->src_fmt, tx->sampv, sampc, srate, ch);
 	aubuf_read_auframe(tx->aubuf, &af);
 
-	mtx_lock(tx->mtx);
 	/* Process exactly one audio-frame in list order */
 	for (le = tx->filtl.head; le; le = le->next) {
 		struct aufilt_enc_st *st = le->data;
@@ -529,11 +531,11 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 {
 	struct audio *a = arg;
 	struct autx *tx = &a->tx;
-	enum aufmt fmt;
-	unsigned i;
 
 	mtx_lock(tx->mtx);
-	fmt = tx->src_fmt;
+	enum aufmt fmt = tx->src_fmt;
+	bool muted = tx->muted;
+	size_t psize = tx->psize;
 	mtx_unlock(tx->mtx);
 
 	if (fmt != af->fmt) {
@@ -544,7 +546,7 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 		return;
 	}
 
-	if (tx->muted)
+	if (muted)
 		auframe_mute(af);
 
 	if (aubuf_cur_size(tx->aubuf) >= tx->aubuf_maxsz) {
@@ -557,18 +559,16 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 
 	(void)aubuf_write_auframe(tx->aubuf, af);
 
-	mtx_lock(tx->mtx);
-	if (!tx->aubuf_started &&
-	    (aubuf_cur_size(tx->aubuf) >= tx->psize))
-		tx->aubuf_started = true;
-
-	mtx_unlock(tx->mtx);
+	if (!re_atomic_rlx(&tx->aubuf_started) &&
+	    (aubuf_cur_size(tx->aubuf) >= psize)) {
+		re_atomic_rlx_set(&tx->aubuf_started, true);
+	}
 
 	if (a->cfg.txmode != AUDIO_MODE_POLL)
 		return;
 
-	for (i=0; i<16; i++) {
-		if (aubuf_cur_size(tx->aubuf) < tx->psize)
+	for (unsigned i=0; i<16; i++) {
+		if (aubuf_cur_size(tx->aubuf) < psize)
 			break;
 
 		poll_aubuf_tx(a);
@@ -883,7 +883,7 @@ static int tx_thread(void *arg)
 		sys_msleep(4);
 		mtx_lock(tx->mtx);
 
-		if (!tx->aubuf_started) {
+		if (!re_atomic_rlx(&tx->aubuf_started)) {
 			mtx_unlock(tx->mtx);
 			goto loop;
 		}
