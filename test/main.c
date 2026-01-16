@@ -182,6 +182,7 @@ static int run_tests(void)
 
 		/* Flush mainloop after each test */
 		re_fhs_flush();
+		dnsc_cache_flush(net_dnsc(baresip_network()));
 
 		mem_get_stat(&mstat_after);
 		if (mstat_after.bytes_cur != mstat_before.bytes_cur) {
