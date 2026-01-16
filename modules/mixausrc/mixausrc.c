@@ -581,9 +581,6 @@ static int process(struct mixstatus *st, struct auframe *af)
 
 	aufilt_prm_update(st, af);
 
-	if (st->mode == FM_FADEOUT && st->i_fade == st->n_fade)
-		st->mode = FM_MIX;
-
 	/* process nextmode */
 	if (re_atomic_rlx(&st->mode) == FM_MIX &&
 	    re_atomic_rlx(&st->nextmode) == FM_FADEOUT) {
