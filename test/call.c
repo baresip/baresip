@@ -472,7 +472,7 @@ static int test_call_mixausrc_priv(bool dec)
 	struct ausrc *ausrc = NULL;
 	struct auplay *auplay = NULL;
 	const char *dp = test_datapath();
-	char *prm;
+	char *prm = NULL;
 	int err = 0;
 
 	err = re_sdprintf(&prm, ";ptime=10"
@@ -480,7 +480,7 @@ static int test_call_mixausrc_priv(bool dec)
 			  ";audio_player=mock-auplay,a", dp);
 	TEST_ERR(err);
 	fixture_init_prm(f, prm);
-	mem_deref(prm);
+	prm = mem_deref(prm);
 	mem_deref(f->b.ua);
 
 	err = re_sdprintf(&prm, "B <sip:b@127.0.0.1>;regint=0;ptime=10"
@@ -488,7 +488,7 @@ static int test_call_mixausrc_priv(bool dec)
 			  ";audio_player=mock-auplay,b", dp);
 	TEST_ERR(err);
 	err = ua_alloc(&f->b.ua, prm);
-	mem_deref(prm);
+	prm = mem_deref(prm);
 	TEST_ERR(err);
 
 	conf_config()->avt.rtp_stats = true;
@@ -511,7 +511,6 @@ static int test_call_mixausrc_priv(bool dec)
 	f->estab_action = ACTION_NOTHING;
 
 	/* Make a call from A to B */
-	TEST_ERR(err);
 	err = ua_connect(f->a.ua, 0, NULL,f->buri, VIDMODE_OFF);
 	TEST_ERR(err);
 
@@ -530,7 +529,7 @@ static int test_call_mixausrc_priv(bool dec)
 				dec ? "dec" : "enc", dp, dec ? "b@" : "a@");
 	TEST_ERR(err);
 	err = fixture_delayed_command(f, 0, prm);
-	mem_deref(prm);
+	prm = mem_deref(prm);
 	TEST_ERR(err);
 	err = re_main_timeout(1000);
 	TEST_ERR(err);
@@ -549,6 +548,7 @@ static int test_call_mixausrc_priv(bool dec)
 	TEST_ERR(fix.err);
 
  out:
+	mem_deref(prm);
 	conf_config()->avt.audio.jbuf_del.min = 100;
 	fixture_close(f);
 	mem_deref(ausrc);
