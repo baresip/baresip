@@ -31,11 +31,11 @@ jobs:
       if: ${{ runner.os == 'Linux' }}
       run: |
         sudo sed -i 's/azure\./de\./' /etc/apt/sources.list
-    
+
     - name: install packages
       run: |
         sudo apt-get update && sudo apt-get install -y libssl-dev ninja-build
-    
+
     - name: Install clang-tools
       run: |
         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
@@ -53,12 +53,12 @@ jobs:
         cmake -S re -B re/build -DHAVE_THREADS=
         cmake --build re/build -j
         mv re ../.
-    
+
     - name: ldconfig
       run: sudo ldconfig
 
     - name: make baresip selftest
-      run: cmake -B build -DHAVE_THREADS= -DSTATIC=1 -DMODULES="g711;ausine;fakevideo;auconv;auresamp;dtls_srtp;srtp;aufile;ice" && cmake --build build -j
+      run: cmake -B build -DHAVE_THREADS= -DSTATIC=1 -DMODULES="g711;ausine;fakevideo;auconv;auresamp;dtls_srtp;srtp;aufile;ice;mixausrc" && cmake --build build -j
 
     - name: run selftest
       run: ./build/test/selftest

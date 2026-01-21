@@ -415,6 +415,7 @@ void fixture_close(struct fixture *f)
 	tmr_cancel(&f->a.tmr);
 	tmr_cancel(&f->b.tmr);
 	tmr_cancel(&f->c.tmr);
+	mem_deref(f->command);
 	mem_deref(f->c.ua);
 	mem_deref(f->b.ua);
 	mem_deref(f->a.ua);
@@ -436,4 +437,88 @@ void fixture_abort(struct fixture *f, int err)
 {
 	f->err = err;
 	re_cancel();
+}
+
+
+int fixture_auframe_handle(struct fixture *fix, struct auframe *af,
+			   const char *dev,
+			   struct agent **pag)
+{
+	struct agent *ag = NULL;
+	struct ua *ua;
+	int err = 0;
+	(void)af;
+
+	ASSERT_EQ(MAGIC, fix->magic);
+
+	if (!str_cmp(dev, "a")) {
+		ag = &fix->a;
+	}
+	else if (!str_cmp(dev, "b")) {
+		ag = &fix->b;
+	}
+	else {
+		warning("test: received audio frame - agent unclear\n");
+		return EINVAL;
+	}
+
+	ua = ag->ua;
+	/* Does auframe come from the decoder ? */
+	if (!audio_rxaubuf_started(call_audio(ua_call(ua)))) {
+		debug("test: [%s] no audio received from decoder yet\n",
+		      account_aor(ua_account(ua)));
+		err = ENOENT;
+		goto out;
+	}
+
+	++ag->n_auframe;
+	(void)audio_level_get(call_audio(ua_call(ua)), &ag->aulvl);
+
+	bevent_ua_emit(BEVENT_CUSTOM, ua, "auframe %u", ag->n_auframe);
+
+ out:
+	if (err && err != ENOENT)
+		fixture_abort(fix, err);
+	else if (pag)
+		*pag = ag;
+
+	return err;
+}
+
+
+static int vprintf_null(const char *p, size_t size, void *arg)
+{
+	(void)p;
+	(void)size;
+	(void)arg;
+	return 0;
+}
+
+
+static void delayed_command(void *arg)
+{
+	struct fixture *fix = arg;
+	const char *cmd = fix->command;
+	struct re_printf pf_null = {vprintf_null, 0};
+	int err = 0;
+
+	err = cmd_process_long(baresip_commands(),
+			       cmd, str_len(cmd), &pf_null, NULL);
+	fix->command = mem_deref(fix->command);
+	if (err)
+		fixture_abort(fix, err);
+}
+
+
+int fixture_delayed_command(struct fixture *f,
+			     uint32_t delay_ms, const char *cmd)
+{
+	int err;
+	f->command = mem_deref(f->command);
+	err = str_dup(&f->command, cmd);
+	if (err)
+		return err;
+
+	tmr_start(&f->a.tmr, delay_ms, delayed_command, f);
+	return 0;
 }
