@@ -35,13 +35,18 @@ static struct http_sock *httpsock;
 
 static int handle_input(struct re_printf *pf, const struct pl *pl)
 {
+	int err;
+
 	if (!pl)
 		return 0;
 
 	if (pl->l > 1 && pl->p[0] == '/')
-		return ui_input_long_command(pf, pl);
+		err = ui_input_long_command(pf, pl);
 	else
-		return ui_input_pl(pf, pl);
+		err = ui_input_pl(pf, pl);
+
+	int print_err = re_hprintf(pf, "err: %m\n", err);
+	return print_err;
 }
 
 
@@ -128,22 +133,7 @@ static void http_req_handler(struct http_conn *conn,
 
 	pl_set_str(&nprm, buf);
 
-	if (0 == pl_strcasecmp(&msg->path, "/")) {
-
-		err = mbuf_printf(mb, "%H", html_print_cmd, &nprm);
-		if (!err) {
-			http_reply(conn, 200, "OK",
-				 "Content-Type: text/html;charset=UTF-8\r\n"
-				 "Content-Length: %zu\r\n"
-				 "Access-Control-Allow-Origin: *\r\n"
-				 "\r\n"
-				 "%b",
-				 mb->end,
-				 mb->buf, mb->end);
-		}
-
-	}
-	else if (0 == pl_strcasecmp(&msg->path, "/raw/")) {
+	if (0 == pl_strcasecmp(&msg->path, "/raw/")) {
 
 		err = mbuf_printf(mb, "%H", html_print_raw, &nprm);
 		if (!err) {
@@ -156,7 +146,20 @@ static void http_req_handler(struct http_conn *conn,
 				 mb->end,
 				 mb->buf, mb->end);
 		}
+	}
+	else if (0 == pl_strcasecmp(&msg->path, "/")) {
 
+		err = mbuf_printf(mb, "%H", html_print_cmd, &nprm);
+		if (!err) {
+			http_reply(conn, 200, "OK",
+				 "Content-Type: text/html;charset=UTF-8\r\n"
+				 "Content-Length: %zu\r\n"
+				 "Access-Control-Allow-Origin: *\r\n"
+				 "\r\n"
+				 "%b",
+				 mb->end,
+				 mb->buf, mb->end);
+		}
 	}
 	else {
 		goto error;

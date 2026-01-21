@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 - 2015 Alfred E. Heggestad
  */
+#include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
 #include <re.h>
@@ -410,6 +411,167 @@ static bool linenum_are_sequential(const struct ua *ua)
 	}
 
 	return true;
+}
+
+
+static void mixdetect_handler(struct auframe *af, const char *dev, void *arg)
+{
+	struct fixture *fix = arg;
+	struct agent *ag = NULL;
+	int err = 0;
+
+	err = fixture_auframe_handle(arg, af, dev, &ag);
+	if (err)
+		return;
+
+	/* only check for agent B */
+	if (ag == &fix->a)
+		return;
+
+	struct ua *ua = ag->ua;
+	int16_t *sampv = af->sampv;
+
+	/* The mixed ausrc is a square wave with double frequency.
+	 * Count zero crosses */
+	uint32_t crosses = 0;
+	int16_t last_v = sampv[0];
+	for (size_t i = 0; i < af->sampc; i++) {
+		int16_t v = sampv[i];
+#if 0
+		debug("%d ", v);
+#endif
+		if (v * last_v < 0) {
+			++crosses;
+#if 0
+			debug("%zu:%d-->%d ", i, last_v, v);
+#endif
+		}
+
+		last_v = v;
+	}
+
+	double aulvl = auframe_level(af);
+#if 0
+	debug(" crosses=%u aulevel=%lf\n", crosses, aulvl);
+#endif
+	if (!crosses && audio_rxaubuf_started(call_audio(ua_call(ua)))) {
+		debug("test: mixdetect_handler: "
+		      "detected a buffer underrun or EOS\n");
+		return;
+	}
+
+	bevent_ua_emit(BEVENT_CUSTOM, ua, crosses > 11 ? "mixed" :
+		       aulvl > -3.0 ? "original" : "low", ag->n_auframe);
+}
+
+
+static int test_call_mixausrc_priv(bool dec)
+{
+	struct fixture fix, *f = &fix;
+	struct cancel_rule *cr;
+	struct ausrc *ausrc = NULL;
+	struct auplay *auplay = NULL;
+	const char *dp = test_datapath();
+	char *prm = NULL;
+	int err = 0;
+
+	err = re_sdprintf(&prm, ";ptime=10"
+			  ";audio_source=aufile,%s/wav/square_500Hz_0.8.wav"
+			  ";audio_player=mock-auplay,a", dp);
+	TEST_ERR(err);
+	fixture_init_prm(f, prm);
+	prm = mem_deref(prm);
+	mem_deref(f->b.ua);
+
+	err = re_sdprintf(&prm, "B <sip:b@127.0.0.1>;regint=0;ptime=10"
+			  ";audio_source=aufile,%s/wav/square_500Hz_0.8.wav"
+			  ";audio_player=mock-auplay,b", dp);
+	TEST_ERR(err);
+	err = ua_alloc(&f->b.ua, prm);
+	prm = mem_deref(prm);
+	TEST_ERR(err);
+
+	conf_config()->avt.rtp_stats = true;
+	conf_config()->avt.audio.jbuf_del.min = 10;
+
+	cancel_rule_new(BEVENT_CUSTOM, f->b.ua, 1, 0, -1);
+	cr->prm = "auframe";
+	cr->n_auframe = 3;
+
+	err = module_load(".", "aufile");
+	TEST_ERR(err);
+	err = module_load(".", "mixausrc");
+	TEST_ERR(err);
+
+	err = mock_auplay_register(&auplay, baresip_auplayl(),
+				   mixdetect_handler, f);
+	TEST_ERR(err);
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+	f->estab_action = ACTION_NOTHING;
+
+	/* Make a call from A to B */
+	err = ua_connect(f->a.ua, 0, NULL,f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	cancel_rule_pop();
+	cancel_rule_new(BEVENT_CUSTOM, f->b.ua, 1, 0, -1);
+	cr->prm = "mixed";
+
+	err = re_sdprintf(&prm,	"mixausrc_%s_start aufile "
+				"%s/wav/square_1kHz_0.4.wav 25 100 cname=%s "
+				"fadetime=10",
+				dec ? "dec" : "enc", dp, dec ? "b@" : "a@");
+	TEST_ERR(err);
+	err = fixture_delayed_command(f, 0, prm);
+	prm = mem_deref(prm);
+	TEST_ERR(err);
+	err = re_main_timeout(1000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	cancel_rule_pop();
+	cancel_rule_new(BEVENT_CUSTOM, f->b.ua, 1, 0, 1);
+	cr->prm = "original";
+	err = fixture_delayed_command(f, 0, dec ?
+				      "mixausrc_dec_stop cname=b@" :
+				      "mixausrc_enc_stop cname=a@");
+	TEST_ERR(err);
+
+	err = re_main_timeout(1000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+ out:
+	mem_deref(prm);
+	conf_config()->avt.audio.jbuf_del.min = 100;
+	fixture_close(f);
+	mem_deref(ausrc);
+	mem_deref(auplay);
+	module_unload("mixausrc");
+	module_unload("aufile");
+	if (fix.err && !err)
+		err = fix.err;
+
+	return err;
+}
+
+
+int test_call_mixausrc(void)
+{
+	int err;
+	err = test_call_mixausrc_priv(false);
+	TEST_ERR(err);
+	err = test_call_mixausrc_priv(true);
+	TEST_ERR(err);
+
+out:
+	return err;
 }
 
 
@@ -915,40 +1077,8 @@ int test_call_100rel_video(void)
 static void auframe_handler(struct auframe *af, const char *dev, void *arg)
 {
 	struct fixture *fix = arg;
-	struct agent *ag = NULL;
-	struct ua *ua;
-	int err = 0;
-	(void)af;
 
-	ASSERT_EQ(MAGIC, fix->magic);
-
-	if (!str_cmp(dev, "a")) {
-		ag = &fix->a;
-	}
-	else if (!str_cmp(dev, "b")) {
-		ag = &fix->b;
-	}
-	else {
-		warning("test: received audio frame - agent unclear\n");
-		return;
-	}
-
-	ua = ag->ua;
-	/* Does auframe come from the decoder ? */
-	if (!audio_rxaubuf_started(call_audio(ua_call(ua)))) {
-		debug("test: [%s] no audio received from decoder yet\n",
-		      account_aor(ua_account(ua)));
-		return;
-	}
-
-	++ag->n_auframe;
-	(void)audio_level_get(call_audio(ua_call(ua)), &ag->aulvl);
-
-	bevent_ua_emit(BEVENT_CUSTOM, ua, "auframe %u", ag->n_auframe);
-
- out:
-	if (err)
-		fixture_abort(fix, err);
+	fixture_auframe_handle(fix, af, dev, NULL);
 }
 
 

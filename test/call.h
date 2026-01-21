@@ -111,12 +111,16 @@ struct fixture {
 	const struct list *hdrs;
 	const char *dtmf_digits;
 	struct list rules;
+	char *command;
 };
 
 
 int fixture_init_priv(struct fixture *f, const char *prm);
 void fixture_close(struct fixture *f);
 void fixture_abort(struct fixture *f, int err);
+int fixture_auframe_handle(struct fixture *fix, struct auframe *af,
+			   const char *dev,
+			   struct agent **pag);
 
 
 #define fixture_init_prm(f, prm) \
@@ -168,3 +172,5 @@ int agent_wait_for_ack(struct agent *ag, unsigned n_incoming,
 #define cancel_rule_pop()						  \
 	mem_deref(list_tail(&f->rules)->data);
 
+int fixture_delayed_command(struct fixture *f,
+			     uint32_t delay_ms, const char *cmd);
