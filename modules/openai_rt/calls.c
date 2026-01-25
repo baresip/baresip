@@ -52,7 +52,11 @@ static void mqueue_handler(int id, void *data, void *arg)
 	case MQ_SEND_DIGIT:
 		{
 			char key = (char)(uintptr_t)data;
-			DEBUG_INFO("mqueue_handler: Sending DTMF digit '%c'\n", key);
+			if (key == KEYCODE_REL) {
+				DEBUG_INFO("mqueue_handler: Sending DTMF key release (KEYCODE_REL)\n");
+			} else {
+				DEBUG_INFO("mqueue_handler: Sending DTMF digit '%c'\n", key);
+			}
 			if (g_oairt.current_call) {
 				call_send_digit(g_oairt.current_call, key);
 			}
@@ -301,7 +305,11 @@ void calls_send_digit(char key)
 		return;
 	}
 	
-	DEBUG_INFO("calls_send_digit: Queuing digit '%c'\n", key);
+	if (key == KEYCODE_REL) {
+		DEBUG_INFO("calls_send_digit: Queuing key release (KEYCODE_REL)\n");
+	} else {
+		DEBUG_INFO("calls_send_digit: Queuing digit '%c'\n", key);
+	}
 	err = mqueue_push(calls_state.mq, MQ_SEND_DIGIT, (void *)(uintptr_t)key);
 	if (err) {
 		warning("openai_rt: Failed to queue digit send: %m\n", err);
