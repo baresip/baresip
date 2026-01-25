@@ -346,14 +346,22 @@ int calls_send_dtmf(const char *digits)
 	DEBUG_INFO("calls_send_dtmf: Sending DTMF string: '%s' (%zu digits)\n", 
 	           digits, strlen(digits));
 	
-	/* Send each digit sequentially with inter-digit pause */
+	/* Send each digit sequentially with proper key press/release */
 	for (p = digits; *p; p++) {
 		char c = *p;
 		/* Convert to uppercase for consistency */
 		if (c >= 'a' && c <= 'd') {
 			c = c - 'a' + 'A';
 		}
+		
+		/* Send key press */
 		calls_send_digit(c);
+		
+		/* Wait for tone to be audible (100ms) */
+		sys_msleep(100);
+		
+		/* Send key release to stop the tone */
+		calls_send_digit(KEYCODE_REL);
 		
 		/* Add inter-digit pause (except after the last digit) */
 		if (*(p + 1)) {
