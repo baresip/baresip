@@ -17,6 +17,7 @@ static int ws_callback(struct lws *wsi, enum lws_callback_reasons reason,
 static int add_auth_headers(void *in, size_t len);
 static void process_outgoing_messages(void);
 static void send_function_call_output(const char *call_id, const char *output);
+static void send_response_create(void);
 
 /* Callbacks for AI model message parsing */
 static void handle_audio_delta(const char *base64_audio, void *arg);
@@ -154,6 +155,30 @@ static void send_function_call_output(const char *call_id, const char *output)
         mem_deref(json_msg);
     }
 }
+
+static void send_response_create(void)
+{
+    struct ai_model *model = get_ai_model();
+    if (!model || !model->build_response_create) {
+        warning("openai_rt: AI model not initialized for response.create\n");
+        return;
+    }
+    
+    char *json_msg = NULL;
+    int err = model->build_response_create(NULL, &json_msg);
+    if (err) {
+        warning("openai_rt: Failed to build response.create: %m\n", err);
+        return;
+    }
+    
+    if (json_msg) {
+        err = queue_message_to_openai(json_msg, str_len(json_msg), NULL, NULL);
+        if (err) {
+            warning("openai_rt: Failed to queue response.create: %m\n", err);
+        }
+        mem_deref(json_msg);
+    }
+}
  
 /* Callbacks for AI model message parsing */
 static void handle_audio_delta(const char *base64_audio, void *arg)
@@ -245,6 +270,7 @@ static void handle_function_call_cb(const char *call_id, const char *name,
         DEBUG_INFO("openai_rt: Executing hangup_call function\n");
         calls_hangup();
         send_function_call_output(call_id, "Call hung up");
+        /* No response.create needed after hangup */
     } 	else if (strcmp(name, AI_TOOL_SEND_DTMF.name) == 0) {
 		DEBUG_INFO("openai_rt: Executing send_dtmf function\n");
 
@@ -280,6 +306,11 @@ static void handle_function_call_cb(const char *call_id, const char *name,
 			send_function_call_output(call_id, "Error: Missing or invalid 'digits' parameter");
 		}
 		json_object_put(args_obj);
+
+		/* Trigger response for OpenAI to acknowledge DTMF */
+		if (g_oairt.backend_type == AI_BACKEND_OPENAI_REALTIME) {
+			send_response_create();
+		}
 	} else if (strcmp(name, AI_TOOL_API_CALL.name) == 0) {
 		DEBUG_INFO("openai_rt: Executing api_call function\n");
 
@@ -332,6 +363,11 @@ static void handle_function_call_cb(const char *call_id, const char *name,
 			send_function_call_output(call_id, "Error: Missing 'method' or 'uri' parameter");
 		}
 		json_object_put(args_obj);
+
+		/* Trigger response for OpenAI to process API result */
+		if (g_oairt.backend_type == AI_BACKEND_OPENAI_REALTIME) {
+			send_response_create();
+		}
 	} else {
         /* This shouldn't happen if validation above worked, but handle it anyway */
         warning("openai_rt: Unknown function call: %s (but was enabled in config?)\n", name);
