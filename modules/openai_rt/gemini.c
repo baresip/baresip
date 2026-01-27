@@ -366,87 +366,65 @@ static int gemini_build_session_update(const char *prompt, char **json_msg)
 	/* Get voice name (default to "Aoede" if not set) */
 	const char *voice_name = str_isset(g_oairt.voice) ? g_oairt.voice : "Aoede";
 	
+	/* Build VAD config JSON if enabled */
+	char *vad_json = NULL;
+	if (g_oairt.gemini_vad_enabled) {
+		re_sdprintf(&vad_json, 
+			"\"realtimeInputConfig\":{"
+				"\"automaticActivityDetection\":{"
+					"\"startOfSpeechSensitivity\":\"%s\","
+					"\"prefixPaddingMs\":%d,"
+					"\"silenceDurationMs\":%d"
+				"}"
+			"},", 
+			g_oairt.gemini_vad_start_sensitivity,
+			g_oairt.gemini_vad_prefix_padding_ms,
+			g_oairt.gemini_vad_silence_duration_ms);
+	}
+
+	/* Check if tools are enabled */
 	/* Check if tools are enabled */
 	bool has_tools = (tools_json && strcmp(tools_json, "[]") != 0);
-	
-	/* Build setup message - always include voice config and realtime input config for interruption detection */
+	char *tools_block = NULL;
 	if (has_tools) {
-		/* With tools */
-		err = re_sdprintf(json_msg,
-			"{"
-				"\"setup\":{"
-					"\"model\":\"models/%s\","
-					"\"generationConfig\":{"
-						"\"responseModalalities\":[\"AUDIO\"],"
-						"\"speechConfig\":{"
-							"\"voiceConfig\":{"
-								"\"prebuiltVoiceConfig\":{"
-									"\"voiceName\":\"%s\""
-								"}"
-							"}"
-						"},"
-						"\"temperature\":%.2f"
-					"},"
-					"\"systemInstruction\":{"
-						"\"parts\":["
-							"{"
-								"\"text\":\"%s\""
-							"}"
-						"],"
-						"\"role\":\"user\""
-					"},"
-					"\"realtimeInputConfig\":{"
-						"\"automaticActivityDetection\":{"
-							"\"startOfSpeechSensitivity\":\"START_SENSITIVITY_HIGH\","
-							"\"prefixPaddingMs\":100,"
-							"\"endOfSpeechSensitivity\":\"END_SENSITIVITY_HIGH\","
-							"\"silenceDurationMs\":300"
-						"}"
-					"},"
-					"\"tools\":%s,"
-					"\"sessionResumption\":{}"
-				"}"
-			"}",
-			model_name, voice_name, temperature, escaped_prompt, tools_json);
-	} else {
-		/* No tools */
-		err = re_sdprintf(json_msg,
-			"{"
-				"\"setup\":{"
-					"\"model\":\"models/%s\","
-					"\"generationConfig\":{"
-						"\"responseModalities\":[\"AUDIO\"],"
-						"\"speechConfig\":{"
-							"\"voiceConfig\":{"
-								"\"prebuiltVoiceConfig\":{"
-									"\"voiceName\":\"%s\""
-								"}"
-							"}"
-						"},"
-						"\"temperature\":%.2f"
-					"},"
-					"\"systemInstruction\":{"
-						"\"parts\":["
-							"{"
-								"\"text\":\"%s\""
-							"}"
-						"],"
-						"\"role\":\"user\""
-					"},"
-					"\"realtimeInputConfig\":{"
-						"\"automaticActivityDetection\":{"
-							"\"startOfSpeechSensitivity\":\"START_SENSITIVITY_HIGH\","
-							"\"prefixPaddingMs\":100,"
-							"\"endOfSpeechSensitivity\":\"END_SENSITIVITY_HIGH\","
-							"\"silenceDurationMs\":300"
-						"}"
-					"},"
-					"\"sessionResumption\":{}"
-				"}"
-			"}",
-			model_name, voice_name, temperature, escaped_prompt);
+		re_sdprintf(&tools_block, "\"tools\":%s,", tools_json);
 	}
 	
+	/* Build setup message - always include voice config and realtime input config for interruption detection */
+	err = re_sdprintf(json_msg,
+		"{"
+			"\"setup\":{"
+				"\"model\":\"models/%s\","
+				"\"generationConfig\":{"
+					"\"responseModalities\":[\"AUDIO\"],"
+					"\"speechConfig\":{"
+						"\"voiceConfig\":{"
+							"\"prebuiltVoiceConfig\":{"
+								"\"voiceName\":\"%s\""
+							"}"
+						"}"
+					"},"
+					"\"temperature\":%.2f"
+				"},"
+				"\"systemInstruction\":{"
+					"\"parts\":["
+						"{"
+							"\"text\":\"%s\""
+						"}"
+					"],"
+					"\"role\":\"user\""
+				"},"
+				"%s"
+				"%s"
+				"\"sessionResumption\":{}"
+			"}"
+		"}",
+		model_name, voice_name, temperature, escaped_prompt, 
+		vad_json ? vad_json : "",
+		tools_block ? tools_block : "");
+
+	mem_deref(vad_json);
+	mem_deref(tools_block);
 	mem_deref(escaped_prompt);
 	mem_deref(tools_json);
 
