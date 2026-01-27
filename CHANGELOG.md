@@ -6,6 +6,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## v4.5.0 - 2026-01-28
+
+## What's Changed
+* rtprecv: fix race condition after video-display was closed by @cspiel1 in https://github.com/baresip/baresip/pull/3590
+* account: added ;check_origin parameter and API functions to get and set it by @juha-h in https://github.com/baresip/baresip/pull/3587
+* peerconn: always call close handler on destruct by @sreimers in https://github.com/baresip/baresip/pull/3592
+* account: misc improvements in core and test by @alfredh in https://github.com/baresip/baresip/pull/3588
+* rtprecv: fix tmr_cancel decode data race by @sreimers in https://github.com/baresip/baresip/pull/3597
+* audio: remove audio_txtelev_empty() -- unused by @alfredh in https://github.com/baresip/baresip/pull/3596
+* rtprecv: check re_thread_init() return value by @alfredh in https://github.com/baresip/baresip/pull/3603
+* test: use insecure warning (not needed for tests) by @sreimers in https://github.com/baresip/baresip/pull/3608
+* readme,license: update for new year by @Clusters in https://github.com/baresip/baresip/pull/3609
+* audio: remove audio_set_hold() -- unused by @alfredh in https://github.com/baresip/baresip/pull/3604
+* test: split test/call.c by @cspiel1 in https://github.com/baresip/baresip/pull/3610
+* test: add peer-connection test cases by @alfredh in https://github.com/baresip/baresip/pull/3605
+* uag: uag_filter_calls() support unlink in listh by @cspiel1 in https://github.com/baresip/baresip/pull/3614
+* mixausrc: rework by @cspiel1 in https://github.com/baresip/baresip/pull/3599
+* test: use audio_txtelev_empty() to check if DTMF was sent by @cspiel1 in https://github.com/baresip/baresip/pull/3607
+* test: add usage of more audio_xxx() functions in peerconn-test by @alfredh in https://github.com/baresip/baresip/pull/3617
+* audio: optimize source mutex handling by @sreimers in https://github.com/baresip/baresip/pull/3621
+* mixausrc sanitizer and EOS fixes by @cspiel1 in https://github.com/baresip/baresip/pull/3624
+* test mixausrc by @cspiel1 in https://github.com/baresip/baresip/pull/3615
+* httpd: print err instead of no reply by @cspiel1 in https://github.com/baresip/baresip/pull/3627
+* test: disable DNS-client cache in test_call_sni -- ref #3620 by @alfredh in https://github.com/baresip/baresip/pull/3625
+
+## New Contributors
+* @Clusters made their first contribution in https://github.com/baresip/baresip/pull/3609
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v4.4.0...v4.5.0
+
+
 ## v4.4.0 - 2025-12-23
 
 ### What's Changed
