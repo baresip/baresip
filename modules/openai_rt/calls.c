@@ -12,6 +12,7 @@
 enum call_mq_events {
 	MQ_HANGUP = 0,
 	MQ_SEND_DIGIT,
+	MQ_API_CALL,
 	MQ_OPENAI_RESPONSE,
 };
 
@@ -65,6 +66,16 @@ static void mqueue_handler(int id, void *data, void *arg)
 			}
 		}
 		break;
+
+	case MQ_API_CALL:
+		{
+			/* API call is handled synchronously for now as it's called from RE thread */
+			/* In a real scenario, we might want to offload this to a separate thread */
+			/* but since it's a tool call from the AI, we need to return the result. */
+			/* However, the tool call itself is triggered by a message from OpenAI */
+			/* which is processed in the RE thread. */
+		}
+		break;
 		
 	case MQ_OPENAI_RESPONSE:
 		{
@@ -90,11 +101,9 @@ static void mqueue_handler(int id, void *data, void *arg)
 }
 
 /* Event handler for UA events */
-static void event_handler(struct ua *ua, enum ua_event ev,
-                         struct call *call, const char *prm, void *arg)
+static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 {
-	(void)ua;
-	(void)prm;
+	struct call *call = bevent_get_call(event);
 	(void)arg;
 
 	if (!call) {
@@ -225,7 +234,7 @@ int calls_init(void)
 	}
 
 	/* Register UA event handler */
-	err = uag_event_register(event_handler, NULL);
+	err = bevent_register(event_handler, NULL);
 	if (err) {
 		DEBUG_INFO("Failed to register event handler: %m\n", err);
 		mem_deref(calls_state.mq);
@@ -245,7 +254,7 @@ void calls_close(void)
 	calls_state.shutting_down = true;
 
 	/* Unregister event handler first to stop receiving new events */
-	uag_event_unregister(event_handler);
+	bevent_unregister(event_handler);
 
 	/* Clean up message queue */
 	calls_state.mq = mem_deref(calls_state.mq);
@@ -379,6 +388,220 @@ int calls_send_dtmf(const char *digits)
 	
 	DEBUG_INFO("calls_send_dtmf: DTMF string '%s' sent successfully\n", digits);
 	return 0;
+}
+
+
+/**
+ * Perform an HTTP API call - thread-safe
+ *
+ * @param method         HTTP method (POST, PUT, GET, UPDATE, DELETE)
+ * @param content_type   Content-Type header value
+ * @param auth_type      Authentication type (basic, bearer)
+ * @param auth_username  Username for basic auth or token for bearer auth
+ * @param auth_password  Password for basic auth
+ * @param body           HTTP request body
+ * @param output         Output: Response body (allocated, must be freed)
+ * @return 0 if success, error code otherwise
+ */
+struct api_call_data {
+	char *method;
+	char *content_type;
+	char *auth_type;
+	char *auth_username;
+	char *auth_password;
+	char *body;
+	char **output;
+	struct sync_obj *sync;
+	int err;
+};
+
+struct sync_obj {
+	mtx_t mtx;
+	cnd_t cnd;
+	bool done;
+};
+
+static void api_call_resph(int err, const struct http_msg *msg, void *arg)
+{
+	struct api_call_data *ad = arg;
+	ad->err = err;
+
+	if (!err && msg && msg->mb && ad->output) {
+		size_t len = mbuf_get_left(msg->mb);
+		*ad->output = mem_zalloc(len + 1, NULL);
+		if (*ad->output) {
+			memcpy(*ad->output, mbuf_buf(msg->mb), len);
+		}
+	}
+
+	mtx_lock(&ad->sync->mtx);
+	ad->sync->done = true;
+	cnd_signal(&ad->sync->cnd);
+	mtx_unlock(&ad->sync->mtx);
+}
+
+int calls_api_call(const char *method, const char *uri,
+                   const char *content_type, const char *auth_type,
+                   const char *auth_username, const char *auth_password,
+                   const char *body,
+                   char **output)
+{
+	struct http_cli *cli = NULL;
+	struct http_reqconn *conn = NULL;
+	struct sync_obj sync;
+	struct api_call_data ad;
+	struct pl pl_met, pl_uri;
+	struct mbuf *mb_body = NULL;
+	int err;
+
+	if (!method || !uri || !output) return EINVAL;
+
+	DEBUG_INFO("calls_api_call: %s %s\n", method, uri);
+
+	re_thread_enter();
+
+	memset(&ad, 0, sizeof(ad));
+	memset(&sync, 0, sizeof(sync));
+	ad.output = output;
+	
+	err = mtx_init(&sync.mtx, mtx_plain);
+	if (err) goto out;
+	err = cnd_init(&sync.cnd);
+	if (err) {
+		mtx_destroy(&sync.mtx);
+		goto out;
+	}
+	sync.done = false;
+	ad.sync = &sync;
+
+	err = http_client_alloc(&cli, net_dnsc(baresip_network()));
+	if (err) {
+		warning("openai_rt: http_client_alloc failed: %m\n", err);
+		goto out;
+	}
+
+#ifdef USE_TLS
+	/* Disable server verification for now to avoid CA certificate issues */
+	http_client_disable_verify_server(cli);
+#endif
+
+	err = http_reqconn_alloc(&conn, cli, api_call_resph, NULL, &ad);
+	if (err) {
+		warning("openai_rt: http_reqconn_alloc failed: %m\n", err);
+		goto out;
+	}
+
+	pl_set_str(&pl_met, method);
+	http_reqconn_set_method(conn, &pl_met);
+
+	if (content_type) {
+		struct pl pl_ct;
+		pl_set_str(&pl_ct, content_type);
+		http_reqconn_set_ctype(conn, &pl_ct);
+	}
+
+	if (auth_type && auth_username) {
+		if (strcmp(auth_type, "bearer") == 0) {
+			struct pl pl_b;
+			pl_set_str(&pl_b, auth_username);
+			http_reqconn_set_bearer(conn, &pl_b);
+		}
+		else if (strcmp(auth_type, "basic") == 0) {
+			/* Construct Basic Auth header manually to ensure it's sent upfront */
+			char *auth_buf = NULL;
+			char *b64_buf = NULL;
+			size_t b64_len;
+			int r;
+
+			re_sdprintf(&auth_buf, "%s:%s", auth_username, 
+				auth_password ? auth_password : "");
+			
+			if (auth_buf) {
+				b64_len = (strlen(auth_buf) * 4 / 3) + 4;
+				b64_buf = mem_zalloc(b64_len, NULL);
+				if (b64_buf) {
+					r = base64_encode((uint8_t *)auth_buf, strlen(auth_buf), 
+						b64_buf, &b64_len);
+					if (r == 0) {
+						char *hdr_buf = NULL;
+						re_sdprintf(&hdr_buf, "Authorization: Basic %s", b64_buf);
+						if (hdr_buf) {
+							struct pl pl_hdr;
+							pl_set_str(&pl_hdr, hdr_buf);
+							http_reqconn_add_header(conn, &pl_hdr);
+							mem_deref(hdr_buf);
+						}
+					}
+					mem_deref(b64_buf);
+				}
+				mem_deref(auth_buf);
+			}
+		}
+	}
+
+	if (body) {
+		mb_body = mbuf_alloc(strlen(body));
+		if (!mb_body) {
+			err = ENOMEM;
+			goto out;
+		}
+		mbuf_write_str(mb_body, body);
+		mbuf_set_pos(mb_body, 0);
+		http_reqconn_set_body(conn, mb_body);
+		
+		/* If content type not set, default to text/plain as requested */
+		if (!content_type) {
+			struct pl pl_ct = PL("text/plain");
+			http_reqconn_set_ctype(conn, &pl_ct);
+		}
+	}
+
+	pl_set_str(&pl_uri, uri);
+
+	DEBUG_INFO("calls_api_call: sending request...\n");
+	err = http_reqconn_send(conn, &pl_uri);
+	if (err) {
+		warning("openai_rt: http_reqconn_send failed: %m\n", err);
+		goto out;
+	}
+
+	/* Leave RE thread before waiting to allow RE event loop to process the request */
+	re_thread_leave();
+
+	DEBUG_INFO("calls_api_call: waiting for response...\n");
+	mtx_lock(&sync.mtx);
+	if (!sync.done) {
+		/* Wait with timeout to prevent hanging baresip if callback is never called */
+		uint64_t wait_start = tmr_jiffies();
+		while (!sync.done) {
+			cnd_wait(&sync.cnd, &sync.mtx);
+			
+			/* Break if we've waited more than 10 seconds */
+			if (tmr_jiffies() - wait_start > 10000) {
+				warning("openai_rt: calls_api_call timed out after 10s\n");
+				ad.err = ETIMEDOUT;
+				break;
+			}
+		}
+	}
+	mtx_unlock(&sync.mtx);
+
+	/* Re-enter RE thread for cleanup */
+	re_thread_enter();
+
+	err = ad.err;
+	DEBUG_INFO("calls_api_call: request completed with error=%d\n", err);
+
+out:
+	mem_deref(conn);
+	mem_deref(cli);
+	mem_deref(mb_body);
+	mtx_destroy(&sync.mtx);
+	cnd_destroy(&sync.cnd);
+
+	re_thread_leave();
+
+	return err;
 }
 
 

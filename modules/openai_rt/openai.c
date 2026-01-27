@@ -43,14 +43,55 @@ const struct ai_tool_call AI_TOOL_SEND_DTMF = {
 		"}"
 };
 
+const struct ai_tool_call AI_TOOL_API_CALL = {
+	.name = "api_call",
+	.description = "Perform an HTTP API call",
+	.parameters_json = 
+		"{"
+			"\"type\": \"object\","
+			"\"properties\": {"
+				"\"method\": {"
+					"\"type\": \"string\","
+					"\"enum\": [\"POST\", \"PUT\", \"GET\", \"UPDATE\", \"DELETE\"]"
+				"},"
+				"\"uri\": {"
+					"\"type\": \"string\","
+					"\"description\": \"The full URI for the API call\""
+				"},"
+				"\"content_type\": {"
+					"\"type\": \"string\","
+					"\"description\": \"Content-Type header value\""
+				"},"
+				"\"auth_type\": {"
+					"\"type\": \"string\","
+					"\"enum\": [\"basic\", \"bearer\"]"
+				"},"
+				"\"auth_username\": {"
+					"\"type\": \"string\","
+					"\"description\": \"Username for basic auth or token for bearer auth\""
+				"},"
+				"\"auth_password\": {"
+					"\"type\": \"string\","
+					"\"description\": \"Password for basic auth\""
+				"},"
+				"\"body\": {"
+					"\"type\": \"string\","
+					"\"description\": \"HTTP request body\""
+				"}"
+			"},"
+			"\"required\": [\"method\", \"uri\"]"
+		"}"
+};
+
 /* Array of all available tool calls */
 const struct ai_tool_call *AI_AVAILABLE_TOOLS[] = {
 	&AI_TOOL_HANGUP_CALL,
 	&AI_TOOL_SEND_DTMF,
+	&AI_TOOL_API_CALL,
 	NULL  /* Sentinel */
 };
 
-const size_t AI_AVAILABLE_TOOLS_COUNT = 2;
+const size_t AI_AVAILABLE_TOOLS_COUNT = 3;
 
 /* Forward declarations */
 static int openai_init(struct openai_rt *ort);
@@ -333,58 +374,10 @@ static int openai_build_session_update(const char *prompt, char **json_msg)
 	}
 
 	/* Escape JSON special characters in the prompt */
-	size_t prompt_len = strlen(prompt);
-	escaped_prompt = mem_zalloc(prompt_len * 2 + 1, NULL);
-	if (!escaped_prompt) {
-		return ENOMEM;
+	err = json_escape(&escaped_prompt, prompt);
+	if (err) {
+		return err;
 	}
-
-	/* Simple JSON escaping - escape quotes, backslashes, and control characters */
-	const char *src = prompt;
-	char *dst = escaped_prompt;
-	while (*src) {
-		switch (*src) {
-		case '"':
-			*dst++ = '\\';
-			*dst++ = '"';
-			break;
-		case '\\':
-			*dst++ = '\\';
-			*dst++ = '\\';
-			break;
-		case '\b':
-			*dst++ = '\\';
-			*dst++ = 'b';
-			break;
-		case '\f':
-			*dst++ = '\\';
-			*dst++ = 'f';
-			break;
-		case '\n':
-			*dst++ = '\\';
-			*dst++ = 'n';
-			break;
-		case '\r':
-			*dst++ = '\\';
-			*dst++ = 'r';
-			break;
-		case '\t':
-			*dst++ = '\\';
-			*dst++ = 't';
-			break;
-		default:
-			if (*src < 0x20) {
-				/* Escape other control characters as \uXXXX */
-				re_snprintf(dst, 7, "\\u%04x", (unsigned char)*src);
-				dst += 6;
-			} else {
-				*dst++ = *src;
-			}
-			break;
-		}
-		src++;
-	}
-	*dst = '\0';
 
 	/* Build tools JSON array based on enabled tools */
 	char *tools_json = NULL;
@@ -446,58 +439,10 @@ static int openai_build_response_create(const char *instructions, char **json_ms
 
 	if (instructions && *instructions) {
 		/* Escape JSON special characters in the instructions */
-		size_t instructions_len = strlen(instructions);
-		escaped_instructions = mem_zalloc(instructions_len * 2 + 1, NULL);
-		if (!escaped_instructions) {
-			return ENOMEM;
+		err = json_escape(&escaped_instructions, instructions);
+		if (err) {
+			return err;
 		}
-
-		/* Simple JSON escaping - escape quotes, backslashes, and control characters */
-		const char *src = instructions;
-		char *dst = escaped_instructions;
-		while (*src) {
-			switch (*src) {
-			case '"':
-				*dst++ = '\\';
-				*dst++ = '"';
-				break;
-			case '\\':
-				*dst++ = '\\';
-				*dst++ = '\\';
-				break;
-			case '\b':
-				*dst++ = '\\';
-				*dst++ = 'b';
-				break;
-			case '\f':
-				*dst++ = '\\';
-				*dst++ = 'f';
-				break;
-			case '\n':
-				*dst++ = '\\';
-				*dst++ = 'n';
-				break;
-			case '\r':
-				*dst++ = '\\';
-				*dst++ = 'r';
-				break;
-			case '\t':
-				*dst++ = '\\';
-				*dst++ = 't';
-				break;
-			default:
-				if (*src < 0x20) {
-					/* Escape other control characters as \uXXXX */
-					re_snprintf(dst, 7, "\\u%04x", (unsigned char)*src);
-					dst += 6;
-				} else {
-					*dst++ = *src;
-				}
-				break;
-			}
-			src++;
-		}
-		*dst = '\0';
 
 		err = re_sdprintf(json_msg,
 			"{"
@@ -521,11 +466,19 @@ static int openai_build_response_create(const char *instructions, char **json_ms
 static int openai_build_function_call_output(const char *call_id, const char *output,
                                             char **json_msg)
 {
+	char *escaped_output = NULL;
+	int err;
+
 	if (!call_id || !output || !json_msg) {
 		return EINVAL;
 	}
 
-	int err = re_sdprintf(json_msg,
+	err = json_escape(&escaped_output, output);
+	if (err) {
+		return err;
+	}
+
+	err = re_sdprintf(json_msg,
 		"{"
 			"\"type\": \"conversation.item.create\","
 			"\"item\": {"
@@ -534,8 +487,9 @@ static int openai_build_function_call_output(const char *call_id, const char *ou
 				"\"output\": \"%s\""
 			"}"
 		"}",
-		call_id, output);
+		call_id, escaped_output);
 
+	mem_deref(escaped_output);
 	return err;
 }
 
@@ -638,6 +592,11 @@ static int openai_parse_message(const char *json_str,
 				response_done_cb(response_json, cb_arg);
 			}
 		}
+	} else if (strcmp(type, "error") == 0) {
+		struct json_object *error_obj = get_json_object_field(root, "error", "error");
+		if (error_obj) {
+			warning("openai_rt: AI model error: %s\n", json_object_to_json_string(error_obj));
+		}
 	} else {
 		DEBUG_INFO("openai_rt: Unhandled message type: %s\n", type);
 	}
@@ -645,4 +604,3 @@ static int openai_parse_message(const char *json_str,
 	json_object_put(root);
 	return result;
 }
-

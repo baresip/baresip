@@ -142,6 +142,7 @@ int resize_injection_buffer(size_t new_size_samples);
 /* Utility functions */
 char *encode_audio_base64(const void *data, size_t len);
 size_t decode_audio_base64(const char *data, uint8_t **out);
+int json_escape(char **dst, const char *src);
 int read_config(void);
 
 
@@ -224,6 +225,10 @@ void audio_free_frame(struct audio_frame *frame);
 void calls_hangup(void);
 void calls_send_digit(char key);
 int calls_send_dtmf(const char *digits);
+int calls_api_call(const char *method, const char *uri,
+                   const char *content_type, const char *auth_type,
+                   const char *auth_username, const char *auth_password,
+                   const char *body, char **output);
 int calls_queue_openai_response(const char *response_json);
 
 #endif /* OPENAI_RT_H */

@@ -104,6 +104,77 @@ size_t decode_audio_base64(const char *data, uint8_t **out)
     return out_len;
 }
 
+/**
+ * Escape a string for JSON
+ *
+ * @param dst  Output: Escaped string (allocated, must be freed)
+ * @param src  Input: Source string
+ * @return 0 if success, error code otherwise
+ */
+int json_escape(char **dst, const char *src)
+{
+	char *escaped = NULL;
+	const char *s = src;
+	char *d;
+	size_t len = 0;
+
+	if (!dst || !src)
+		return EINVAL;
+
+	/* Calculate required length */
+	while (*s) {
+		switch (*s) {
+		case '"':
+		case '\\':
+		case '\b':
+		case '\f':
+		case '\n':
+		case '\r':
+		case '\t':
+			len += 2;
+			break;
+		default:
+			if (*s < 0x20)
+				len += 6; /* \uXXXX */
+			else
+				len += 1;
+			break;
+		}
+		s++;
+	}
+
+	escaped = mem_zalloc(len + 1, NULL);
+	if (!escaped)
+		return ENOMEM;
+
+	s = src;
+	d = escaped;
+	while (*s) {
+		switch (*s) {
+		case '"':  *d++ = '\\'; *d++ = '"'; break;
+		case '\\': *d++ = '\\'; *d++ = '\\'; break;
+		case '\b': *d++ = '\\'; *d++ = 'b'; break;
+		case '\f': *d++ = '\\'; *d++ = 'f'; break;
+		case '\n': *d++ = '\\'; *d++ = 'n'; break;
+		case '\r': *d++ = '\\'; *d++ = 'r'; break;
+		case '\t': *d++ = '\\'; *d++ = 't'; break;
+		default:
+			if (*s < 0x20) {
+				re_snprintf(d, 7, "\\u%04x", (unsigned char)*s);
+				d += 6;
+			} else {
+				*d++ = *s;
+			}
+			break;
+		}
+		s++;
+	}
+	*d = '\0';
+
+	*dst = escaped;
+	return 0;
+}
+
 int read_config(void)
 {
 

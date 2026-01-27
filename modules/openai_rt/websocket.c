@@ -245,42 +245,94 @@ static void handle_function_call_cb(const char *call_id, const char *name,
         DEBUG_INFO("openai_rt: Executing hangup_call function\n");
         calls_hangup();
         send_function_call_output(call_id, "Call hung up");
-    } else if (strcmp(name, AI_TOOL_SEND_DTMF.name) == 0) {
-        DEBUG_INFO("openai_rt: Executing send_dtmf function\n");
+    } 	else if (strcmp(name, AI_TOOL_SEND_DTMF.name) == 0) {
+		DEBUG_INFO("openai_rt: Executing send_dtmf function\n");
 
-        /* Parse arguments JSON */
-        struct json_object *args_obj = json_tokener_parse(arguments);
-        if (!args_obj) {
-            warning("openai_rt: Failed to parse send_dtmf arguments\n");
-            send_function_call_output(call_id, "Error: Failed to parse function arguments");
-            return;
-        }
+		/* Parse arguments JSON */
+		struct json_object *args_obj = json_tokener_parse(arguments);
+		if (!args_obj) {
+			warning("openai_rt: Failed to parse send_dtmf arguments\n");
+			send_function_call_output(call_id, "Error: Failed to parse function arguments");
+			return;
+		}
 
-        struct json_object *digits_obj = NULL;
-        if (json_object_object_get_ex(args_obj, "digits", &digits_obj) &&
-            json_object_is_type(digits_obj, json_type_string)) {
-            const char *digits = json_object_get_string(digits_obj);
-            if (digits && *digits) {
-                int err = calls_send_dtmf(digits);
-                if (!err) {
-                    char output[256];
-                    re_snprintf(output, sizeof(output), "DTMF tones sent: %s", digits);
-                    send_function_call_output(call_id, output);
-                } else {
-                    char error_msg[256];
-                    re_snprintf(error_msg, sizeof(error_msg), 
-                               "Error: Failed to send DTMF string '%s'", digits);
-                    send_function_call_output(call_id, error_msg);
-                    warning("openai_rt: Failed to send DTMF string '%s': %m\n", digits, err);
-                }
-            } else {
-                send_function_call_output(call_id, "Error: Missing or empty 'digits' parameter");
-            }
-        } else {
-            send_function_call_output(call_id, "Error: Missing or invalid 'digits' parameter");
-        }
-        json_object_put(args_obj);
-    } else {
+		struct json_object *digits_obj = NULL;
+		if (json_object_object_get_ex(args_obj, "digits", &digits_obj) &&
+			json_object_is_type(digits_obj, json_type_string)) {
+			const char *digits = json_object_get_string(digits_obj);
+			if (digits && *digits) {
+				int err = calls_send_dtmf(digits);
+				if (!err) {
+					char output[256];
+					re_snprintf(output, sizeof(output), "DTMF tones sent: %s", digits);
+					send_function_call_output(call_id, output);
+				} else {
+					char error_msg[256];
+					re_snprintf(error_msg, sizeof(error_msg), 
+							   "Error: Failed to send DTMF string '%s'", digits);
+					send_function_call_output(call_id, error_msg);
+					warning("openai_rt: Failed to send DTMF string '%s': %m\n", digits, err);
+				}
+			} else {
+				send_function_call_output(call_id, "Error: Missing or empty 'digits' parameter");
+			}
+		} else {
+			send_function_call_output(call_id, "Error: Missing or invalid 'digits' parameter");
+		}
+		json_object_put(args_obj);
+	} else if (strcmp(name, AI_TOOL_API_CALL.name) == 0) {
+		DEBUG_INFO("openai_rt: Executing api_call function\n");
+
+		/* Parse arguments JSON */
+		struct json_object *args_obj = json_tokener_parse(arguments);
+		if (!args_obj) {
+			warning("openai_rt: Failed to parse api_call arguments\n");
+			send_function_call_output(call_id, "Error: Failed to parse function arguments");
+			return;
+		}
+
+		const char *method = NULL;
+		const char *uri = NULL;
+		const char *content_type = NULL;
+		const char *auth_type = NULL;
+		const char *auth_username = NULL;
+		const char *auth_password = NULL;
+		const char *body = NULL;
+
+		struct json_object *obj = NULL;
+		if (json_object_object_get_ex(args_obj, "method", &obj))
+			method = json_object_get_string(obj);
+		if (json_object_object_get_ex(args_obj, "uri", &obj))
+			uri = json_object_get_string(obj);
+		if (json_object_object_get_ex(args_obj, "content_type", &obj))
+			content_type = json_object_get_string(obj);
+		if (json_object_object_get_ex(args_obj, "auth_type", &obj))
+			auth_type = json_object_get_string(obj);
+		if (json_object_object_get_ex(args_obj, "auth_username", &obj))
+			auth_username = json_object_get_string(obj);
+		if (json_object_object_get_ex(args_obj, "auth_password", &obj))
+			auth_password = json_object_get_string(obj);
+		if (json_object_object_get_ex(args_obj, "body", &obj))
+			body = json_object_get_string(obj);
+
+		if (method && uri) {
+			char *api_output = NULL;
+			int err = calls_api_call(method, uri, content_type, auth_type,
+				auth_username, auth_password, body, &api_output);
+			
+			if (err == 0) {
+				send_function_call_output(call_id, api_output ? api_output : "Success");
+			} else {
+				char error_msg[256];
+				re_snprintf(error_msg, sizeof(error_msg), "Error: API call failed with code %d", err);
+				send_function_call_output(call_id, error_msg);
+			}
+			mem_deref(api_output);
+		} else {
+			send_function_call_output(call_id, "Error: Missing 'method' or 'uri' parameter");
+		}
+		json_object_put(args_obj);
+	} else {
         /* This shouldn't happen if validation above worked, but handle it anyway */
         warning("openai_rt: Unknown function call: %s (but was enabled in config?)\n", name);
         char error_msg[256];
@@ -370,13 +422,16 @@ static void handle_response_done_cb(const char *response_json, void *arg)
             if (len > 0 && g_oairt.ws_state == WS_CONNECTED) {
                struct ai_model *model = get_ai_model();
                if (model && model->parse_message) {
-                   model->parse_message((const char *)in,
+                   int parse_err = model->parse_message((const char *)in,
                                       handle_audio_delta,
                                       handle_session_updated_cb,
                                       handle_speech_started_cb,
                                       handle_function_call_cb,
                                       handle_response_done_cb,
                                       NULL);
+                   if (parse_err) {
+                       DEBUG_INFO("openai_rt: parse_message returned error %d\n", parse_err);
+                   }
                }
             }
         }

@@ -60,6 +60,29 @@ static int gemini_parse_message(const char *json_str,
 
 /* JSON parsing helpers */
 static struct json_object *parse_json_safe(const char *json_str, const char *context);
+
+/* Silent versions for optional fields (no warnings) */
+static struct json_object *get_json_object_field_optional(struct json_object *obj,
+                                                          const char *field_name)
+{
+	struct json_object *field_obj = NULL;
+	json_object_object_get_ex(obj, field_name, &field_obj);
+	return field_obj;
+}
+
+static const char *get_json_string_field_optional(struct json_object *obj,
+                                                   const char *field_name)
+{
+	struct json_object *field_obj = NULL;
+	if (!json_object_object_get_ex(obj, field_name, &field_obj)) {
+		return NULL;
+	}
+	if (!json_object_is_type(field_obj, json_type_string)) {
+		return NULL;
+	}
+	return json_object_get_string(field_obj);
+}
+
 static const char *get_json_string_field(struct json_object *obj, const char *field_name,
                                          const char *context);
 static struct json_object *get_json_object_field(struct json_object *obj,
@@ -314,58 +337,10 @@ static int gemini_build_session_update(const char *prompt, char **json_msg)
 	}
 
 	/* Escape JSON special characters in the prompt */
-	size_t prompt_len = strlen(prompt);
-	escaped_prompt = mem_zalloc(prompt_len * 2 + 1, NULL);
-	if (!escaped_prompt) {
-		return ENOMEM;
+	err = json_escape(&escaped_prompt, prompt);
+	if (err) {
+		return err;
 	}
-
-	/* Simple JSON escaping - escape quotes, backslashes, and control characters */
-	const char *src = prompt;
-	char *dst = escaped_prompt;
-	while (*src) {
-		switch (*src) {
-		case '"':
-			*dst++ = '\\';
-			*dst++ = '"';
-			break;
-		case '\\':
-			*dst++ = '\\';
-			*dst++ = '\\';
-			break;
-		case '\b':
-			*dst++ = '\\';
-			*dst++ = 'b';
-			break;
-		case '\f':
-			*dst++ = '\\';
-			*dst++ = 'f';
-			break;
-		case '\n':
-			*dst++ = '\\';
-			*dst++ = 'n';
-			break;
-		case '\r':
-			*dst++ = '\\';
-			*dst++ = 'r';
-			break;
-		case '\t':
-			*dst++ = '\\';
-			*dst++ = 't';
-			break;
-		default:
-			if (*src < 0x20) {
-				/* Escape other control characters as \uXXXX */
-				re_snprintf(dst, 7, "\\u%04x", (unsigned char)*src);
-				dst += 6;
-			} else {
-				*dst++ = *src;
-			}
-			break;
-		}
-		src++;
-	}
-	*dst = '\0';
 
 	/* Build tools JSON array based on enabled tools */
 	char *tools_json = NULL;
@@ -402,7 +377,7 @@ static int gemini_build_session_update(const char *prompt, char **json_msg)
 				"\"setup\":{"
 					"\"model\":\"models/%s\","
 					"\"generationConfig\":{"
-						"\"responseModalities\":[\"AUDIO\"],"
+						"\"responseModalalities\":[\"AUDIO\"],"
 						"\"speechConfig\":{"
 							"\"voiceConfig\":{"
 								"\"prebuiltVoiceConfig\":{"
@@ -530,44 +505,10 @@ static int gemini_build_response_create(const char *instructions, char **json_ms
 	const char *text_content = (instructions && *instructions) ? instructions : "Hello";
 
 	/* Escape JSON special characters */
-	size_t text_len = strlen(text_content);
-	escaped_text = mem_zalloc(text_len * 2 + 1, NULL);
-	if (!escaped_text) {
-		return ENOMEM;
+	err = json_escape(&escaped_text, text_content);
+	if (err) {
+		return err;
 	}
-
-	/* Simple JSON escaping */
-	const char *src = text_content;
-	char *dst = escaped_text;
-	while (*src) {
-		switch (*src) {
-		case '"':
-			*dst++ = '\\';
-			*dst++ = '"';
-			break;
-		case '\\':
-			*dst++ = '\\';
-			*dst++ = '\\';
-			break;
-		case '\n':
-			*dst++ = '\\';
-			*dst++ = 'n';
-			break;
-		case '\r':
-			*dst++ = '\\';
-			*dst++ = 'r';
-			break;
-		case '\t':
-			*dst++ = '\\';
-			*dst++ = 't';
-			break;
-		default:
-			*dst++ = *src;
-			break;
-		}
-		src++;
-	}
-	*dst = '\0';
 
 	/* Gemini Live API uses "client_content" format for turn-based text */
 	err = re_sdprintf(json_msg,
@@ -600,48 +541,21 @@ static int gemini_build_response_create(const char *instructions, char **json_ms
 static int gemini_build_function_call_output(const char *call_id, const char *output,
                                             char **json_msg)
 {
+	char *escaped_output = NULL;
+	int err;
+
 	if (!call_id || !output || !json_msg) {
 		return EINVAL;
 	}
 
 	/* Escape output text for JSON */
-	char *escaped_output = NULL;
-	size_t output_len = strlen(output);
-	escaped_output = mem_zalloc(output_len * 2 + 1, NULL);
-	if (!escaped_output) {
-		return ENOMEM;
+	err = json_escape(&escaped_output, output);
+	if (err) {
+		return err;
 	}
-
-	const char *src = output;
-	char *dst = escaped_output;
-	while (*src) {
-		switch (*src) {
-		case '"':
-			*dst++ = '\\';
-			*dst++ = '"';
-			break;
-		case '\\':
-			*dst++ = '\\';
-			*dst++ = '\\';
-			break;
-		case '\n':
-			*dst++ = '\\';
-			*dst++ = 'n';
-			break;
-		case '\r':
-			*dst++ = '\\';
-			*dst++ = 'r';
-			break;
-		default:
-			*dst++ = *src;
-			break;
-		}
-		src++;
-	}
-	*dst = '\0';
 
 	/* Gemini Live API uses "tool_response" format */
-	int err = re_sdprintf(json_msg,
+	err = re_sdprintf(json_msg,
 		"{"
 			"\"tool_response\": {"
 				"\"functionResponses\": ["
@@ -669,28 +583,6 @@ static struct json_object *parse_json_safe(const char *json_str, const char *con
 		warning("openai_rt: Failed to parse Gemini JSON in %s\n", context);
 	}
 	return root;
-}
-
-/* Silent versions for optional fields (no warnings) */
-static struct json_object *get_json_object_field_optional(struct json_object *obj,
-                                                          const char *field_name)
-{
-	struct json_object *field_obj = NULL;
-	json_object_object_get_ex(obj, field_name, &field_obj);
-	return field_obj;
-}
-
-static const char *get_json_string_field_optional(struct json_object *obj,
-                                                   const char *field_name)
-{
-	struct json_object *field_obj = NULL;
-	if (!json_object_object_get_ex(obj, field_name, &field_obj)) {
-		return NULL;
-	}
-	if (!json_object_is_type(field_obj, json_type_string)) {
-		return NULL;
-	}
-	return json_object_get_string(field_obj);
 }
 
 /* Warning versions for required fields */
@@ -768,11 +660,7 @@ static int gemini_parse_message(const char *json_str,
 	/* Check for errors in the response - optional field */
 	struct json_object *error_obj = get_json_object_field_optional(root, "error");
 	if (error_obj) {
-		const char *error_msg = get_json_string_field_optional(error_obj, "message");
-		const char *error_code = get_json_string_field_optional(error_obj, "code");
-		warning("openai_rt: Gemini API error: code=%s, message=%s\n", 
-		        error_code ? error_code : "unknown",
-		        error_msg ? error_msg : "unknown");
+		warning("openai_rt: Gemini API error: %s\n", json_object_to_json_string(error_obj));
 		result = EPROTO;
 		goto cleanup;
 	}
@@ -871,4 +759,3 @@ cleanup:
 	json_object_put(root);
 	return result;
 }
-

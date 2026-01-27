@@ -64,3 +64,5 @@ install_manifest.txt
 
 # Temporary build folder
 out/
+libg7221/
+build
