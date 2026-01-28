@@ -341,8 +341,13 @@ static void mock_vidisp_handler(const struct vidframe *frame,
 }
 
 
-static int test_peerconn_param(bool use_audio, bool use_video)
+static int test_peerconn_param(bool use_audio, bool use_aufilt, bool use_video)
 {
+	const char *aufilters[] = {
+		"auconv",
+		"auresamp",
+		"mixausrc",
+	};
 	struct fixture fix = {0};
 	struct auplay *auplay = NULL;
 	struct vidisp *vidisp = NULL;
@@ -357,6 +362,17 @@ static int test_peerconn_param(bool use_audio, bool use_video)
 		TEST_ERR(err);
 		err = module_load(".", "ausine");
 		TEST_ERR(err);
+
+		if (use_aufilt) {
+			for (size_t i=0; i<RE_ARRAY_SIZE(aufilters); i++) {
+				const char *name = aufilters[i];
+
+				err = module_load(".", name);
+				TEST_ERR(err);
+
+				aufilt_enable(baresip_aufiltl(), name, true);
+			}
+		}
 	}
 
 	if (use_video) {
@@ -415,6 +431,14 @@ static int test_peerconn_param(bool use_audio, bool use_video)
 	mem_deref(fix.mq);
 
 	if (use_audio) {
+		if (use_aufilt) {
+			for (size_t i=0; i<RE_ARRAY_SIZE(aufilters); i++) {
+				const char *name = aufilters[i];
+
+				module_unload(name);
+			}
+		}
+
 		module_unload("ausine");
 		module_unload("g711");
 		mem_deref(auplay);
@@ -441,11 +465,14 @@ int test_peerconn(void)
 	err = module_load(".", "ice");
 	TEST_ERR(err);
 
-	err = test_peerconn_param(1, 0);
+	err = test_peerconn_param(1, 0, 0);
 	TEST_ERR(err);
-	err = test_peerconn_param(0, 1);
+	err = test_peerconn_param(0, 0, 1);
 	TEST_ERR(err);
-	err = test_peerconn_param(1, 1);
+	err = test_peerconn_param(1, 0, 1);
+	TEST_ERR(err);
+
+	err = test_peerconn_param(1, 1, 0);
 	TEST_ERR(err);
 
  out:
