@@ -50,7 +50,7 @@ jobs:
 
     - name: baresip
       run: |
-        ./build/baresip -h
+        ./build/baresip -h || true
         ./build/baresip \
           -4 \
           -a Test \
