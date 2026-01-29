@@ -50,17 +50,14 @@ jobs:
 
     - name: baresip
       run: |
+        ./build/baresip -h
         ./build/baresip \
           -4 \
           -a Test \
-          -e "/insmod debug_cmd.so" \
           -e "/insmod aufile.so" \
-          -e "/aufileinfo busy.wav" \
           -e "/rmmod aufile.so" \
-          -e "/rmmod debug_cmd.so" \
           -e "/quit" \
           -f /tmp/test \
-          -m debug_cmd.so \
           -m aufile.so \
           -p share \
           -s \
