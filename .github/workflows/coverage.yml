@@ -48,6 +48,29 @@ jobs:
     - name: selftest
       run: ./build/test/selftest
 
+    - name: baresip
+      run: |
+        ./build/baresip \
+          -4 \
+          -a Test \
+          -e "/insmod debug_cmd.so" \
+          -e "/insmod aufile.so" \
+          -e "/aufileinfo busy.wav" \
+          -e "/rmmod aufile.so" \
+          -e "/rmmod debug_cmd.so" \
+          -e "/quit" \
+          -f /tmp/test \
+          -m debug_cmd.so \
+          -m aufile.so \
+          -p share \
+          -s \
+          -t 5 \
+          -n lo0 \
+          -u UA-PARAMS \
+          -v \
+          -T \
+          -c
+
     - name: gcov
       run: |
         gcov build/**/*.o
