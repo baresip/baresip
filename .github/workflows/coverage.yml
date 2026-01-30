@@ -78,7 +78,7 @@ jobs:
 
     - name: coverage check
       run: |
-        min_cov="53.9"
+        min_cov="65.0"
         mkdir html
         cov=$(~/.local/bin/gcovr -r . --html-details html/index.html --json-summary | jq .line_percent)
         echo "Coverage: ${cov}% (min $min_cov%)"
