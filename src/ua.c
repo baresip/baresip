@@ -944,6 +944,9 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 		sa_init(&ua->dst, AF_UNSPEC);
 		sa_cpy(&cprm.laddr, laddr);
 	}
+	else {
+		net_default_source_addr_get(af, &cprm.laddr);
+	}
 
 	cprm.vidmode = vmode;
 	cprm.af      = af;
