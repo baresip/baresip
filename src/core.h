@@ -374,7 +374,6 @@ void ua_handle_options(struct ua *ua, const struct sip_msg *msg);
 bool ua_handle_refer(struct ua *ua, const struct sip_msg *msg);
 void sipsess_conn_handler(const struct sip_msg *msg, void *arg);
 bool ua_catchall(struct ua *ua);
-bool ua_reghasladdr(const struct ua *ua, const struct sa *laddr);
 int uas_req_auth(struct ua *ua, const struct sip_msg *msg);
 
 /*

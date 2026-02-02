@@ -390,24 +390,6 @@ bool ua_regfailed(const struct ua *ua)
 }
 
 
-bool ua_reghasladdr(const struct ua *ua, const struct sa *laddr)
-{
-	struct le *le;
-
-	if (!ua || !laddr)
-		return false;
-
-	for (le = ua->regl.head; le; le = le->next) {
-
-		const struct reg *reg = le->data;
-		if (sa_cmp(reg_laddr(reg), laddr, SA_ADDR))
-			return true;
-	}
-
-	return false;
-}
-
-
 /**
  * Destroy the user-agent, terminate all active calls and
  * send the SHUTDOWN event.
