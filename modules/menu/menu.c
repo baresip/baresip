@@ -531,7 +531,9 @@ static int menu_autoanwser_call(struct call *call)
 		mem_deref(outgoing);
 	}
 
-	return call_answer(call, 200, VIDMODE_ON);
+	call_start_answtmr(call, 0);
+
+	return 0;
 }
 
 
