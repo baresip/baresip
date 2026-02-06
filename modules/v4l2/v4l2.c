@@ -197,6 +197,31 @@ static int init_mmap(struct vidsrc_st *st, const char *dev_name)
 }
 
 
+static uint32_t v4l2_enum_sizes(struct vidsrc_st *st, u_int32_t pixfmt,
+				int width, int height)
+{
+	struct v4l2_frmsizeenum frmsize;
+	uint32_t diff = (uint32_t) -1;
+	memset(&frmsize, 0, sizeof(frmsize));
+	frmsize.pixel_format = pixfmt;
+	for (frmsize.index=0;
+	     !v4l2_ioctl(st->fd, VIDIOC_ENUM_FRAMESIZES, &frmsize);
+	     frmsize.index++) {
+		if (frmsize.type == V4L2_FRMSIZE_TYPE_DISCRETE) {
+			int ds = abs((int) frmsize.discrete.width  - width) +
+				 abs((int) frmsize.discrete.height - height);
+			if ((uint32_t) ds < diff)
+				diff = (uint32_t) ds;
+
+			if (diff == 0)
+				break;
+		}
+	}
+
+	return diff;
+}
+
+
 static int v4l2_init_device(struct vidsrc_st *st, const char *dev_name,
 			    int width, int height)
 {
@@ -233,11 +258,16 @@ static int v4l2_init_device(struct vidsrc_st *st, const char *dev_name,
 	memset(&fmts, 0, sizeof(fmts));
 
 	fmts.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	uint32_t diff_min = (uint32_t) -1;
 	for (fmts.index=0; !v4l2_ioctl(st->fd, VIDIOC_ENUM_FMT, &fmts);
 			fmts.index++) {
 		if (match_fmt(fmts.pixelformat) != VID_FMT_N) {
-			st->pixfmt = fmts.pixelformat;
-			break;
+			uint32_t diff = v4l2_enum_sizes(st, fmts.pixelformat,
+							width, height);
+			if (diff < diff_min) {
+				diff_min = diff;
+				st->pixfmt = fmts.pixelformat;
+			}
 		}
 	}
 
