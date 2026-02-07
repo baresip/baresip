@@ -93,6 +93,7 @@ jobs:
           'python3-devel' \
           'SDL2-devel' \
           'spandsp-devel' \
+          'valgrind' \
           '/usr/bin/gdbus-codegen'
 
     - uses: actions/download-artifact@v4
@@ -147,7 +148,7 @@ jobs:
         cat >> placeholder.spec <<EOF
         %check
         cd %{__cmake_builddir}
-        ./test/selftest -d ../test/data/ -v
+        valgrind --leak-check=full --show-reachable=yes --error-exitcode=42 ./test/selftest -d ../test/data/
         EOF
 
     - name: "Write RPM macros configuration for baresip"
