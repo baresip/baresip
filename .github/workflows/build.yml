@@ -139,5 +139,5 @@ jobs:
         cmake --build build-static -j
 
     - name: selftest
-      if: ${{ runner.os == 'Linux' }}
+      if: ${{ matrix.compiler != 'clang' }}
       run: valgrind --leak-check=full --show-reachable=yes --error-exitcode=42 ./build-static/test/selftest
