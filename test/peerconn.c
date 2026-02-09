@@ -21,6 +21,7 @@ struct agent {
 	struct media_track *media;   /* pointer */
 	struct peer_connection *pc;
 	const char *name;
+	uint32_t magic;
 	bool use_audio;
 	bool use_video;
 	bool got_sdp;
@@ -30,6 +31,9 @@ struct agent {
 	bool got_video;
 	int err;
 };
+
+
+static const uint32_t MAGIC_AGENT = 0x0ee0c001;
 
 
 static struct agent *agent_peer(const struct agent *ag)
@@ -50,10 +54,11 @@ static struct agent *agent_peer(const struct agent *ag)
 
 static void agent_close(struct agent *ag, int err)
 {
-	peerconnection_close(ag->pc);
-
 	ag->media = NULL;
 	ag->err = err;
+
+	if (ag->fix)
+		ag->fix->terminated = true;
 
 	re_cancel();
 }
@@ -123,6 +128,8 @@ static void peerconnection_gather_handler(void *arg)
 	enum sdp_type type = SDP_NONE;
 	int err;
 
+	ASSERT_EQ(MAGIC_AGENT, ag->magic);
+
 	if (ag->err)
 		return;
 
@@ -168,6 +175,8 @@ static void peerconnection_estab_handler(struct media_track *media, void *arg)
 	struct agent *ag = arg;
 	struct audio *au;
 	int err = 0;
+
+	ASSERT_EQ(MAGIC_AGENT, ag->magic);
 
 	switch (mediatrack_kind(media)) {
 
@@ -216,8 +225,17 @@ static void peerconnection_close_handler(int err, void *arg)
 {
 	struct agent *ag = arg;
 
-	info("[ %s ] peer connection closed\n", ag->name);
+	ASSERT_EQ(MAGIC_AGENT, ag->magic);
 
+	if (err) {
+		warning("[ %s ] peer connection closed (%m)\n",
+			ag->name, err);
+	}
+	else {
+		info("[ %s ] peer connection closed\n", ag->name);
+	}
+
+ out:
 	agent_close(ag, err);
 }
 
@@ -256,6 +274,7 @@ static int agent_alloc(struct agent **agp, struct fixture *fix,
 	if (!ag)
 		return ENOMEM;
 
+	ag->magic = MAGIC_AGENT;
 	ag->fix = fix;
 	ag->name = name;
 	ag->use_audio = use_audio;
@@ -408,8 +427,10 @@ static int test_peerconn_param(bool use_audio, bool use_aufilt, bool use_video)
 
 	fix.terminated = true;
 
-	TEST_ERR(fix.a->err);
-	TEST_ERR(fix.b->err);
+	err = fix.a->err;
+	TEST_ERR(err);
+	err = fix.b->err;
+	TEST_ERR(err);
 
 	ASSERT_TRUE(fix.a->got_sdp);
 	ASSERT_TRUE(fix.b->got_sdp);
