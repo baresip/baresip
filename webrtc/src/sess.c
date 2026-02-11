@@ -123,9 +123,10 @@ static void peerconnection_close_handler(int err, void *arg)
 {
 	struct session *sess = arg;
 
-	warning("demo: session closed (%m)\n", err);
-
-	session_close(sess, err);
+	if (err) {
+		warning("demo: session closed (%m)\n", err);
+		session_close(sess, err);
+	}
 }
 
 
