@@ -46,7 +46,6 @@ static struct config core_config = {
 	/** Audio */
 	.audio = {
 		.audio_path = SHARE_PATH,
-		.txmode = AUDIO_MODE_POLL,
 		.level = false,
 		.src_fmt = AUFMT_S16LE,
 		.play_fmt = AUFMT_S16LE,
@@ -354,7 +353,6 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 {
 	struct vidsz size = {0, 0};
 	struct pl rxmode;
-	struct pl txmode;
 	struct pl jbtype;
 	struct pl tr;
 	struct pl pl;
@@ -442,17 +440,6 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	(void)conf_get_u32(conf, "auplay_srate", &cfg->audio.srate_play);
 	(void)conf_get_u32(conf, "ausrc_channels", &cfg->audio.channels_src);
 	(void)conf_get_u32(conf, "auplay_channels", &cfg->audio.channels_play);
-
-	if (0 == conf_get(conf, "audio_txmode", &txmode)) {
-
-		if (0 == pl_strcasecmp(&txmode, "poll"))
-			cfg->audio.txmode = AUDIO_MODE_POLL;
-		else if (0 == pl_strcasecmp(&txmode, "thread"))
-			cfg->audio.txmode = AUDIO_MODE_THREAD;
-		else {
-			warning("unsupported audio txmode (%r)\n", &txmode);
-		}
-	}
 
 	(void)conf_get_bool(conf, "audio_level", &cfg->audio.level);
 
@@ -630,7 +617,6 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "ausrc_srate\t\t%u\n"
 			 "auplay_channels\t\t%u\n"
 			 "ausrc_channels\t\t%u\n"
-			 "audio_txmode\t\t%s\n"
 			 "audio_level\t\t%s\n"
 			 "ausrc_format\t\t%s\n"
 			 "auplay_format\t\t%s\n"
@@ -647,8 +633,6 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 cfg->audio.alert_mod, cfg->audio.alert_dev,
 			 cfg->audio.srate_play, cfg->audio.srate_src,
 			 cfg->audio.channels_play, cfg->audio.channels_src,
-			 cfg->audio.txmode == AUDIO_MODE_POLL ?
-						"poll" : "thread",
 			 cfg->audio.level ? "yes" : "no",
 			 aufmt_name(cfg->audio.src_fmt),
 			 aufmt_name(cfg->audio.play_fmt),
@@ -897,7 +881,6 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#auplay_srate\t\t48000\n"
 			  "#ausrc_channels\t\t0\n"
 			  "#auplay_channels\t0\n"
-			  "#audio_txmode\t\tpoll\t\t# poll, thread\n"
 			  "audio_level\t\tno\n"
 			  "ausrc_format\t\ts16\t\t# s16, float, ..\n"
 			  "auplay_format\t\ts16\t\t# s16, float, ..\n"

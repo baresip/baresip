@@ -375,12 +375,6 @@ static inline bool in_range(const struct range *rng, uint32_t val)
 	return rng ? (val >= rng->min && val <= rng->max) : false;
 }
 
-/** Audio transmit mode */
-enum audio_mode {
-	AUDIO_MODE_POLL = 0,         /**< Polling mode                  */
-	AUDIO_MODE_THREAD,           /**< Use dedicated thread          */
-};
-
 /** RTP receive mode */
 enum rtp_receive_mode {
 	RECEIVE_MODE_MAIN = 0,  /**< RTP RX is processed in main thread      */
@@ -428,7 +422,6 @@ struct config_audio {
 	uint32_t srate_src;     /**< Opt. sampling rate for source  */
 	uint32_t channels_play; /**< Opt. channels for player       */
 	uint32_t channels_src;  /**< Opt. channels for source       */
-	enum audio_mode txmode; /**< Audio transmit mode            */
 	bool level;             /**< Enable audio level indication  */
 	int src_fmt;            /**< Audio source sample format     */
 	int play_fmt;           /**< Audio playback sample format   */

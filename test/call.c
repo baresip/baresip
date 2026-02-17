@@ -1134,7 +1134,7 @@ int test_call_aulevel(void)
 }
 
 
-static int test_100rel_audio_base(enum audio_mode txmode)
+static int test_100rel_audio_base(void)
 {
 	struct fixture fix, *f = &fix;
 	struct cancel_rule *cr;
@@ -1148,7 +1148,6 @@ static int test_100rel_audio_base(enum audio_mode txmode)
 		       ";regint=0;ptime=1;audio_player=mock-auplay,b"
 		       ";answermode=early;100rel=yes");
 	TEST_ERR(err);
-	conf_config()->audio.txmode = txmode;
 
 	cancel_rule_new(BEVENT_CUSTOM, f->b.ua, 1, -1, 0);
 	cr->prm = "auframe";
@@ -1233,13 +1232,8 @@ int test_call_100rel_audio(void)
 {
 	int err;
 
-	err = test_100rel_audio_base(AUDIO_MODE_POLL);
+	err = test_100rel_audio_base();
 	ASSERT_EQ(0, err);
-
-	err = test_100rel_audio_base(AUDIO_MODE_THREAD);
-	ASSERT_EQ(0, err);
-
-	conf_config()->audio.txmode = AUDIO_MODE_POLL;
 
  out:
 	return err;
@@ -1284,8 +1278,7 @@ int test_call_progress(void)
 }
 
 
-static int test_media_base(enum audio_mode txmode,
-			   enum aufmt sndfmt, enum aufmt acfmt)
+static int test_media_base(enum aufmt sndfmt, enum aufmt acfmt)
 {
 	struct fixture fix, *f = &fix;
 	struct cancel_rule *cr;
@@ -1300,7 +1293,6 @@ static int test_media_base(enum audio_mode txmode,
 
 	conf_config()->audio.srate_play = 16000;
 	conf_config()->audio.srate_src = 16000;
-	conf_config()->audio.txmode = txmode;
 	conf_config()->audio.src_fmt = sndfmt;
 	conf_config()->audio.channels_play = 1;
 	conf_config()->audio.channels_src = 1;
@@ -1350,7 +1342,6 @@ static int test_media_base(enum audio_mode txmode,
 
 	conf_config()->audio.src_fmt = AUFMT_S16LE;
 	conf_config()->audio.play_fmt = AUFMT_S16LE;
-	conf_config()->audio.txmode = AUDIO_MODE_POLL;
 	conf_config()->audio.srate_play = 0;
 	conf_config()->audio.srate_src = 0;
 	conf_config()->audio.channels_play = 0;
@@ -1381,28 +1372,16 @@ int test_call_format_float(void)
 
 	mock_aucodec_register();
 
-	err = test_media_base(AUDIO_MODE_POLL, AUFMT_S16LE, AUFMT_S16LE);
+	err = test_media_base(AUFMT_S16LE, AUFMT_S16LE);
 	TEST_ERR(err);
 
-	err = test_media_base(AUDIO_MODE_POLL, AUFMT_S16LE, AUFMT_FLOAT);
+	err = test_media_base(AUFMT_S16LE, AUFMT_FLOAT);
 	TEST_ERR(err);
 
-	err = test_media_base(AUDIO_MODE_POLL, AUFMT_FLOAT, AUFMT_S16LE);
+	err = test_media_base(AUFMT_FLOAT, AUFMT_S16LE);
 	TEST_ERR(err);
 
-	err = test_media_base(AUDIO_MODE_POLL, AUFMT_FLOAT, AUFMT_FLOAT);
-	TEST_ERR(err);
-
-	err = test_media_base(AUDIO_MODE_THREAD, AUFMT_S16LE, AUFMT_S16LE);
-	TEST_ERR(err);
-
-	err = test_media_base(AUDIO_MODE_THREAD, AUFMT_S16LE, AUFMT_FLOAT);
-	TEST_ERR(err);
-
-	err = test_media_base(AUDIO_MODE_THREAD, AUFMT_FLOAT, AUFMT_S16LE);
-	TEST_ERR(err);
-
-	err = test_media_base(AUDIO_MODE_THREAD, AUFMT_FLOAT, AUFMT_FLOAT);
+	err = test_media_base(AUFMT_FLOAT, AUFMT_FLOAT);
 	TEST_ERR(err);
 
  out:
