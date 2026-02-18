@@ -417,12 +417,10 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 			 const struct audio *au)
 {
 	struct mixausrc_enc *enc;
-	int err;
-	(void)au;
-	(void)af;
 	(void)ctx;
+	(void)af;
 
-	if (!stp || !ctx || !prm)
+	if (!stp || !prm)
 		return EINVAL;
 
 	if (*stp)
@@ -433,9 +431,11 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 		return ENOMEM;
 
 	enc->st.fadetime = DEFAULT_FADE_TIME;
-	err = str_dup(&enc->cname, stream_cname(audio_strm(au)));
-	if (err)
-		return err;
+	if (au) {
+		int err = str_dup(&enc->cname, stream_cname(audio_strm(au)));
+		if (err)
+			return err;
+	}
 
 	list_append(&encs, &enc->le_priv, enc);
 	*stp = (struct aufilt_enc_st *) enc;
@@ -449,10 +449,8 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 			 const struct audio *au)
 {
 	struct mixausrc_dec *dec;
-	int err;
-	(void)au;
-	(void)af;
 	(void)ctx;
+	(void)af;
 
 	if (!stp || !prm)
 		return EINVAL;
@@ -465,9 +463,11 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 		return ENOMEM;
 
 	dec->st.fadetime = DEFAULT_FADE_TIME;
-	err = str_dup(&dec->cname, stream_cname(audio_strm(au)));
-	if (err)
-		return err;
+	if (au) {
+		int err = str_dup(&dec->cname, stream_cname(audio_strm(au)));
+		if (err)
+			return err;
+	}
 
 	list_append(&decs, &dec->le_priv, dec);
 	*stp = (struct aufilt_dec_st *) dec;
@@ -847,9 +847,11 @@ static struct mixausrc_enc *enc_find(const struct cmd_arg *carg)
 
 	struct mixausrc_enc *enc = NULL;
 	for (struct le *le = encs.head; le; le = le->next) {
-		enc = le->data;
-		if (!re_regex(enc->cname, str_len(enc->cname), cname_str))
+		struct mixausrc_enc *tenc = le->data;
+		if (!re_regex(tenc->cname, str_len(tenc->cname), cname_str)) {
+			enc = tenc;
 			goto out;
+		}
 	}
 
 	warning("mixausrc: no encoding stream with cname=%r\n",	&cname);
@@ -874,9 +876,11 @@ static struct mixausrc_dec *dec_find(const struct cmd_arg *carg)
 
 	struct mixausrc_dec *dec = NULL;
 	for (struct le *le = decs.head; le; le = le->next) {
-		dec = le->data;
-		if (!re_regex(dec->cname, str_len(dec->cname), cname_str))
+		struct mixausrc_dec *tdec = le->data;
+		if (!re_regex(tdec->cname, str_len(tdec->cname), cname_str)) {
+			dec = tdec;
 			goto out;
+		}
 	}
 
 	warning("mixausrc: no decoding stream with cname=%r\n",	&cname);
