@@ -177,8 +177,7 @@ static void stop_tx(struct autx *tx, struct audio *a)
 		return;
 
 	stream_enable_tx(a->strm, false);
-	if (a->cfg.txmode == AUDIO_MODE_THREAD &&
-	    re_atomic_rlx(&tx->thr.run)) {
+	if (re_atomic_rlx(&tx->thr.run)) {
 		re_atomic_rlx_set(&tx->thr.run, false);
 		thrd_join(tx->thr.tid, NULL);
 	}
@@ -563,19 +562,6 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 	    (aubuf_cur_size(tx->aubuf) >= psize)) {
 		re_atomic_rlx_set(&tx->aubuf_started, true);
 	}
-
-	if (a->cfg.txmode != AUDIO_MODE_POLL)
-		return;
-
-	for (unsigned i=0; i<16; i++) {
-		if (aubuf_cur_size(tx->aubuf) < psize)
-			break;
-
-		poll_aubuf_tx(a);
-	}
-
-	/* Exact timing: send Telephony-Events from here */
-	check_telev(a, tx);
 }
 
 
@@ -1121,29 +1107,16 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 		mtx_unlock(tx->mtx);
 		tx->as = ausrc_find(ausrcl, tx->module);
 
-		switch (a->cfg.txmode) {
-
-		case AUDIO_MODE_POLL:
-			break;
-
-		case AUDIO_MODE_THREAD:
-			if (!re_atomic_rlx(&tx->thr.run)) {
-				re_atomic_rlx_set(&tx->thr.run, true);
-				err = thread_create_name(&tx->thr.tid,
-							 "Audio TX",
-							 tx_thread, a);
-				if (err) {
-					re_atomic_rlx_set(&tx->thr.run,
-							   false);
-					return err;
-				}
+		if (!re_atomic_rlx(&tx->thr.run)) {
+			re_atomic_rlx_set(&tx->thr.run, true);
+			err = thread_create_name(&tx->thr.tid,
+						 "Audio TX",
+						 tx_thread, a);
+			if (err) {
+				re_atomic_rlx_set(&tx->thr.run,
+						  false);
+				return err;
 			}
-			break;
-
-		default:
-			warning("audio: tx mode not supported (%d)\n",
-				a->cfg.txmode);
-			return ENOTSUP;
 		}
 
 		info("audio: source started with sample format %s\n",
