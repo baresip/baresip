@@ -454,7 +454,7 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 	(void)af;
 	(void)ctx;
 
-	if (!stp || !ctx || !prm)
+	if (!stp || !prm)
 		return EINVAL;
 
 	if (*stp)
