@@ -31,11 +31,6 @@ extern "C" {
  */
 #define VIDEO_TIMEBASE 1000000U
 
-/** Define the minimum Threshold between two samples to detect a click */
-#ifndef CLICK_THRESHOLD_MIN
-#define CLICK_THRESHOLD_MIN 20000
-#endif
-
 /* forward declarations */
 struct sa;
 struct sdp_media;
@@ -48,7 +43,6 @@ struct vidframe;
 struct vidrect;
 struct vidsz;
 
-void calculate_timestamp(char *char_buffer);
 
 /*
  * Account
@@ -953,31 +947,12 @@ enum ua_event {
 	
 	UA_EVENT_OPENAI_RESPONSE,
 
-	UA_EVENT_AUDIO_LATENCY_INCOMING, /**< click detection on decoder side*/
-	UA_EVENT_AUDIO_LATENCY_OUTGOING, /**< click detection on encoder side*/
+	UA_EVENT_AUDIO_LATENCY_OUTGOING,  /**< Tone sent on encoder side */
+	UA_EVENT_AUDIO_LATENCY_INCOMING,  /**< Tone detected on decoder side */
 
 	UA_EVENT_MAX,
 	UA_EVENT_SUB_NOTIFY,
 };
-
-/* Define function pointer for event callback */
-typedef void (*ClickEventHandler)(
-	const char *char_buffer,
-	const int index,
-	enum ua_event event
-);
-
-int detect_click(
-	int16_t *audio_data,
-	const int num_samples,
-	char *char_buffer,
-	ClickEventHandler event_handler,
-	enum ua_event event);
-
-void baresip_click_event_handler(
-	const char *char_buffer,
-	const int index,
-	enum ua_event event);
 
 struct bevent;
 

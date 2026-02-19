@@ -150,8 +150,9 @@ static const char *ua_event_class_name(enum ua_event ev)
 	case UA_EVENT_TRACE_RX_MSG:
 		return "trace";
 
-	case UA_EVENT_AUDIO_LATENCY_INCOMING:
 	case UA_EVENT_AUDIO_LATENCY_OUTGOING:
+	case UA_EVENT_AUDIO_LATENCY_INCOMING:
+		return "audio_latency";
 
 	case UA_EVENT_SUB_NOTIFY:
 
@@ -1100,8 +1101,8 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_CALL_ENDED_REMOTE:    return "CALL_ENDED_REMOTE";
 	case UA_EVENT_CALL_STAT:            return "CALL_STAT";
 	case UA_EVENT_OPENAI_RESPONSE:      return "OPENAI_RESPONSE";
-	case UA_EVENT_AUDIO_LATENCY_INCOMING:  return "AUDIO_LATENCY_INCOMING";
 	case UA_EVENT_AUDIO_LATENCY_OUTGOING:  return "AUDIO_LATENCY_OUTGOING";
+	case UA_EVENT_AUDIO_LATENCY_INCOMING:  return "AUDIO_LATENCY_INCOMING";
 	case UA_EVENT_SUB_NOTIFY:			return "NOTIFY";
 	default: return "?";
 	}

@@ -77,6 +77,7 @@ set(MODULES
   subscribe
   swscale
   syslog
+  tonedetect
   turn
   uuid
   v4l2
