@@ -2064,7 +2064,6 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 
 	err |= re_hprintf(pf, "\nAccount:\n");
 
-	err |= re_hprintf(pf, " address:      %s\n", acc->buf);
 	err |= re_hprintf(pf, " luri:         %H\n",
 			  uri_encode, &acc->luri);
 	err |= re_hprintf(pf, " aor:          %s\n", acc->aor);
@@ -2095,12 +2094,13 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 	err |= re_hprintf(pf, " catchall:         %s\n",
 			  acc->catchall ? "yes" : "no");
 	err |= re_hprintf(pf, " cert:             %s\n", acc->cert);
-	err |= re_hprintf(pf, " check_origin  %s\n",
+	err |= re_hprintf(pf, " check_origin      %s\n",
 			  account_check_origin(acc) ? "yes" : "no");
 	err |= re_hprintf(pf, " dtmfmode:         %s\n",
 			  dtmfmode_str(acc->dtmfmode));
 	err |= re_hprintf(pf, " extra:            %s\n",
 			  acc->extra ? acc->extra : "none");
+	err |= re_hprintf(pf, " fbregint:         %u\n", acc->fbregint);
 	err |= re_hprintf(pf, " inreq_allowed:    %s\n",
 			  inreq_mode_str(acc->inreq_mode));
 	err |= re_hprintf(pf, " mediaenc:         %s\n",
@@ -2124,16 +2124,19 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 	err |= re_hprintf(pf, " regq:             %s\n", acc->regq);
 	err |= re_hprintf(pf, " rtcp_mux:         %s\n",
 			  acc->rtcp_mux ? "yes" : "no");
+	err |= re_hprintf(pf, " rwait:            %u\n", acc->rwait);
 	err |= re_hprintf(pf, " sipnat:           %s\n", acc->sipnat);
 	err |= re_hprintf(pf, " stunuser:         %s\n", acc->stun_user);
 	err |= re_hprintf(pf, " stunserver:       %H\n",
 			  stunuri_print, acc->stun_host);
-	err |= re_hprintf(pf, " sipans:           %s\n",
+	err |= re_hprintf(pf, " sip_autoanswer:   %s\n",
 			  acc->sipans ? "yes" : "no");
 	err |= re_hprintf(pf, " sipansbeep:       %s\n",
 			  sipansbeep_str(acc->sipansbeep));
 	err |= re_hprintf(pf, " sip_autoredirect: %s\n",
 			  acc->autoredirect ? "yes" : "no");
+	err |= re_hprintf(pf, " tcpsrcport:       %u\n", acc->tcpsrcport);
+	err |= re_hprintf(pf, " uas_user:         %s\n", acc->uas_user);
 
 	if (!list_isempty(&acc->vidcodecl)) {
 		err |= re_hprintf(pf, " video_codecs:    ");
