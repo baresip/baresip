@@ -1425,6 +1425,12 @@ int call_hold(struct call *call, bool hold)
 	FOREACH_STREAM
 		stream_hold(le->data, hold);
 
+	/* Emit local hold/resume event when requested */
+	if (hold)
+		bevent_call_emit(UA_EVENT_CALL_HOLD_LOCAL, call, "");
+	else
+		bevent_call_emit(UA_EVENT_CALL_RESUME_LOCAL, call, "");
+
 	return call_modify(call);
 }
 

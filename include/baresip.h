@@ -933,6 +933,8 @@ enum ua_event {
 	UA_EVENT_CALL_REMOTE_SDP,     /**< param: offer or answer 	*/
 	UA_EVENT_CALL_HOLD,           /**< Call put on-hold by peer */
 	UA_EVENT_CALL_RESUME,         /**< Call resumed by peer     */
+	UA_EVENT_CALL_HOLD_LOCAL,     /**< Call put on-hold by local side */
+	UA_EVENT_CALL_RESUME_LOCAL,   /**< Call resumed by local side */
 	UA_EVENT_REFER,
 	UA_EVENT_MODULE,
 	UA_EVENT_END_OF_FILE,
