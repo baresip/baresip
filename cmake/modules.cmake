@@ -36,6 +36,7 @@ set(MODULES
   g7221
   g726
   g729
+  gsm
   gst
   gtk
   gzrtp

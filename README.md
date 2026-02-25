@@ -76,6 +76,7 @@ Distributed under BSD license
   - G.711
   - G.722
   - G.726
+  - GSM
   - L16
   - MPA
   - Opus
@@ -279,6 +280,7 @@ g711          G.711 audio codec
 g722          G.722 audio codec
 g7221         G.722.1 audio codec
 g726          G.726 audio codec
+gsm           GSM audio codec
 gst           Gstreamer audio source
 gtk           GTK+ 3 menu-based UI
 gzrtp         ZRTP module using GNU ZRTP C++ library
