@@ -699,7 +699,7 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 	enum sdp_dir ardir, vrdir;
 	uint32_t count;
 	struct pl val;
-	char * uri;
+	const char *uri;
 	const char           *prm  = bevent_get_text(event);
 	struct call          *call = bevent_get_call(event);
 	struct ua            *ua   = bevent_get_ua(event);
