@@ -70,16 +70,13 @@ static void ua_destructor(void *arg)
 }
 
 
-void ua_printf(const struct ua *ua, const char *fmt, ...)
+int ua_printf(struct re_printf *pf, const struct ua *ua)
 {
-	va_list ap;
-
 	if (!ua)
-		return;
+		return 0;
 
-	va_start(ap, fmt);
-	info("%r@%r: %v", &ua->acc->luri.user, &ua->acc->luri.host, fmt, &ap);
-	va_end(ap);
+	return re_hprintf(pf, "%r@%r", &ua->acc->luri.user,
+			  &ua->acc->luri.host);
 }
 
 
@@ -561,17 +558,17 @@ static void call_event_handler(struct call *call, enum call_event ev,
 		break;
 
 	case CALL_EVENT_PROGRESS:
-		ua_printf(ua, "Call in-progress: %s\n", peeruri);
+		info("%H: Call in-progress: %s\n", ua_printf, ua, peeruri);
 		bevent_call_emit(BEVENT_CALL_PROGRESS, call, "%s", peeruri);
 		break;
 
 	case CALL_EVENT_ANSWERED:
-		ua_printf(ua, "Call answered: %s\n", peeruri);
+		info("%H: Call answered: %s\n", ua_printf, ua, peeruri);
 		bevent_call_emit(BEVENT_CALL_ANSWERED, call, "%s", peeruri);
 		break;
 
 	case CALL_EVENT_ESTABLISHED:
-		ua_printf(ua, "Call established: %s\n", peeruri);
+		info("%H: Call established: %s\n", ua_printf, ua, peeruri);
 		bevent_call_emit(BEVENT_CALL_ESTABLISHED, call,
 				"%s", peeruri);
 		break;
@@ -1228,20 +1225,21 @@ int ua_alloc(struct ua **uap, const char *aor)
 		goto out;
 
 	if (ua->acc->sipnat) {
-		ua_printf(ua, "Using sipnat: '%s'\n", ua->acc->sipnat);
+		info("%H: Using sipnat: '%s'\n", ua_printf, ua,
+		     ua->acc->sipnat);
 	}
 
 	if (ua->acc->mnat) {
-		ua_printf(ua, "Using medianat '%s'\n",
-			  ua->acc->mnat->id);
+		info("%H: Using medianat '%s'\n", ua_printf, ua,
+		     ua->acc->mnat->id);
 
 		if (0 == str_casecmp(ua->acc->mnat->id, "ice"))
 			ua_add_extension(ua, "ice");
 	}
 
 	if (ua->acc->menc) {
-		ua_printf(ua, "Using media encryption '%s'\n",
-			  ua->acc->menc->id);
+		info("%H: Using media encryption '%s'\n", ua_printf, ua,
+		     ua->acc->menc->id);
 	}
 
 	if (ua->acc->cert) {
@@ -1561,7 +1559,7 @@ int ua_hold_answer(struct ua *ua, struct call *call, enum vidmode vmode)
 	/* put established call on-hold */
 	pcall = ua_find_call_state(ua, CALL_STATE_ESTABLISHED);
 	if (pcall) {
-		ua_printf(ua, "putting call with '%s' on hold\n",
+		info("%H: putting call with '%s' on hold\n", ua_printf, ua,
 		     call_peeruri(pcall));
 
 		err = call_hold(pcall, true);

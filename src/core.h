@@ -364,8 +364,7 @@ void stream_mnat_connected(struct stream *strm, const struct sa *raddr1,
 
 struct ua;
 
-void         ua_printf(const struct ua *ua, const char *fmt, ...);
-
+int ua_printf(struct re_printf *pf, const struct ua *ua);
 int ua_print_allowed(struct re_printf *pf, const struct ua *ua);
 int ua_print_require(struct re_printf *pf, const struct ua *ua);
 struct call *ua_find_call_onhold(const struct ua *ua);

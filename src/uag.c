@@ -943,7 +943,7 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 			continue;
 
 		if (0 == pl_strcasecmp(cuser, ua_local_cuser(ua))) {
-			ua_printf(ua, "selected for %r\n", cuser);
+			info("%H: selected for %r\n", ua_printf, ua, cuser);
 			return ua;
 		}
 	}
@@ -963,7 +963,8 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 			continue;
 
 		if (0 == pl_casecmp(cuser, &acc->luri.user)) {
-			ua_printf(ua, "account match for %r\n", cuser);
+			info("%H: account match for %r\n", ua_printf, ua,
+			     cuser);
 			return ua;
 		}
 
@@ -972,7 +973,7 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 	}
 
 	if (uaf)
-		ua_printf(uaf, "selected fallback\n");
+		info("%H: selected fallback\n", ua_printf, uaf);
 
 	return uaf;
 }
@@ -1134,7 +1135,7 @@ struct ua *uag_find_requri_pl(const struct pl *requri)
 	}
 
 	if (ret) {
-		ua_printf(ret, "selected for request\n");
+		info("%H: selected for request\n", ua_printf, ret);
 	}
 	else {
 		/* Ok, seems that matching account is missing. */
@@ -1143,7 +1144,7 @@ struct ua *uag_find_requri_pl(const struct pl *requri)
 		}
 
 		ret = uag.ual.head->data;
-		ua_printf(ret, "fallback selection\n");
+		info("%H: fallback selection\n", ua_printf, ret);
 	}
 
 out:
