@@ -27,6 +27,26 @@ static void delayed_dtmf_check(void *arg)
 }
 
 
+static int check_bevent(const struct bevent *event)
+{
+	struct odict *od = NULL;
+	enum { HASH_SIZE = 16 };
+
+	int err = odict_alloc(&od, HASH_SIZE);
+	if (err)
+		return err;
+
+	err = bevent_odict_encode(od, event);
+	TEST_ERR(err);
+
+	ASSERT_TRUE(odict_count(od, true) >= 1);
+
+ out:
+	mem_deref(od);
+	return err;
+}
+
+
 static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 {
 	struct fixture *f = arg;
@@ -47,6 +67,9 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 
 	ASSERT_TRUE(f != NULL);
 	ASSERT_EQ(MAGIC, f->magic);
+
+	err = check_bevent(event);
+	TEST_ERR(err);
 
 	if (ev == BEVENT_CREATE)
 		return;
