@@ -943,7 +943,7 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 			continue;
 
 		if (0 == pl_strcasecmp(cuser, ua_local_cuser(ua))) {
-			info("%H: selected for %r\n", ua_printf, ua, cuser);
+			debug("%H: selected for %r\n", ua_printf, ua, cuser);
 			return ua;
 		}
 	}
@@ -963,8 +963,8 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 			continue;
 
 		if (0 == pl_casecmp(cuser, &acc->luri.user)) {
-			info("%H: account match for %r\n", ua_printf, ua,
-			     cuser);
+			debug("%H: account match for %r\n", ua_printf, ua,
+			      cuser);
 			return ua;
 		}
 
@@ -973,7 +973,7 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 	}
 
 	if (uaf)
-		info("%H: selected fallback\n", ua_printf, uaf);
+		debug("%H: selected fallback\n", ua_printf, uaf);
 
 	return uaf;
 }
