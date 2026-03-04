@@ -6,9 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## v4.6.0 - 2026-03-04
+
+### What's Changed
+* ci/windows: install latest version of OpenSSL via choco by @alfredh in https://github.com/baresip/baresip/pull/3637
+* ci: increase minimum coverage by @alfredh in https://github.com/baresip/baresip/pull/3634
+* test: add testing of audio filters in peerconn by @alfredh in https://github.com/baresip/baresip/pull/3635
+* ua/ua_call_alloc: add default source addr fallback by @sreimers in https://github.com/baresip/baresip/pull/3639
+* menu: use answtmr for autoanswer by @maximilianfridrich in https://github.com/baresip/baresip/pull/3640
+* v4l2: enumerate resolutions by @cspiel1 in https://github.com/baresip/baresip/pull/3643
+* ua: remove unused ua_reghasladdr() by @alfredh in https://github.com/baresip/baresip/pull/3641
+* ci: add running of baresip program in coverage job by @alfredh in https://github.com/baresip/baresip/pull/3636
+* webrtc/sess: close by peerconnection only on error by @sreimers in https://github.com/baresip/baresip/pull/3651
+* mixausrc: do not check ctx pointer as it is unused by @maximilianfridrich in https://github.com/baresip/baresip/pull/3654
+* audio: remove audio_mode by @alfredh in https://github.com/baresip/baresip/pull/3653
+* test: misc peerconn test improvements by @alfredh in https://github.com/baresip/baresip/pull/3648
+* mixausrc: do not exit if cname is not set by @maximilianfridrich in https://github.com/baresip/baresip/pull/3655
+* account: improve account_debug by @maximilianfridrich in https://github.com/baresip/baresip/pull/3657
+* menu: fix discards const qualifier by @cspiel1 in https://github.com/baresip/baresip/pull/3658
+* test: add testing of ausrc module by @alfredh in https://github.com/baresip/baresip/pull/3656
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v4.5.0...v4.6.0
+
+
 ## v4.5.0 - 2026-01-28
 
-## What's Changed
+### What's Changed
 * rtprecv: fix race condition after video-display was closed by @cspiel1 in https://github.com/baresip/baresip/pull/3590
 * account: added ;check_origin parameter and API functions to get and set it by @juha-h in https://github.com/baresip/baresip/pull/3587
 * peerconn: always call close handler on destruct by @sreimers in https://github.com/baresip/baresip/pull/3592
