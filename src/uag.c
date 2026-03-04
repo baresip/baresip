@@ -946,6 +946,9 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 			ua_printf(ua, "selected for %r\n", cuser);
 			return ua;
 		}
+
+		if (!uaf && ua_catchall(ua))
+			uaf = ua;
 	}
 
 	/* match for peer-to-peer calls (only un-registered accounts) */
