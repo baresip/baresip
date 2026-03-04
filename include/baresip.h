@@ -1728,7 +1728,7 @@ void module_app_unload(void);
  * Generic event
  */
 
-int odict_encode_bevent(struct odict *od, struct bevent *event);
+int bevent_odict_encode(struct odict *od, const struct bevent *event);
 int event_add_au_jb_stat(struct odict *od_parent, const struct call *call);
 int  bevent_register(bevent_h *eh, void *arg);
 void bevent_unregister(bevent_h *eh);

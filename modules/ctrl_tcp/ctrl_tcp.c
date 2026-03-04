@@ -268,7 +268,7 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 		return;
 
 	err = odict_entry_add(od, "event", ODICT_BOOL, true);
-	err |= odict_encode_bevent(od, event);
+	err |= bevent_odict_encode(od, event);
 	if (err) {
 		warning("ctrl_tcp: failed to encode event (%m)\n", err);
 		goto out;

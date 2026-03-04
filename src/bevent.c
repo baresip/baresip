@@ -351,7 +351,7 @@ static int odict_encode_call(struct odict *od, struct call *call)
 }
 
 
-int odict_encode_bevent(struct odict *od, struct bevent *event)
+int bevent_odict_encode(struct odict *od, const struct bevent *event)
 {
 	if (!event)
 		return EINVAL;

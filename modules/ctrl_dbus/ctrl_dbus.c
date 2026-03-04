@@ -253,7 +253,7 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 
 	pf.vph = print_handler;
 	pf.arg = buf;
-	err = odict_encode_bevent(od, event);
+	err = bevent_odict_encode(od, event);
 	if (err)
 		goto out;
 

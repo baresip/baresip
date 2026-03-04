@@ -58,7 +58,7 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 
 	struct odict *od = NULL;
 	int err = odict_alloc(&od, 8);
-	err |= odict_encode_bevent(od, event);
+	err |= bevent_odict_encode(od, event);
 	if (err) {
 		warning("bevent: encode failed: %m\n", err);
 		bevent_set_error(event, err);

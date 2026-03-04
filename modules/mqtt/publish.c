@@ -30,7 +30,7 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 	if (err)
 		return;
 
-	err = odict_encode_bevent(od, event);
+	err = bevent_odict_encode(od, event);
 	if (err)
 		goto out;
 
