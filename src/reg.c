@@ -139,12 +139,12 @@ static void register_handler(int err, const struct sip_msg *msg, void *arg)
 		reg->af    = sipmsg_af(msg);
 
 		if (msg->scode != reg->scode && reg->regint) {
-			ua_printf(reg->ua, "(prio %u) {%d/%s/%s} %u %r (%s)"
-				  " [%u binding%s]\n",
-				  prio, reg->id, sip_transp_name(msg->tp),
-				  af_name(reg->af), msg->scode, &msg->reason,
-				  reg->srv, n_bindings,
-				  1==n_bindings?"":"s");
+			info("%H: (prio %u) {%d/%s/%s} %u %r (%s)"
+			     " [%u binding%s]\n", ua_printf, reg->ua,
+			     prio, reg->id, sip_transp_name(msg->tp),
+			     af_name(reg->af), msg->scode, &msg->reason,
+			     reg->srv, n_bindings,
+			     1==n_bindings?"":"s");
 		}
 
 		reg->scode = msg->scode;
