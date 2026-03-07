@@ -209,22 +209,42 @@ static int encode_pip(struct vidfilt_enc_st *st, struct vidframe *frame,
 		return 0;
 
 	mtx_lock(&selfview->lock);
-	if (!selfview->frame) {
-		struct vidsz sz;
 
-		/* Use size if configured, or else 20% of main window */
-		if (selfview_size.w && selfview_size.h) {
-			sz = selfview_size;
-		}
-		else {
-			sz.w = frame->size.w / 5;
-			sz.h = frame->size.h / 5;
-		}
+	struct vidsz target_sz;
 
-		err = vidframe_alloc(&selfview->frame, VID_FMT_YUV420P, &sz);
+	/* Use size if configured, or else 20% of main window */
+	if (selfview_size.w && selfview_size.h) {
+		target_sz = selfview_size;
+		/* If source is portrait but config is landscape
+		   (or vice versa), swap target*/
+		bool frame_is_portrait = frame->size.h > frame->size.w;
+		bool target_is_portrait = target_sz.h > target_sz.w;
+		if (frame_is_portrait != target_is_portrait) {
+			uint32_t tmp = target_sz.w;
+			target_sz.w = target_sz.h;
+			target_sz.h = tmp;
+		}
 	}
+	else {
+		target_sz.w = frame->size.w / 5;
+		target_sz.h = frame->size.h / 5;
+	}
+
+	/* Check if capture resolution has changed (e.g. rotation) */
+	if (selfview->frame && (selfview->frame->size.w != target_sz.w ||
+				selfview->frame->size.h != target_sz.h)) {
+		selfview->frame = mem_deref(selfview->frame);
+	}
+
+	/* Reallocate if necessary */
+	if (!selfview->frame) {
+		err = vidframe_alloc(&selfview->frame, VID_FMT_YUV420P,
+				     &target_sz);
+	}
+
 	if (!err)
 		vidconv(selfview->frame, frame, NULL);
+
 	mtx_unlock(&selfview->lock);
 
 	return err;
