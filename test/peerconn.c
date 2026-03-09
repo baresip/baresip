@@ -474,9 +474,29 @@ static int test_peerconn_param(bool use_audio, bool use_aufilt, bool use_video)
 }
 
 
+static bool if_handler(const char *ifname, const struct sa *sa, void *arg)
+{
+	bool *have_real_ip = arg;
+	(void)ifname;
+
+	if (sa_is_loopback(sa) || sa_is_linklocal(sa))
+		return false;
+
+	*have_real_ip = true;
+
+	return true;
+}
+
+
 int test_peerconn(void)
 {
+	bool have_real_ip = false;
 	int err;
+
+	/* skip the test if no other interface than loopback is available */
+	net_laddr_apply(baresip_network(), if_handler, &have_real_ip);
+	if (!have_real_ip)
+		return 0;
 
 	if (conf_config()->avt.rxmode == RECEIVE_MODE_THREAD)
 		return 0;
