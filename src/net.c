@@ -590,6 +590,19 @@ int net_set_af(struct network *net, int af)
 }
 
 
+/**
+ * Get the enabled address family (AF)
+ *
+ * @param net Network instance
+ *
+ * @return AF_UNSPEC, AF_INET or AF_INET6
+ */
+int net_af(const struct network *net)
+{
+	return net ? net->cfg.af : AF_UNSPEC;
+}
+
+
 bool net_ifaddr_filter(const struct network *net, const char *ifname,
 			      const struct sa *sa)
 {
