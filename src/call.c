@@ -2983,12 +2983,6 @@ int call_replace_transfer(struct call *call, struct call *source_call)
 }
 
 
-int call_af(const struct call *call)
-{
-	return call ? call->af : AF_UNSPEC;
-}
-
-
 /**
  * Get the SIP status code for the outgoing call
  *
