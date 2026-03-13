@@ -843,6 +843,7 @@ int  net_flush_addresses(struct network *net);
 int  net_rm_address(struct network *net, const struct sa *ip);
 bool net_af_enabled(const struct network *net, int af);
 int  net_set_af(struct network *net, int af);
+int  net_af(const struct network *net);
 void net_dns_refresh(struct network *net);
 int  net_dns_debug(struct re_printf *pf, const struct network *net);
 int  net_debug(struct re_printf *pf, const struct network *net);
