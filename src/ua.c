@@ -898,6 +898,9 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 		laddr = ua_regladdr(ua);
 		af = sa_af(laddr);
 	}
+	else {
+		af = net_af(net);
+	}
 
 	if (af != AF_UNSPEC && !net_af_enabled(net, af)) {
 		warning("ua: address family %s not supported\n",
