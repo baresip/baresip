@@ -31,7 +31,10 @@ static int cmd_test(struct re_printf *pf, void *arg)
 
 
 static const struct cmd cmdv[] = {
-	{NULL, '@', 0, "Test command",  cmd_test},
+	{NULL, '@',         0, "Test command",  cmd_test},
+	{NULL, ' ',         0, "Test command",  cmd_test},
+	{NULL, '\n',        0, "Test command",  cmd_test},
+	{NULL, KEYCODE_ESC, 0, "Test command",  cmd_test},
 };
 
 
@@ -103,7 +106,8 @@ static int long_handler(struct re_printf *pf, void *arg)
 
 
 static const struct cmd longcmdv[] = {
-	{ "test", 0, 0, "Test Command", long_handler},
+	{ "test",  0, CMD_PRM, "Test Command", long_handler},
+	{ "test2", 0, CMD_PRM, "Test Command", long_handler},
 };
 
 
@@ -112,7 +116,7 @@ int test_cmd_long(void)
 	struct commands *commands = NULL;
 	struct test test;
 	const struct cmd *cmd;
-	static const char *input_str = "/test 123\n";
+	static const char *input_str = "\t/test 123\n";
 	struct cmd_ctx *ctx = NULL;
 	size_t i;
 	int err;
