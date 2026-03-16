@@ -2034,6 +2034,7 @@ static int test_call_bundle_base(bool use_mnat, bool use_menc)
 	struct call *callv[2];
 	struct audio *audiov[2];
 	struct video *videov[2];
+	char *debug_str = NULL;
 	unsigned i;
 	int err;
 
@@ -2156,11 +2157,27 @@ static int test_call_bundle_base(bool use_mnat, bool use_menc)
 		ASSERT_TRUE(stream_is_secure(video_strm(videov[1])));
 	}
 
+	for (i=0; i<2; i++) {
+
+		err = re_sdprintf(&debug_str, "%H",
+				  audio_debug, call_audio(callv[i]));
+		TEST_ERR(err);
+		ASSERT_TRUE(str_isset(debug_str));
+		debug_str = mem_deref(debug_str);
+
+		err = re_sdprintf(&debug_str, "%H",
+				  video_debug, call_video(callv[i]));
+		TEST_ERR(err);
+		ASSERT_TRUE(str_isset(debug_str));
+		debug_str = mem_deref(debug_str);
+	}
+
  out:
 	fixture_close(f);
 
 	mem_deref(sdp);
 	mem_deref(vidisp);
+	mem_deref(debug_str);
 	module_unload("fakevideo");
 	mock_vidcodec_unregister();
 
