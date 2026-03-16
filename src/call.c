@@ -1129,6 +1129,22 @@ int call_modify(struct call *call)
 
 
 /**
+ * Send a re-INVITE without SDP offer
+ *
+ * @param call Call object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int call_modify_nosdp(struct call *call)
+{
+	if (!call || !call->sess)
+		return EINVAL;
+
+	return sipsess_modify(call->sess, NULL);
+}
+
+
+/**
  * Hangup the call
  *
  * @param call   Call to hangup
