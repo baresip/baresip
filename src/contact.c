@@ -432,7 +432,7 @@ static bool find_handler(struct le *le, void *arg)
  */
 struct contact *contact_find(const struct contacts *contacts, const char *uri)
 {
-	if (!contacts)
+	if (!contacts || !str_isset(uri))
 		return NULL;
 
 	return list_ledata(hash_lookup(contacts->cht, hash_joaat_str(uri),
