@@ -711,12 +711,8 @@ static void process_module_event(struct call *call, const char *prm)
 
 static void apply_contact_mediadir(struct call *call)
 {
-	const char *peeruri = call_peeruri(call);
-	if (!peeruri)
-		return;
-
 	const struct contacts *contacts = baresip_contacts();
-	struct contact *con = contact_find(contacts, peeruri);
+	struct contact *con = contact_find_call(contacts, call);
 	if (!con)
 		return;
 
