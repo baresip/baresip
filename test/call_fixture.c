@@ -430,8 +430,42 @@ out:
 }
 
 
+static int check_ua_debug(const struct ua *ua)
+{
+	if (!ua)
+		return 0;
+
+	char *debug_str = NULL;
+	int err = re_sdprintf(&debug_str, "%H", ua_print_calls, ua);
+	TEST_ERR(err);
+	ASSERT_TRUE(str_isset(debug_str));
+	debug_str = mem_deref(debug_str);
+
+	const struct call *call = ua_call(ua);
+	if (call) {
+		err = re_sdprintf(&debug_str, "%H%H",
+				  call_debug, call,
+				  call_status, call);
+		TEST_ERR(err);
+		ASSERT_TRUE(str_isset(debug_str));
+	}
+
+ out:
+	mem_deref(debug_str);
+
+	return err;
+}
+
+
 void fixture_close(struct fixture *f)
 {
+	if (!f)
+		return;
+
+	check_ua_debug(f->a.ua);
+	check_ua_debug(f->b.ua);
+	check_ua_debug(f->c.ua);
+
 	tmr_cancel(&f->a.tmr_ack);
 	tmr_cancel(&f->b.tmr_ack);
 	tmr_cancel(&f->c.tmr_ack);
