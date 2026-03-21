@@ -2319,6 +2319,17 @@ int test_call_ipv6ll(void)
 }
 
 
+/*
+ * Test: Call hold and resume with various media directions.
+ *
+ * - A calls B with sendrecv, verifies audio is enabled and bi-directional.
+ * - A puts B on hold (changes to sendonly), verifies B receives ON_HOLD event.
+ * - A resumes call (back to sendrecv), verifies B receives RESUME event.
+ * - A makes new call with sendonly direction, repeats hold/resume steps.
+ * - B puts A on hold (changes to sendonly), verifies A receives ON_HOLD event.
+ * - B sets media to inactive, then resumes (changes to sendrecv),
+ *   verifies A receives RESUME event.
+ */
 static int test_call_hold_resume_base(bool tcp)
 {
 	struct fixture fix, *f = &fix;
@@ -2577,6 +2588,243 @@ static int test_call_hold_resume_base(bool tcp)
 }
 
 
+/*
+ * Test: B holds A, then B sends a re-INVITE without SDP.
+ * A responds with 200 OK containing an SDP offer (sendrecv).
+ * B sends the SDP answer in the ACK with sendrecv, resuming the call.
+ * Expectation: A emits a BEVENT_CALL_RESUME after receiving the ACK.
+ */
+static int test_call_hold_resume_nosdp(void)
+{
+	struct fixture fix, *f = &fix;
+	struct cancel_rule *cr;
+	int err = 0;
+
+	fixture_init(f);
+	cancel_rule_new(BEVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
+	cr->n_audio_estab = 1;
+	cancel_rule_and(BEVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
+	cr->n_audio_estab = 1;
+
+	err = module_load(".", "ausine");
+	TEST_ERR(err);
+	err = module_load(".", "aufile");
+	TEST_ERR(err);
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+	f->estab_action = ACTION_NOTHING;
+
+	/* Make a call from A to B */
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_ON);
+	TEST_ERR(err);
+
+	/* wait for RTP audio */
+	err = re_main_timeout(10000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	/* verify sendrecv on both sides */
+	struct sdp_media *m;
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(m));
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(m));
+
+	/* B puts A on hold */
+	cancel_rule_new(BEVENT_CALL_REMOTE_SDP, f->a.ua, 0, 0, 1);
+	cr->prm = "offer";
+	cancel_rule_and(BEVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 1);
+	cr->prm = "answer";
+
+	err = call_hold(ua_call(f->b.ua), true);
+	TEST_ERR(err);
+	err = re_main_timeout(10000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	err = agent_wait_for_ack(&f->a, -1, -1, 1);
+	TEST_ERR(err);
+
+	ASSERT_EQ(1, f->a.n_hold_cnt);
+	ASSERT_EQ(0, f->b.n_hold_cnt);
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
+	ASSERT_EQ(SDP_SENDONLY, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_SENDONLY, sdp_media_rdir(m));
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_RECVONLY, sdp_media_rdir(m));
+	ASSERT_TRUE(!call_ack_pending(ua_call(f->a.ua)));
+
+	/* B resumes by: setting media direction to sendrecv, then
+	 * sending a re-INVITE without SDP.
+	 * A will create an SDP offer in 200 OK (sendrecv).
+	 * B will send the SDP answer in the ACK (sendrecv). */
+	cancel_rule_new(BEVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 1);
+	cr->prm = "offer";
+	cancel_rule_and(BEVENT_CALL_REMOTE_SDP, f->a.ua, 0, 0, 1);
+	cr->prm = "answer";
+
+	call_set_media_direction(ua_call(f->b.ua), SDP_SENDRECV, SDP_SENDRECV);
+
+	err = call_modify_nosdp(ua_call(f->b.ua));
+	TEST_ERR(err);
+	err = re_main_timeout(10000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	err = agent_wait_for_ack(&f->a, -1, -1, 1);
+	TEST_ERR(err);
+
+	/* A should have emitted resume after receiving the SDP answer
+	 * in the ACK (stream goes from recvonly back to sendrecv) */
+	ASSERT_EQ(1, f->a.n_resume_cnt);
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(m));
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(m));
+
+ out:
+	if (err)
+		failure_debug(f, false);
+
+	fixture_close(f);
+	module_unload("aufile");
+	module_unload("ausine");
+
+	return err;
+}
+
+
+/*
+ * Test: A calls B (sendrecv), then A puts B on hold by sending a re-INVITE
+ * with inactive SDP direction (B responds with inactive).
+ * Expectation: B emits ON_HOLD event, A does not.
+ * Then A resumes by sending a re-INVITE with sendrecv.
+ * Expectation: B emits RESUME event, A does not.
+ *
+ * This tests the scenario where the caller (A) puts the callee (B) on hold
+ * using inactive direction, and verifies that only B receives hold/resume
+ * events (since A is the one initiating the hold).
+ */
+static int test_call_hold_resume_inactive(void)
+{
+	struct fixture fix, *f = &fix;
+	struct cancel_rule *cr;
+	int err = 0;
+
+	fixture_init(f);
+	cancel_rule_new(BEVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
+	cr->n_audio_estab = 1;
+	cancel_rule_and(BEVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
+	cr->n_audio_estab = 1;
+
+	err = module_load(".", "ausine");
+	TEST_ERR(err);
+	err = module_load(".", "aufile");
+	TEST_ERR(err);
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+	f->estab_action = ACTION_NOTHING;
+
+	/* Make a call from A to B */
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_ON);
+	TEST_ERR(err);
+
+	/* wait for RTP audio */
+	err = re_main_timeout(10000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	/* verify that audio was enabled and bi-directional */
+	ASSERT_TRUE(call_has_audio(ua_call(f->a.ua)));
+	ASSERT_TRUE(call_has_audio(ua_call(f->b.ua)));
+
+	struct sdp_media *m;
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(m));
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(m));
+
+	/* A puts B on hold with inactive direction */
+	cancel_rule_new(BEVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 1);
+	cr->prm = "offer";
+	cancel_rule_and(BEVENT_CALL_REMOTE_SDP, f->a.ua, 0, 0, 1);
+	cr->prm = "answer";
+
+	/* Set media direction to inactive and send re-INVITE */
+	call_set_media_direction(ua_call(f->a.ua), SDP_INACTIVE, SDP_INACTIVE);
+	err = call_modify(ua_call(f->a.ua));
+	TEST_ERR(err);
+	err = re_main_timeout(10000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	err = agent_wait_for_ack(&f->b, -1, -1, 1);
+	TEST_ERR(err);
+
+	/* Verify: B should receive ON_HOLD event, A should not */
+	ASSERT_EQ(0, f->a.n_hold_cnt);
+	ASSERT_EQ(1, f->b.n_hold_cnt);
+
+	/* Verify SDP directions */
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
+	ASSERT_EQ(SDP_INACTIVE, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_INACTIVE, sdp_media_rdir(m));
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_INACTIVE, sdp_media_rdir(m));
+	ASSERT_TRUE(!call_ack_pending(ua_call(f->b.ua)));
+
+	/* A resumes the call with sendrecv */
+	call_set_media_direction(ua_call(f->a.ua), SDP_SENDRECV, SDP_SENDRECV);
+	err = call_modify(ua_call(f->a.ua));
+	TEST_ERR(err);
+	tmr_start(&f->b.tmr_ack, 1, check_ack, &f->b);
+	err = re_main_timeout(10000);
+	TEST_ERR(err);
+
+	err = agent_wait_for_ack(&f->b, -1, -1, 1);
+	TEST_ERR(err);
+
+	/* Verify: B should receive RESUME event, A should not */
+	ASSERT_EQ(0, f->a.n_resume_cnt);
+	ASSERT_EQ(1, f->b.n_resume_cnt);
+
+	/* Verify SDP directions are back to sendrecv */
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(m));
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(m));
+	ASSERT_TRUE(!call_ack_pending(ua_call(f->b.ua)));
+
+ out:
+	if (err)
+		failure_debug(f, false);
+
+	fixture_close(f);
+	module_unload("aufile");
+	module_unload("ausine");
+
+	return err;
+}
+
+
 int test_call_hold_resume(void)
 {
 	int err;
@@ -2585,6 +2833,12 @@ int test_call_hold_resume(void)
 	TEST_ERR(err);
 
 	err = test_call_hold_resume_base(true);
+	TEST_ERR(err);
+
+	err = test_call_hold_resume_nosdp();
+	TEST_ERR(err);
+
+	err = test_call_hold_resume_inactive();
 	TEST_ERR(err);
 
 out:

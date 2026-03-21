@@ -54,6 +54,7 @@ struct call {
 	struct tmr tmr_dtmf;      /**< Timer for incoming DTMF events       */
 	struct tmr tmr_answ;      /**< Timer for delayed answer             */
 	struct tmr tmr_reinv;     /**< Timer for outgoing re-INVITES        */
+	bool remote_hold;         /**< True if remote has placed us on hold */
 	time_t time_start;        /**< Time when call started               */
 	time_t time_conn;         /**< Time when call initiated             */
 	time_t time_stop;         /**< Time when call stopped               */
@@ -1129,6 +1130,22 @@ int call_modify(struct call *call)
 
 
 /**
+ * Send a re-INVITE without SDP offer
+ *
+ * @param call Call object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int call_modify_nosdp(struct call *call)
+{
+	if (!call || !call->sess)
+		return EINVAL;
+
+	return sipsess_modify(call->sess, NULL);
+}
+
+
+/**
  * Hangup the call
  *
  * @param call   Call to hangup
@@ -1810,21 +1827,77 @@ static int auth_handler(char **username, char **password,
 }
 
 
+/*
+ * Returns true, if a hold or resume event is detected.
+ *
+ * If a hold or resume is detected, ev is set to BEVENT_CALL_HOLD,
+ * or BEVENT_CALL_RESUME.
+ *
+ * Detects hold/resume transitions per RFC 6337 section 5.3. Only detect
+ * transitions in established calls, not during initial call setup.
+ *
+ * When remote transitions from sendrecv or recvonly to sendonly or inactive,
+ * we're placed on hold.
+ * When remote transitions from sendonly or inactive to sendrecv or recvonly,
+ * we're resumed.
+ */
+static bool detect_hold_resume(enum bevent_ev *ev, struct call *call,
+			       enum sdp_dir old_rdir, bool is_offer)
+{
+	bool emit_event = false;
+
+	if (!ev || !call || call->state != CALL_STATE_ESTABLISHED)
+		return false;
+
+	const struct sdp_media *m = stream_sdpmedia(audio_strm(call->audio));
+	const enum sdp_dir new_rdir = sdp_media_rdir(m);
+
+	bool before_on_hold = (old_rdir == SDP_RECVONLY ||
+			       old_rdir == SDP_INACTIVE);
+	bool now_on_hold = (new_rdir == SDP_RECVONLY ||
+			    new_rdir == SDP_INACTIVE);
+
+	/* For offers, detect based on rdir changes.
+	 * For answers, use the tracked remote_hold state because rdir
+	 * may have changed when we created an offer. */
+	if (is_offer) {
+		if (now_on_hold && !before_on_hold) {
+			*ev = BEVENT_CALL_HOLD;
+			call->remote_hold = true;
+			emit_event = true;
+		}
+		else if (before_on_hold && !now_on_hold) {
+			*ev = BEVENT_CALL_RESUME;
+			call->remote_hold = false;
+			emit_event = true;
+		}
+	}
+	else if (call->remote_hold && !now_on_hold) {
+		/* Only detect resume events for answers, not hold events. */
+		*ev = BEVENT_CALL_RESUME;
+		call->remote_hold = false;
+		emit_event = true;
+	}
+
+	return emit_event;
+}
+
+
 static int sipsess_offer_handler(struct mbuf **descp,
 				 const struct sip_msg *msg, void *arg)
 {
 	const bool got_offer = (0 != mbuf_get_left(msg->mb));
 	struct call *call = arg;
-	struct sdp_media *vmedia = NULL;
 	enum sdp_dir ardir, vrdir;
 	int err;
 
 	MAGIC_CHECK(call);
 
 	if (got_offer) {
+		enum bevent_ev hold_ev;
 		const struct sdp_media *m =
 			stream_sdpmedia(audio_strm(call->audio));
-		bool aurx = sdp_media_dir(m) & SDP_SENDONLY;
+		const enum sdp_dir old_rdir = sdp_media_rdir(m);
 		call->got_offer = true;
 
 		/* Decode SDP Offer */
@@ -1835,10 +1908,8 @@ static int sipsess_offer_handler(struct mbuf **descp,
 			return err;
 		}
 
-		if (aurx && !(sdp_media_dir(m) & SDP_SENDONLY))
-			bevent_call_emit(BEVENT_CALL_HOLD, call, "");
-		else if (!aurx && sdp_media_dir(m) & SDP_SENDONLY)
-			bevent_call_emit(BEVENT_CALL_RESUME, call, "");
+		if (detect_hold_resume(&hold_ev, call, old_rdir, true))
+			bevent_call_emit(hold_ev, call, "");
 
 		err = update_media(call);
 		if (err) {
@@ -1848,21 +1919,12 @@ static int sipsess_offer_handler(struct mbuf **descp,
 		}
 	}
 
-	ardir = sdp_media_rdir(
-		stream_sdpmedia(audio_strm(call_audio(call))));
-
-	vmedia = stream_sdpmedia(video_strm(call_video(call)));
-	if (sdp_media_rport(vmedia) == 0 ||
-		list_head(sdp_media_format_lst(vmedia, false)) == 0) {
-		vrdir = SDP_INACTIVE;
-	}
-	else {
-		vrdir = sdp_media_rdir(vmedia);
-	}
+	ardir = sdp_media_rdir(stream_sdpmedia(audio_strm(call_audio(call))));
+	vrdir = sdp_media_rdir(stream_sdpmedia(video_strm(call_video(call))));
 
 	info("call: got %r%s audio-video: %s-%s\n", &msg->met,
-	     got_offer ? " (SDP Offer)" : "", sdp_dir_name(ardir),
-	     sdp_dir_name(vrdir));
+	     got_offer ? " (SDP Offer)" : "",
+	     sdp_dir_name(ardir), sdp_dir_name(vrdir));
 
 	/* Encode SDP Answer */
 	err = sdp_encode(descp, call->sdp, !got_offer);
@@ -1880,6 +1942,9 @@ static int sipsess_answer_handler(const struct sip_msg *msg, void *arg)
 {
 	struct call *call = arg;
 	int err;
+	enum bevent_ev hold_ev;
+	const struct sdp_media *m = stream_sdpmedia(audio_strm(call->audio));
+	const enum sdp_dir old_rdir = sdp_media_rdir(m);
 
 	MAGIC_CHECK(call);
 
@@ -1904,9 +1969,11 @@ static int sipsess_answer_handler(const struct sip_msg *msg, void *arg)
 		return err;
 	}
 
+	if (detect_hold_resume(&hold_ev, call, old_rdir, false))
+		bevent_call_emit(hold_ev, call, "");
+
 	/* note: before update_media */
 	if (call->config_avt.bundle) {
-
 		bundle_sdp_decode(call->sdp, &call->streaml);
 	}
 
