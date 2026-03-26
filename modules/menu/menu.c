@@ -951,7 +951,7 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 			menu_invite(uri);
 		}
 		else {
-			info("menu: redirect call to %s\n", uri);
+			info("menu: redirect call to %s blocked\n", uri);
 		}
 		break;
 
