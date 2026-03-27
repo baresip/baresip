@@ -457,62 +457,62 @@ static int encode(struct aufilt_enc_st *aufilt_enc_st, struct auframe *af)
 		rtt_tracking.pending_pong = false;
 	}
 
-	/* Priority 2: Send ping (tone_id 1) dynamically - first ping immediately, then after pong or timeout */
-	/* Send first ping as soon as call/RTP is established */
-	if (!rtt_tracking.first_ping_sent && tonedetect_call_state.call_established && tonedetect_call_state.rtp_established &&
-	    !st->gen.active && config.num_send_pairs > 0 && PING_TONE_ID <= config.num_send_pairs) {
-		/* Send first ping immediately */
-		size_t pair_index = PING_TONE_ID - 1;
-		const uint8_t ia = config.send_pair_a[pair_index];
-		const uint8_t ib = config.send_pair_b[pair_index];
-		uint32_t f1 = config.send_frequencies[ia];
-		uint32_t f2 = config.send_frequencies[ib];
-		
-		debug("tonedetect: sending first ping (tone_id=%d) - call/RTP established\n", PING_TONE_ID);
-		start_tone_generation(st, f1, f2, PING_TONE_ID, af->srate);
-		
-		rtt_tracking.last_ping_sent_time = now;
-		rtt_tracking.first_ping_sent = true;
-		rtt_tracking.pending_ping = false;
-	}
-	/* Send ping if scheduled (50ms after receiving a pong and stability not detected) or if timeout (2 seconds without pong) */
-	else if (!rtt_tracking.connection_stable && rtt_tracking.next_ping_time > 0 && now >= rtt_tracking.next_ping_time &&
-	         tonedetect_call_state.call_established && tonedetect_call_state.rtp_established &&
-	         !st->gen.active && config.num_send_pairs > 0 && PING_TONE_ID <= config.num_send_pairs) {
-		/* Send ping 50ms after receiving a pong (if stability not detected) */
-		size_t pair_index = PING_TONE_ID - 1;
-		const uint8_t ia = config.send_pair_a[pair_index];
-		const uint8_t ib = config.send_pair_b[pair_index];
-		uint32_t f1 = config.send_frequencies[ia];
-		uint32_t f2 = config.send_frequencies[ib];
-		
-		debug("tonedetect: sending ping (tone_id=%d) - 50ms after pong received\n", PING_TONE_ID);
-		start_tone_generation(st, f1, f2, PING_TONE_ID, af->srate);
-		
-		rtt_tracking.last_ping_sent_time = now;
-		rtt_tracking.next_ping_time = 0;  /* Clear scheduled ping time */
-		rtt_tracking.pending_ping = false;
-	}
-	/* Check for timeout: if 1 second passes without receiving a pong, send another ping */
-	else if (!rtt_tracking.connection_stable && rtt_tracking.first_ping_sent && rtt_tracking.last_ping_sent_time > 0 &&
-	         tonedetect_call_state.call_established && tonedetect_call_state.rtp_established &&
-	         !st->gen.active && config.num_send_pairs > 0 && PING_TONE_ID <= config.num_send_pairs) {
-		uint64_t ping_timeout_ms = 1000;  /* 1 second timeout */
-		uint64_t time_since_ping = now - rtt_tracking.last_ping_sent_time;
-		uint64_t time_since_pong = (rtt_tracking.last_pong_received_time > 0) ? (now - rtt_tracking.last_pong_received_time) : ping_timeout_ms;
-		
-		/* If no pong received within 1 second, send another ping */
-		if (time_since_ping >= ping_timeout_ms && time_since_pong >= ping_timeout_ms) {
+	/* Priority 2: Send ping (tone_id 1) — only when tone_generation is enabled (same flag as regular tones). */
+	/* Without it we still reply with pong (above); outbound pings and RTT/stability from local pings are off. */
+	if (config.enable_tone_generation) {
+		/* Send first ping as soon as call/RTP is established */
+		if (!rtt_tracking.first_ping_sent && tonedetect_call_state.call_established && tonedetect_call_state.rtp_established &&
+		    !st->gen.active && config.num_send_pairs > 0 && PING_TONE_ID <= config.num_send_pairs) {
 			size_t pair_index = PING_TONE_ID - 1;
 			const uint8_t ia = config.send_pair_a[pair_index];
 			const uint8_t ib = config.send_pair_b[pair_index];
 			uint32_t f1 = config.send_frequencies[ia];
 			uint32_t f2 = config.send_frequencies[ib];
-			
-			debug("tonedetect: sending ping (tone_id=%d) - timeout (no pong received in 1s)\n", PING_TONE_ID);
+
+			debug("tonedetect: sending first ping (tone_id=%d) - call/RTP established\n", PING_TONE_ID);
 			start_tone_generation(st, f1, f2, PING_TONE_ID, af->srate);
-			
+
 			rtt_tracking.last_ping_sent_time = now;
+			rtt_tracking.first_ping_sent = true;
+			rtt_tracking.pending_ping = false;
+		}
+		/* Send ping if scheduled (50ms after receiving a pong and stability not detected) */
+		else if (!rtt_tracking.connection_stable && rtt_tracking.next_ping_time > 0 && now >= rtt_tracking.next_ping_time &&
+			 tonedetect_call_state.call_established && tonedetect_call_state.rtp_established &&
+			 !st->gen.active && config.num_send_pairs > 0 && PING_TONE_ID <= config.num_send_pairs) {
+			size_t pair_index = PING_TONE_ID - 1;
+			const uint8_t ia = config.send_pair_a[pair_index];
+			const uint8_t ib = config.send_pair_b[pair_index];
+			uint32_t f1 = config.send_frequencies[ia];
+			uint32_t f2 = config.send_frequencies[ib];
+
+			debug("tonedetect: sending ping (tone_id=%d) - 50ms after pong received\n", PING_TONE_ID);
+			start_tone_generation(st, f1, f2, PING_TONE_ID, af->srate);
+
+			rtt_tracking.last_ping_sent_time = now;
+			rtt_tracking.next_ping_time = 0;  /* Clear scheduled ping time */
+			rtt_tracking.pending_ping = false;
+		}
+		/* Timeout: if 1 second passes without receiving a pong, send another ping */
+		else if (!rtt_tracking.connection_stable && rtt_tracking.first_ping_sent && rtt_tracking.last_ping_sent_time > 0 &&
+			 tonedetect_call_state.call_established && tonedetect_call_state.rtp_established &&
+			 !st->gen.active && config.num_send_pairs > 0 && PING_TONE_ID <= config.num_send_pairs) {
+			const uint64_t ping_timeout_ms = 1000;  /* 1 second timeout */
+			const uint64_t time_since_ping = now - rtt_tracking.last_ping_sent_time;
+			const uint64_t time_since_pong = (rtt_tracking.last_pong_received_time > 0) ? (now - rtt_tracking.last_pong_received_time) : ping_timeout_ms;
+
+			if (time_since_ping >= ping_timeout_ms && time_since_pong >= ping_timeout_ms) {
+				size_t pair_index = PING_TONE_ID - 1;
+				const uint8_t ia = config.send_pair_a[pair_index];
+				const uint8_t ib = config.send_pair_b[pair_index];
+				uint32_t f1 = config.send_frequencies[ia];
+				uint32_t f2 = config.send_frequencies[ib];
+
+				debug("tonedetect: sending ping (tone_id=%d) - timeout (no pong received in 1s)\n", PING_TONE_ID);
+				start_tone_generation(st, f1, f2, PING_TONE_ID, af->srate);
+
+				rtt_tracking.last_ping_sent_time = now;
+			}
 		}
 	}
 
