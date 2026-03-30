@@ -331,6 +331,7 @@ void stream_set_ldir(struct stream *s, enum sdp_dir dir);
 void stream_set_rtcp_interval(struct stream *s, uint32_t n);
 void stream_set_srate(struct stream *s, uint32_t srate_tx, uint32_t srate_rx);
 bool stream_is_ready(const struct stream *strm);
+bool stream_rtp_established(const struct stream *strm);
 int  stream_print(struct re_printf *pf, const struct stream *s);
 void stream_remove_menc_media_state(struct stream *strm);
 enum media_type stream_type(const struct stream *strm);
@@ -531,4 +532,5 @@ void rtprecv_mnat_connected_handler(const struct sa *raddr1,
 int  rtprecv_start_rtcp(struct rtp_receiver *rx, const char *cname,
 			const struct sa *peer, bool pinhole);
 bool rtprecv_running(const struct rtp_receiver *rx);
+bool rtprecv_rtp_established(const struct rtp_receiver *rx);
 void rtprecv_set_srate(struct rtp_receiver *rx, uint32_t srate);

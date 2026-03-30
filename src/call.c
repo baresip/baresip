@@ -17,6 +17,11 @@
 #define MAGIC 0xca11ca11
 #include "magic.h"
 
+/** Delay before emitting CALL_CODEC so rapid SDP/encoder updates coalesce */
+#ifndef CALL_CODEC_DEBOUNCE_MS
+#define CALL_CODEC_DEBOUNCE_MS 50
+#endif
+
 
 #define FOREACH_STREAM						\
 	for (le = call->streaml.head; le; le = le->next)
@@ -88,11 +93,22 @@ struct call {
 	/**< Timestamp of first invite sent to calc stats */
 	uint64_t ts_invite_sent;
 	uint64_t stat_pdd;
+
+	char codec_state_fp[384]; /**< last emitted CALL_CODEC fingerprint   */
+	struct tmr tmr_codec;     /**< debounce rapid codec notifications    */
+	char codec_prm[32];        /**< param for debounced CALL_CODEC emit   */
+	struct tmr tmr_codec_rinv; /**< retry codec re-INVITE when SDP busy   */
+	char codec_rinv_spec[128]; /**< pending spec for tmr_codec_rinv       */
+	uint8_t codec_rinv_retry;  /**< retry count for deferred re-INVITE      */
 };
 
 
 static int send_invite(struct call *call);
 static int send_dtmf_info(struct call *call, char key);
+static int codec_reinvite_internal(struct call *call, const char *spec,
+				   bool user_init);
+static bool have_common_audio_codecs(const struct call *call);
+static bool have_common_video_codecs(const struct call *call);
 
 
 static const char *state_name(enum call_state st)
@@ -356,6 +372,8 @@ static void call_destructor(void *arg)
 	tmr_cancel(&call->tmr_dtmf);
 	tmr_cancel(&call->tmr_answ);
 	tmr_cancel(&call->tmr_reinv);
+	tmr_cancel(&call->tmr_codec);
+	tmr_cancel(&call->tmr_codec_rinv);
 
 	mem_deref(call->sess);
 	mem_deref(call->id);
@@ -534,6 +552,198 @@ static void stream_mnatconn_handler(struct stream *strm, void *arg)
 }
 
 
+static void call_build_codec_fp(struct call *call, char *buf, size_t sz)
+{
+	const struct aucodec *ac_tx, *ac_rx, *ac_sdp;
+	const struct vidcodec *vc_tx, *vc_rx, *vc_sdp;
+	const struct sdp_format *fmt;
+	struct sdp_media *m;
+	struct stream *strm;
+	int aptx = -1, aprx = -1;
+	int vptx = -1, vprx = -1;
+
+	if (!call || !buf || !sz) {
+		if (buf && sz)
+			buf[0] = '\0';
+		return;
+	}
+
+	buf[0] = '\0';
+
+	if (call->audio) {
+		ac_tx = audio_codec(call->audio, true);
+		ac_rx = audio_codec(call->audio, false);
+		ac_sdp = NULL;
+		if (!ac_tx || !ac_rx) {
+			m = stream_sdpmedia(audio_strm(call->audio));
+			fmt = sdp_media_rformat(m, NULL);
+			if (fmt && fmt->data)
+				ac_sdp = fmt->data;
+			if (!ac_tx)
+				ac_tx = ac_sdp;
+			if (!ac_rx)
+				ac_rx = ac_sdp;
+		}
+		strm = audio_strm(call->audio);
+		if (strm)
+			aptx = stream_pt_enc(strm);
+		aprx = audio_rx_payload_type(call->audio);
+
+		(void)re_snprintf(buf, sz,
+				  "A:%s:%u:%u:%d|%s:%u:%u:%d|",
+				  ac_tx ? ac_tx->name : "-",
+				  ac_tx ? ac_tx->srate : 0u,
+				  ac_tx ? (unsigned)ac_tx->ch : 0u,
+				  aptx,
+				  ac_rx ? ac_rx->name : "-",
+				  ac_rx ? ac_rx->srate : 0u,
+				  ac_rx ? (unsigned)ac_rx->ch : 0u,
+				  aprx);
+	}
+	else {
+		(void)re_snprintf(buf, sz, "A:-|");
+	}
+
+	if (call->video) {
+		size_t len = str_len(buf);
+		char *p;
+		size_t left;
+
+		if (len >= sz)
+			return;
+		p = buf + len;
+		left = sz - len;
+
+		vc_tx = video_codec(call->video, true);
+		vc_rx = video_codec(call->video, false);
+		vc_sdp = NULL;
+		if (!vc_tx || !vc_rx) {
+			m = stream_sdpmedia(video_strm(call->video));
+			fmt = sdp_media_rformat(m, NULL);
+			if (fmt && fmt->data)
+				vc_sdp = fmt->data;
+			if (!vc_tx)
+				vc_tx = vc_sdp;
+			if (!vc_rx)
+				vc_rx = vc_sdp;
+		}
+		strm = video_strm(call->video);
+		if (strm)
+			vptx = stream_pt_enc(strm);
+		vprx = video_rx_payload_type(call->video);
+
+		(void)re_snprintf(p, left, "V:%s:%s|%s:%s|%d|%d",
+				  vc_tx ? vc_tx->name : "-",
+				  vc_tx && vc_tx->variant ? vc_tx->variant : "-",
+				  vc_rx ? vc_rx->name : "-",
+				  vc_rx && vc_rx->variant ? vc_rx->variant : "-",
+				  vptx,
+				  vprx);
+	}
+	else {
+		size_t len = str_len(buf);
+		char *p;
+		size_t left;
+
+		if (len >= sz)
+			return;
+		p = buf + len;
+		left = sz - len;
+		(void)re_snprintf(p, left, "V:-");
+	}
+}
+
+
+/**
+ * True when CALL_CODEC may be emitted: media paths are far enough along
+ * that SDP/codec negotiation is not half-applied. For streams that receive
+ * RTP from the peer, the first RTP packet must have been seen (same as
+ * CALL_RTPESTAB). For send-only streams, remote RTP never arrives, so we
+ * require stream_is_ready (addresses, NAT, etc.) instead.
+ */
+static bool call_codec_ready_to_emit(struct call *call)
+{
+	struct le *le;
+
+	if (!call)
+		return false;
+
+	FOREACH_STREAM {
+		struct stream *strm = le->data;
+		enum sdp_dir dir = sdp_media_dir(stream_sdpmedia(strm));
+
+		if (dir == SDP_INACTIVE)
+			continue;
+
+		if (dir & SDP_RECVONLY) {
+			if (!stream_rtp_established(strm))
+				return false;
+		}
+		else {
+			if (!stream_is_ready(strm))
+				return false;
+		}
+	}
+
+	return true;
+}
+
+
+static void call_codec_debounce_handler(void *arg)
+{
+	struct call *call = arg;
+	char fp[sizeof(call->codec_state_fp)];
+
+	if (!call)
+		return;
+
+	MAGIC_CHECK(call);
+
+	if (!call_codec_ready_to_emit(call))
+		return;
+
+	call_build_codec_fp(call, fp, sizeof(fp));
+	if (str_cmp(call->codec_state_fp, fp) == 0)
+		return;
+
+	(void)str_ncpy(call->codec_state_fp, fp, sizeof(call->codec_state_fp));
+
+	bevent_call_emit(UA_EVENT_CALL_CODEC, call, "%s",
+			 str_isset(call->codec_prm) ? call->codec_prm : "codec");
+}
+
+
+static void call_codec_notify(struct call *call, const char *param)
+{
+	if (!call)
+		return;
+
+	MAGIC_CHECK(call);
+
+	if (str_isset(param))
+		str_ncpy(call->codec_prm, param, sizeof(call->codec_prm));
+	else
+		call->codec_prm[0] = '\0';
+
+	tmr_cancel(&call->tmr_codec);
+	tmr_start(&call->tmr_codec, CALL_CODEC_DEBOUNCE_MS,
+		  call_codec_debounce_handler, call);
+}
+
+
+static void call_on_stream_codec(struct stream *strm, void *arg)
+{
+	struct call *call = arg;
+
+	if (!strm || !call)
+		return;
+
+	MAGIC_CHECK(call);
+
+	call_codec_notify(call, sdp_media_name(stream_sdpmedia(strm)));
+}
+
+
 static void stream_rtpestab_handler(struct stream *strm, void *arg)
 {
 	struct call *call = arg;
@@ -541,6 +751,7 @@ static void stream_rtpestab_handler(struct stream *strm, void *arg)
 
 	bevent_call_emit(UA_EVENT_CALL_RTPESTAB, call,
 			 "%s", sdp_media_name(stream_sdpmedia(strm)));
+	call_codec_notify(call, sdp_media_name(stream_sdpmedia(strm)));
 }
 
 
@@ -789,6 +1000,8 @@ int call_streams_alloc(struct call *call)
 					    stream_rtcp_handler,
 					    stream_error_handler, call);
 
+		stream_set_codec_change(strm, call_on_stream_codec, call);
+
 		stream_enable_natpinhole(strm, acc->pinhole);
 	}
 
@@ -859,6 +1072,8 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	tmr_init(&call->tmr_inv);
 	tmr_init(&call->tmr_answ);
 	tmr_init(&call->tmr_reinv);
+	tmr_init(&call->tmr_codec);
+	tmr_init(&call->tmr_codec_rinv);
 
 	call->cfg    = cfg;
 	call->acc    = mem_ref(acc);
@@ -1100,7 +1315,7 @@ int call_connect(struct call *call, const struct pl *paddr)
 int call_modify(struct call *call)
 {
 	struct mbuf *desc = NULL;
-	int err;
+	int err = 0;
 
 	if (!call)
 		return EINVAL;
@@ -1125,6 +1340,142 @@ int call_modify(struct call *call)
 	mem_deref(desc);
 
 	return err;
+}
+
+
+static int parse_codec_spec(const char *spec, char *name, size_t namesz,
+			    uint32_t *srate, uint8_t *ch)
+{
+	struct pl pl_cname, pl_srate, pl_ch = PL_INIT;
+	char cname[128];
+
+	if (!spec || !name || !srate || !ch)
+		return EINVAL;
+
+	str_ncpy(cname, spec, sizeof(cname));
+
+	if (!strchr(cname, '/')) {
+		str_ncpy(name, cname, namesz);
+		*srate = 0;
+		*ch = 0;
+		return 0;
+	}
+
+	if (0 == re_regex(cname, str_len(cname),
+			  "[^/]+/[0-9]+[/]*[0-9]*",
+			  &pl_cname, &pl_srate,
+			  NULL, &pl_ch)) {
+		(void)pl_strcpy(&pl_cname, name, namesz);
+		*srate = pl_u32(&pl_srate);
+		if (pl_isset(&pl_ch))
+			*ch = pl_u32(&pl_ch);
+		else
+			*ch = 1;
+
+		return 0;
+	}
+
+	return EINVAL;
+}
+
+
+static void codec_rinv_retry_handler(void *arg)
+{
+	struct call *call = arg;
+
+	if (!call)
+		return;
+
+	MAGIC_CHECK(call);
+
+	if (!str_isset(call->codec_rinv_spec))
+		return;
+
+	(void)codec_reinvite_internal(call, call->codec_rinv_spec, false);
+}
+
+
+static int codec_reinvite_internal(struct call *call, const char *spec,
+				   bool user_init)
+{
+	char name[64];
+	uint32_t srate;
+	uint8_t ch;
+	const struct aucodec *sel;
+	struct list aucl;
+	struct le le_one;
+	struct account *acc;
+	int err;
+
+	if (!call || !call->audio || !str_isset(spec))
+		return EINVAL;
+
+	if (user_init)
+		call->codec_rinv_retry = 0;
+
+	err = parse_codec_spec(spec, name, sizeof(name), &srate, &ch);
+	if (err)
+		return err;
+
+	sel = aucodec_find(baresip_aucodecl(), name, srate, ch);
+	if (!sel) {
+		warning("call: codec not registered: %s/%u/%u\n",
+			name, srate, ch);
+		return EINVAL;
+	}
+
+	list_init(&aucl);
+	list_append(&aucl, &le_one, (void *)sel);
+
+	acc = call->acc;
+	err = audio_sdp_set_codecs(call->audio, &aucl, acc->ptime);
+	if (err)
+		return err;
+
+	(void)str_ncpy(call->codec_rinv_spec, spec, sizeof(call->codec_rinv_spec));
+
+	if (!call_refresh_allowed(call)) {
+		enum sdp_neg_state neg_state = call_sdp_neg_state(call);
+		int neg_st = (int)neg_state;
+
+		if (!user_init && ++call->codec_rinv_retry > 50) {
+			warning("call: codec re-INVITE deferred too long "
+				"(SDP negotiation state=%d)\n",
+				neg_st);
+			call->codec_rinv_spec[0] = '\0';
+			return ETIMEDOUT;
+		}
+
+		tmr_cancel(&call->tmr_codec_rinv);
+		tmr_start(&call->tmr_codec_rinv, 100, codec_rinv_retry_handler,
+			  call);
+		info("call: codec re-INVITE deferred (SDP negotiation not idle;"
+		     " state=%d)\n",
+		     neg_st);
+		return 0;
+	}
+
+	tmr_cancel(&call->tmr_codec_rinv);
+	call->codec_rinv_spec[0] = '\0';
+
+	return call_modify(call);
+}
+
+
+/**
+ * Re-INVITE with a single audio codec (same "name/srate/ch" form as
+ * account audio_codecs). The codec is resolved from globally registered
+ * modules (\ref baresip_aucodecl). The local SDP m=audio line lists only
+ * that codec (plus telephone-event).
+ *
+ * @param call  Call object
+ * @param spec  Codec string, e.g. "opus/48000/2" or "PCMU"
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int call_codec_reinvite(struct call *call, const char *spec)
+{
+	return codec_reinvite_internal(call, spec, true);
 }
 
 
@@ -1840,18 +2191,58 @@ static int sipsess_offer_handler(struct mbuf **descp,
 	MAGIC_CHECK(call);
 
 	if (got_offer) {
+		struct mbuf *sdp_prev = NULL;
 		const struct sdp_media *m =
 			stream_sdpmedia(audio_strm(call->audio));
 		bool aurx = sdp_media_dir(m) & SDP_SENDONLY;
 		call->got_offer = true;
 
+		/*
+		 * Rebuild local audio codecs from account list plus any codec
+		 * from a prior "codec" command so we can answer peer re-INVITEs
+		 * with a matching payload (not only the last narrowed offer).
+		 */
+		if (call_state(call) == CALL_STATE_ESTABLISHED && call->audio) {
+			err = audio_sdp_peer_reinvite_merge(call->audio,
+							    call->acc);
+			if (err) {
+				warning("call: peer re-INVITE: merge audio "
+					"codecs failed: %m\n",
+					err);
+				return err;
+			}
+		}
+
+		/* Snapshot session before applying peer offer (for rollback) */
+		err = sdp_encode(&sdp_prev, call->sdp, true);
+		if (err) {
+			warning("call: sdp_encode (pre re-INVITE): %m\n", err);
+			return err;
+		}
+
 		/* Decode SDP Offer */
 		err = sdp_decode(call->sdp, msg->mb, true);
 		if (err) {
+			mem_deref(sdp_prev);
 			warning("call: reinvite: could not decode SDP offer:"
 				" %m\n", err);
 			return err;
 		}
+
+		/* Reject before update_media so RTP/codec state stays unchanged */
+		if (!have_common_audio_codecs(call) &&
+		    !have_common_video_codecs(call)) {
+			info("call: no common audio or video codecs "
+			     "(SDP offer)\n");
+			err = sdp_decode(call->sdp, sdp_prev, true);
+			mem_deref(sdp_prev);
+			if (err)
+				warning("call: SDP rollback after reject: %m\n",
+					err);
+			return ENOTSUP;
+		}
+
+		mem_deref(sdp_prev);
 
 		if (aurx && !(sdp_media_dir(m) & SDP_SENDONLY))
 			bevent_call_emit(UA_EVENT_CALL_HOLD, call, "");

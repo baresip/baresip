@@ -164,6 +164,29 @@ static int call_reinvite(struct re_printf *pf, void *arg)
 }
 
 
+static int call_codec_cmd(struct re_printf *pf, void *arg)
+{
+	struct cmd_arg *carg = arg;
+	struct ua *ua = carg->data ? carg->data : menu_uacur();
+	struct call *call = ua_call(ua);
+
+	if (!call) {
+		(void)re_hprintf(pf, "no active call\n");
+		return ENOENT;
+	}
+
+	if (!str_isset(carg->prm)) {
+		(void)re_hprintf(pf,
+				 "usage: codec <name>/<srate>[/<ch>]\n"
+				 "  Re-INVITE with that codec only in SDP "
+				 "(registered modules, e.g. opus/48000/2)\n");
+		return EINVAL;
+	}
+
+	return call_codec_reinvite(call, carg->prm);
+}
+
+
 /**
  * Resume the active call
  *
@@ -472,6 +495,8 @@ static const struct cmd callcmdv[] = {
 {"line",        '@', CMD_PRM, "Set current call <line>", set_current_call  },
 {"mute",        'm', CMD_PRM, "Call mute/un-mute",    call_mute            },
 {"reinvite",    'I',       0, "Send re-INVITE",       call_reinvite        },
+{"codec",        0,  CMD_PRM, "Re-INVITE; single audio codec in SDP",
+ call_codec_cmd },
 {"resume",      'X',       0, "Call resume",          cmd_call_resume      },
 {"sndcode",      0,  CMD_PRM, "Send Code",            send_code            },
 {"statmode",    'S',       0, "Statusmode toggle",    toggle_statmode      },

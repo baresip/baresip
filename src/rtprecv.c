@@ -794,6 +794,21 @@ bool rtprecv_running(const struct rtp_receiver *rx)
 }
 
 
+bool rtprecv_rtp_established(const struct rtp_receiver *rx)
+{
+	bool estab;
+
+	if (!rx)
+		return false;
+
+	mtx_lock(rx->mtx);
+	estab = rx->rtp_estab;
+	mtx_unlock(rx->mtx);
+
+	return estab;
+}
+
+
 void rtprecv_set_handlers(struct rtp_receiver *rx,
 			   stream_rtpestab_h *rtpestabh, void *arg)
 {

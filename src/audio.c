@@ -257,6 +257,197 @@ static int add_audio_codec(struct sdp_media *m, struct aucodec *ac)
 }
 
 
+static void sdp_media_lfmt_clear(struct sdp_media *m)
+{
+	const struct list *lst = sdp_media_format_lst(m, true);
+	struct le *le, *next;
+
+	if (!lst)
+		return;
+
+	for (le = lst->head; le; le = next) {
+		struct sdp_format *fmt = le->data;
+
+		next = le->next;
+		mem_deref(fmt);
+	}
+}
+
+
+static int add_audio_codec_dyn(struct sdp_media *m, struct aucodec *ac,
+			       int *dynpt)
+{
+	const char *id;
+	char buf[4];
+
+	if (ac->crate < 8000) {
+		warning("audio: illegal clock rate %u\n", ac->crate);
+		return EINVAL;
+	}
+
+	if (ac->ch == 0 || ac->pch == 0) {
+		warning("audio: illegal channels for audio codec '%s'\n",
+			ac->name);
+		return EINVAL;
+	}
+
+	if (ac->pt) {
+		id = ac->pt;
+	}
+	else {
+		if (*dynpt > 127)
+			return ERANGE;
+		re_snprintf(buf, sizeof(buf), "%d", (*dynpt)++);
+		id = buf;
+	}
+
+	return sdp_format_add(NULL, m, false, id, ac->name, ac->crate,
+			      ac->pch, ac->fmtp_ench, ac->fmtp_cmph, ac, false,
+			      "%s", ac->fmtp ? ac->fmtp : "");
+}
+
+
+static int add_telev_codec(struct audio *a);
+
+
+/**
+ * Replace local audio SDP payload types from an ordered codec list.
+ * Used to re-negotiate codecs mid-call (e.g. menu "codec" command).
+ *
+ * @param a        Audio object
+ * @param aucodecl Ordered list of aucodec pointers (first = preferred)
+ * @param ptime    Packet time in ms
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int audio_sdp_set_codecs(struct audio *a, struct list *aucodecl,
+			 uint32_t ptime)
+{
+	struct sdp_media *m;
+	struct le *le;
+	uint32_t minptime = ptime;
+	int dynpt = 96;
+	int err;
+
+	if (!a || !aucodecl)
+		return EINVAL;
+
+	m = stream_sdpmedia(a->strm);
+
+	sdp_media_lfmt_clear(m);
+
+	for (le = list_head(aucodecl); le; le = le->next) {
+		struct aucodec *ac = le->data;
+
+		if (ac->ptime)
+			minptime = min(minptime, ac->ptime);
+
+		err = add_audio_codec_dyn(m, ac, &dynpt);
+		if (err)
+			return err;
+	}
+
+	err  = sdp_media_set_lattr(m, true, "minptime", "%u", minptime);
+	err |= sdp_media_set_lattr(m, true, "ptime", "%u", ptime);
+	if (err)
+		return err;
+
+	err = add_telev_codec(a);
+
+	return err;
+}
+
+
+static bool sdp_fmt_is_audio_aucodec(const struct sdp_format *fmt)
+{
+	if (!fmt || !str_isset(fmt->name))
+		return false;
+
+	if (!str_casecmp(fmt->name, "telephone-event"))
+		return false;
+
+	return fmt->data != NULL;
+}
+
+
+static bool aucodec_list_contains(const struct list *list,
+				  const struct aucodec *ac)
+{
+	struct le *le;
+
+	for (le = list->head; le; le = le->next) {
+		if (le->data == ac)
+			return true;
+	}
+
+	return false;
+}
+
+
+/**
+ * Before answering an incoming SDP offer on an established call, rebuild
+ * local audio formats from the account codec list and any codecs from the
+ * current local SDP (e.g. from a prior "codec" command), so the answer can
+ * match the peer using account preferences or a previously narrowed codec.
+ *
+ * @param a    Audio object
+ * @param acc  Account (codec list and ptime)
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int audio_sdp_peer_reinvite_merge(struct audio *a, const struct account *acc)
+{
+	enum { MAX_CODEC = 32 };
+	struct list merged;
+	struct le leb[MAX_CODEC];
+	unsigned n = 0;
+	struct le *le;
+	struct sdp_media *m;
+	const struct list *lfmtl;
+	int err;
+
+	if (!a || !acc)
+		return EINVAL;
+
+	/* list_append() requires le->list == NULL; stack leb[] must be zeroed */
+	memset(leb, 0, sizeof(leb));
+
+	list_init(&merged);
+	m = stream_sdpmedia(a->strm);
+
+	for (le = list_head(account_aucodecl(acc)); le && n < MAX_CODEC;
+	     le = le->next) {
+		list_append(&merged, &leb[n], le->data);
+		++n;
+	}
+
+	lfmtl = sdp_media_format_lst(m, true);
+	if (lfmtl) {
+		for (le = lfmtl->head; le && n < MAX_CODEC; le = le->next) {
+			const struct sdp_format *fmt = le->data;
+			struct aucodec *ac;
+
+			if (!sdp_fmt_is_audio_aucodec(fmt))
+				continue;
+
+			ac = fmt->data;
+			if (aucodec_list_contains(&merged, ac))
+				continue;
+
+			list_append(&merged, &leb[n], ac);
+			++n;
+		}
+	}
+
+	if (list_isempty(&merged))
+		return 0;
+
+	err = audio_sdp_set_codecs(a, &merged, account_ptime(acc));
+
+	return err;
+}
+
+
 static int append_rtpext(struct audio *au, struct mbuf *mb,
 			 enum aufmt fmt, const void *sampv, size_t sampc)
 {
@@ -1391,6 +1582,8 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 	if (ac->ptime)
 		tx->ptime = ac->ptime;
 
+	stream_codec_changed(a->strm);
+
 	return err;
 }
 
@@ -1436,6 +1629,8 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 	stream_set_srate(a->strm, 0, ac->crate);
 	if (reset || !aurecv_player_started(a->aur))
 		err |= aurecv_start_player(a->aur, baresip_auplayl());
+
+	stream_codec_changed(a->strm);
 
 	return err;
 }
@@ -1939,6 +2134,15 @@ const struct aucodec *audio_codec(const struct audio *au, bool tx)
 		return NULL;
 
 	return tx ? au->tx.ac : aurecv_codec(au->aur);
+}
+
+
+int audio_rx_payload_type(const struct audio *au)
+{
+	if (!au || !au->aur)
+		return -1;
+
+	return aurecv_payload_type(au->aur);
 }
 
 

@@ -1614,6 +1614,9 @@ int video_encoder_set(struct video *v, struct vidcodec *vc,
  out:
 	mtx_unlock(vtx->lock_enc);
 
+	if (!err)
+		stream_codec_changed(v->strm);
+
 	return err;
 }
 
@@ -1664,6 +1667,8 @@ int video_decoder_set(struct video *v, struct vidcodec *vc, int pt_rx,
 		vrx->vc = vc;
 	}
 
+	stream_codec_changed(v->strm);
+
 	return err;
 }
 
@@ -1678,6 +1683,15 @@ int video_decoder_set(struct video *v, struct vidcodec *vc, int pt_rx,
 struct stream *video_strm(const struct video *v)
 {
 	return v ? v->strm : NULL;
+}
+
+
+int video_rx_payload_type(const struct video *v)
+{
+	if (!v)
+		return -1;
+
+	return v->vrx.pt_rx;
 }
 
 

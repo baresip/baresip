@@ -225,6 +225,7 @@ void call_hangup(struct call *call, uint16_t scode, const char *reason);
 void call_hangupf(struct call *call, uint16_t scode, const char *reason,
 		  const char *fmt, ...);
 int  call_modify(struct call *call);
+int  call_codec_reinvite(struct call *call, const char *spec);
 int  call_hold(struct call *call, bool hold);
 void call_set_audio_ldir(struct call *call, enum sdp_dir dir);
 void call_set_video_ldir(struct call *call, enum sdp_dir dir);
@@ -924,6 +925,7 @@ enum ua_event {
 	UA_EVENT_CALL_DTMF_POUND,
 	UA_EVENT_CALL_DTMF_END,
 	UA_EVENT_CALL_RTPESTAB,
+	UA_EVENT_CALL_CODEC,          /**< negotiated codecs (param: media name) */
 	UA_EVENT_CALL_RTCP,
 	UA_EVENT_CALL_MENC,
 	UA_EVENT_VU_TX,
@@ -1481,6 +1483,9 @@ struct stream *audio_strm(const struct audio *au);
 uint64_t audio_jb_current_value(const struct audio *au);
 int  audio_set_bitrate(struct audio *au, uint32_t bitrate);
 bool audio_rxaubuf_started(const struct audio *au);
+int  audio_sdp_set_codecs(struct audio *a, struct list *aucodecl,
+			  uint32_t ptime);
+int  audio_sdp_peer_reinvite_merge(struct audio *a, const struct account *acc);
 int  audio_update(struct audio *a);
 int  audio_start(struct audio *a);
 int  audio_start_source(struct audio *a, struct list *ausrcl,
@@ -1495,6 +1500,7 @@ int  audio_encoder_set(struct audio *a, const struct aucodec *ac,
 int  audio_decoder_set(struct audio *a, const struct aucodec *ac,
 		       int pt_rx, const char *params);
 const struct aucodec *audio_codec(const struct audio *au, bool tx);
+int audio_rx_payload_type(const struct audio *au);
 struct config_audio *audio_config(struct audio *au);
 bool audio_txtelev_empty(const struct audio *au);
 void audio_call_telev_handler(const struct audio *au, int key, bool end);
@@ -1534,6 +1540,7 @@ const char *video_get_disp_dev(const struct video *v);
 int   video_debug(struct re_printf *pf, const struct video *v);
 struct stream *video_strm(const struct video *v);
 const struct vidcodec *video_codec(const struct video *vid, bool tx);
+int video_rx_payload_type(const struct video *v);
 void video_sdp_attr_decode(struct video *v);
 void video_req_keyframe(struct video *vid);
 
@@ -1563,6 +1570,7 @@ typedef void (stream_rtpestab_h)(struct stream *strm, void *arg);
 typedef void (stream_rtcp_h)(struct stream *strm,
 			     struct rtcp_msg *msg, void *arg);
 typedef void (stream_error_h)(struct stream *strm, int err, void *arg);
+typedef void (stream_codec_ch)(struct stream *strm, void *arg);
 
 int stream_update(struct stream *s);
 const struct rtcp_stats *stream_rtcp_stats(const struct stream *strm);
@@ -1592,6 +1600,9 @@ void stream_set_session_handlers(struct stream *strm,
 				 stream_rtpestab_h *rtpestabh,
 				 stream_rtcp_h *rtcph,
 				 stream_error_h *errorh, void *arg);
+void stream_set_codec_change(struct stream *strm, stream_codec_ch *ch,
+			     void *arg);
+void stream_codec_changed(struct stream *strm);
 struct stream *stream_lookup_mid(const struct list *streaml,
 				 const char *mid, size_t len);
 const char *stream_name(const struct stream *strm);
