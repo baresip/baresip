@@ -3455,7 +3455,8 @@ int test_call_samplerate_switch(void)
 	const char *dp = test_datapath();
 	char *prm = NULL;
 
-	err = re_sdprintf(&prm, ";audio_source=aufile,%s/wav/square_500Hz_0.8.wav", dp);
+	err = re_sdprintf(&prm, ";audio_source=aufile,%s/%s", dp,
+			  "wav/square_500Hz_0.8.wav");
 	TEST_ERR(err);
 
 	err = module_load(".", "l16");
@@ -3488,7 +3489,8 @@ int test_call_samplerate_switch(void)
 	debug_str = NULL;
 
 	/* Simulate a payload change to PCMA (PT 8) */
-	const struct aucodec *pcma = aucodec_find(baresip_aucodecl(), "PCMA", 8000, 1);
+	const struct aucodec *pcma;
+	pcma = aucodec_find(baresip_aucodecl(), "PCMA", 8000, 1);
 	ASSERT_TRUE(pcma != NULL);
 
 	err = audio_decoder_set(au, pcma, 8, NULL);
