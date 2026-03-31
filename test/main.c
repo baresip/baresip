@@ -57,6 +57,7 @@ static const struct test tests[] = {
 	TEST(test_call_hold_resume),
 	TEST(test_call_srtp_tx_rekey),
 	TEST(test_call_uag_find_msg),
+	TEST(test_call_samplerate_switch),
 #ifdef USE_TLS
 	TEST(test_call_sni),
 	TEST(test_call_cert_select),
