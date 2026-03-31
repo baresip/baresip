@@ -1407,7 +1407,10 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 		return err;
 
 	if (reset && !list_isempty(baresip_aufiltl())) {
-		err |= aufilt_setup(a, baresip_aufiltl());
+		err = aufilt_setup(a, baresip_aufiltl());
+		if (err) {
+			return err;
+		}
 	}
 
 	stream_set_srate(a->strm, 0, ac->crate);
