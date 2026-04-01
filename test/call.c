@@ -3447,11 +3447,9 @@ int test_call_uag_find_msg(void)
 int test_call_samplerate_switch(void)
 {
 	struct fixture fix, *f = &fix;
-	struct call *call = NULL;
 	struct audio *au;
 	char *debug_str = NULL;
 	int err = 0;
-
 	const char *dp = test_datapath();
 	char *prm = NULL;
 
@@ -3468,7 +3466,7 @@ int test_call_samplerate_switch(void)
 	fixture_init_prm(f, prm);
 	mem_deref(prm);
 
-	err = ua_connect(f->a.ua, &call, NULL, f->buri, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
 	TEST_ERR(err);
 
 	err = re_main_timeout(2000);
@@ -3480,13 +3478,9 @@ int test_call_samplerate_switch(void)
 	/* Verify auresamp is present initially */
 	err = re_sdprintf(&debug_str, "%H", audio_debug, au);
 	TEST_ERR(err);
-	if (!strstr(debug_str, "auresamp")) {
-		warning("auresamp missing initially: %s\n", debug_str);
-		err = EINVAL;
-		goto out;
-	}
-	mem_deref(debug_str);
-	debug_str = NULL;
+	ASSERT_TRUE(strstr(debug_str, "auresamp") != NULL);
+
+	debug_str = mem_deref(debug_str);
 
 	/* Simulate a payload change to PCMA (PT 8) */
 	const struct aucodec *pcma;
@@ -3499,11 +3493,7 @@ int test_call_samplerate_switch(void)
 	/* Verify auresamp is still present */
 	err = re_sdprintf(&debug_str, "%H", audio_debug, au);
 	TEST_ERR(err);
-	if (!strstr(debug_str, "auresamp")) {
-		warning("auresamp missing after switch: %s\n", debug_str);
-		err = EBADMSG;
-		goto out;
-	}
+	ASSERT_TRUE(strstr(debug_str, "auresamp") != NULL);
 
  out:
 	fixture_close(f);
