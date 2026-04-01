@@ -567,7 +567,7 @@ void rtprecv_set_socket(struct rtp_receiver *rx, struct rtp_sock *rtp)
 
 void rtprecv_set_ssrc(struct rtp_receiver *rx, uint32_t ssrc)
 {
-	if (!rx)
+	if (!rx || !rx->mtx)
 		return;
 
 	mtx_lock(rx->mtx);
@@ -589,7 +589,7 @@ void rtprecv_set_ssrc(struct rtp_receiver *rx, uint32_t ssrc)
 
 uint64_t rtprecv_ts_last(struct rtp_receiver *rx)
 {
-	if (!rx)
+	if (!rx || !rx->mtx)
 		return 0;
 
 	uint64_t ts_last;
@@ -604,7 +604,7 @@ uint64_t rtprecv_ts_last(struct rtp_receiver *rx)
 
 void rtprecv_set_ts_last(struct rtp_receiver *rx, uint64_t ts_last)
 {
-	if (!rx)
+	if (!rx || !rx->mtx)
 		return;
 
 	mtx_lock(rx->mtx);
@@ -624,7 +624,7 @@ void rtprecv_flush(struct rtp_receiver *rx)
 
 void rtprecv_enable(struct rtp_receiver *rx, bool enable)
 {
-	if (!rx)
+	if (!rx || !rx->mtx)
 		return;
 
 	mtx_lock(rx->mtx);
@@ -637,7 +637,7 @@ int rtprecv_get_ssrc(struct rtp_receiver *rx, uint32_t *ssrc)
 {
 	int err;
 
-	if (!rx || !ssrc)
+	if (!rx || !ssrc || !rx->mtx)
 		return EINVAL;
 
 	mtx_lock(rx->mtx);
@@ -658,7 +658,7 @@ static bool rtprecv_consume_ssrc_change(struct rtp_receiver *rx,
 {
 	bool changed = false;
 
-	if (!rx)
+	if (!rx || !rx->mtx)
 		return false;
 
 	mtx_lock(rx->mtx);
@@ -684,7 +684,7 @@ struct jbuf *rtprecv_jbuf(struct rtp_receiver *rx)
 
 void rtprecv_enable_mux(struct rtp_receiver *rx, bool enable)
 {
-	if (!rx)
+	if (!rx || !rx->mtx)
 		return;
 
 	mtx_lock(rx->mtx);
@@ -706,7 +706,7 @@ int rtprecv_debug(struct re_printf *pf, const struct rtp_receiver *rx)
 	int err;
 	bool enabled;
 
-	if (!rx)
+	if (!rx || !rx->mtx)
 		return 0;
 
 	mtx_lock(rx->mtx);
@@ -723,6 +723,7 @@ int rtprecv_debug(struct re_printf *pf, const struct rtp_receiver *rx)
 static void destructor(void *arg)
 {
 	struct rtp_receiver *rx = arg;
+	mtx_t *mtx = rx->mtx;
 
 	if (re_atomic_rlx(&rx->run)) {
 		rtprecv_enable(rx, false);
@@ -739,7 +740,8 @@ static void destructor(void *arg)
 
 	mem_deref(rx->metric);
 	mem_deref(rx->name);
-	mem_deref(rx->mtx);
+	rx->mtx = NULL;
+	mem_deref(mtx);
 	mem_deref(rx->jbuf);
 	mem_deref(rx->cname);
 }

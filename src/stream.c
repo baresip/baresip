@@ -87,6 +87,7 @@ struct stream {
 	struct sender tx;
 
 	struct rtp_receiver *rx;
+	RE_ATOMIC bool rx_closed;
 	struct rxmain rxm;
 };
 
@@ -228,6 +229,13 @@ int stream_enable_tx(struct stream *strm, bool enable)
 static void stream_start_receiver(void *arg)
 {
 	struct stream *s = arg;
+
+	if (!s || re_atomic_rlx(&s->rx_closed) || !s->rx) {
+		if (s)
+			tmr_cancel(&s->rxm.tmr_rec);
+		return;
+	}
+
 	rtprecv_start_thread(s->rx);
 }
 
@@ -244,6 +252,9 @@ int stream_enable_rx(struct stream *strm, bool enable)
 {
 	if (!strm)
 		return EINVAL;
+
+	if (re_atomic_rlx(&strm->rx_closed) || !strm->rx)
+		return 0;
 
 	if (!enable) {
 		debug("stream: disable %s RTP receiver\n",
@@ -282,10 +293,16 @@ static void stream_close(struct stream *strm, int err)
 	stream_error_h *errorh = strm->errorh;
 
 	strm->terminated = true;
+	re_atomic_rlx_set(&strm->rx_closed, true);
 	stream_enable(strm, false);
 	strm->errorh = NULL;
 
-	strm->rx = mem_deref(strm->rx);
+	tmr_cancel(&strm->rxm.tmr_rtp);
+	tmr_cancel(&strm->rxm.tmr_rec);
+	tmr_cancel(&strm->tmr_natph);
+	struct rtp_receiver *rx = strm->rx;
+	strm->rx = NULL;
+	mem_deref(rx);
 	if (errorh)
 		errorh(strm, err, strm->sess_arg);
 }
@@ -299,6 +316,11 @@ static void check_rtp_handler(void *arg)
 	int diff_ms;
 
 	MAGIC_CHECK(strm);
+
+	if (re_atomic_rlx(&strm->rx_closed) || !strm->rx) {
+		tmr_cancel(&strm->rxm.tmr_rtp);
+		return;
+	}
 
 	tmr_start(&strm->rxm.tmr_rtp, RTP_CHECK_INTERVAL,
 		  check_rtp_handler, strm);
@@ -1077,6 +1099,11 @@ void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms)
 	if (!strm)
 		return;
 
+	if (re_atomic_rlx(&strm->rx_closed) || !strm->rx) {
+		tmr_cancel(&strm->rxm.tmr_rtp);
+		return;
+	}
+
 	m = stream_sdpmedia(strm);
 	if (!sdp_media_has_media(m))
 		return;
@@ -1356,6 +1383,9 @@ static void natpinhole_handler(void *arg)
 	struct sa raddr_rtp;
 	int err = 0;
 
+	if (!strm || strm->terminated || !strm->rtp)
+		return;
+
 	sc = sdp_media_rformat(strm->sdp, NULL);
 	if (!sc)
 		return;
@@ -1364,7 +1394,6 @@ static void natpinhole_handler(void *arg)
 	if (!mb)
 		return;
 
-	tmr_start(&strm->tmr_natph, phwait(strm), natpinhole_handler, strm);
 	mbuf_set_end(mb, RTP_HEADER_SIZE);
 	mbuf_advance(mb, RTP_HEADER_SIZE);
 
@@ -1381,6 +1410,10 @@ static void natpinhole_handler(void *arg)
 	}
 
 	mem_deref(mb);
+
+	if (!strm->terminated)
+		tmr_start(&strm->tmr_natph, phwait(strm),
+				natpinhole_handler, strm);
 }
 
 
