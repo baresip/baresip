@@ -818,7 +818,7 @@ static int stream_pt_handler(uint8_t pt, struct mbuf *mb, void *arg)
 	if (ptc != -1)
 		info("Audio decoder changed payload %d -> %u\n", ptc, pt);
 
-	return audio_decoder_set(a, lc->data, lc->pt, lc->params);
+	return audio_decoder_set(a, lc->data, lc->pt, lc->rparams);
 }
 
 
@@ -1382,7 +1382,7 @@ int audio_update(struct audio *a)
 	}
 
 	if (dir & SDP_RECVONLY)
-		err |= audio_decoder_set(a, sc->data, sc->pt, sc->rparams);
+		err |= audio_decoder_set(a, sc->data, sc->pt, sc->params);
 
 	if (dir & SDP_SENDONLY)
 		err |= audio_encoder_set(a, sc->data, sc->pt, sc->params);
@@ -1771,14 +1771,27 @@ void audio_sdp_attr_decode(struct audio *a)
 	if (attr) {
 		struct autx *tx = &a->tx;
 		uint32_t ptime_tx = atoi(attr);
+		uint32_t ptime_eff = ptime_tx;
 
-		if (ptime_tx && ptime_tx != a->tx.ptime
-		    && ptime_tx <= MAX_PTIME) {
+		/* Some codecs require a fixed packetization time. If the
+		 * active encoder specifies one, don't let peer "ptime" break
+		 * TX framing/packetization. */
+		if (tx->ac && tx->ac->ptime) {
+			ptime_eff = tx->ac->ptime;
+			if (ptime_tx && ptime_tx != ptime_eff) {
+				info("audio: peer ptime_tx=%ums ignored; "
+				     "using codec ptime=%ums (%s)\n",
+				     ptime_tx, ptime_eff, tx->ac->name);
+			}
+		}
+
+		if (ptime_eff && ptime_eff != a->tx.ptime
+		    && ptime_eff <= MAX_PTIME) {
 
 			info("audio: peer changed ptime_tx %ums -> %ums\n",
-			     a->tx.ptime, ptime_tx);
+			     a->tx.ptime, ptime_eff);
 
-			tx->ptime = ptime_tx;
+			tx->ptime = ptime_eff;
 
 			if (tx->ac) {
 				size_t sz;
@@ -1787,11 +1800,11 @@ void audio_sdp_attr_decode(struct audio *a)
 
 				tx->psize = sz * au_calc_nsamp(tx->ac->srate,
 							    tx->ac->ch,
-							    ptime_tx);
+							    ptime_eff);
 			}
 
 			sdp_media_set_lattr(stream_sdpmedia(a->strm), true,
-					    "ptime", "%u", ptime_tx);
+					    "ptime", "%u", ptime_eff);
 		}
 	}
 
@@ -1954,6 +1967,14 @@ int audio_set_source(struct audio *au, const char *mod, const char *device)
 	tx->ausrc = mem_deref(tx->ausrc);
 
 	if (str_isset(mod)) {
+
+		/* Persist source selection so codec changes/restarts reuse it */
+		tx->module = mem_deref(tx->module);
+		tx->device = mem_deref(tx->device);
+		err  = str_dup(&tx->module, mod);
+		err |= str_dup(&tx->device, device);
+		if (err)
+			return err;
 
 		err = ausrc_alloc(&tx->ausrc, baresip_ausrcl(),
 				  mod, &tx->ausrc_prm, device,
