@@ -777,6 +777,8 @@ bool net_laddr_apply(const struct network *net, net_ifaddr_h *ifh, void *arg)
 
 	LIST_FOREACH(&net->laddrs, le) {
 		struct laddr *laddr = le->data;
+		if (!laddr || !laddr->ifname)
+			continue;
 		if (ifh(laddr->ifname, &laddr->sa, arg))
 			return true;
 	}
