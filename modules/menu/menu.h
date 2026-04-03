@@ -38,6 +38,7 @@ struct menu{
 	size_t outcnt;                /**< Outgoing call counter          */
 	bool dnd;                     /**< Do not disturb flag            */
 	bool message_tone;            /**< Play tone for SIP MESSAGE      */
+	struct tmr tmr_answ;          /**< Timer for auto answer          */
 };
 
 /*Get menu object*/

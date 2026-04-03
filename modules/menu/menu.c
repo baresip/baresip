@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 Alfred E. Heggestad
  */
+#include <stdint.h>
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
@@ -36,6 +37,7 @@ struct filter_arg {
 
 
 static void menu_sel_other(struct call *exclude);
+static bool check_delayed_answer(struct call *call);
 
 static int menu_set_incall(bool incall)
 {
@@ -407,7 +409,8 @@ static void delayed_play(void *arg)
 
 	switch (call_state(call)) {
 	case CALL_STATE_INCOMING:
-		play_incoming(call);
+		if (!check_delayed_answer(call))
+			play_incoming(call);
 		break;
 	case CALL_STATE_RINGING:
 	case CALL_STATE_EARLY:
@@ -532,7 +535,6 @@ static int menu_autoanwser_call(struct call *call)
 	}
 
 	call_start_answtmr(call, 0);
-
 	return 0;
 }
 
@@ -561,20 +563,23 @@ static void menu_play_closed(struct call *call)
 
 static void auans_play_finished(struct play *play, void *arg)
 {
-	struct call *call = arg;
-	int32_t adelay = call_answer_delay(call);
-	(void) play;
+	struct call *call = menu_callcur();
+	(void)arg;
+	(void)play;
 
-	if (call_state(call) == CALL_STATE_INCOMING) {
-		call_start_answtmr(call, adelay);
-		if (adelay >= MIN_RINGTIME)
-			play_incoming(call);
-	}
+	/* the first incoming call stays the current */
+	if (call_state(call) != CALL_STATE_INCOMING)
+		return;
+
+	menu_autoanwser_call(call);
 }
 
 
 static bool alert_uri_supported(const char *uri)
 {
+	if (!uri)
+		return false;
+
 	if (!re_regex(uri, strlen(uri), "https://"))
 		return true;
 
@@ -588,35 +593,79 @@ static bool alert_uri_supported(const char *uri)
 }
 
 
-static void start_autoanswer(struct call *call)
+static void auto_answer_handler(void *arg)
 {
+	struct call *call = menu_callcur();
+	(void)arg;
+
+	/* the first incoming call stays the current */
+	if (call_state(call) != CALL_STATE_INCOMING)
+		return;
+
 	struct account *acc = call_account(call);
-	int32_t adelay = call_answer_delay(call);
 	const char *aluri = call_alerturi(call);
 	enum sipansbeep bmet = account_sipansbeep(acc);
 	bool beep = false;
 
-	if (adelay == -1)
-		return;
-
 	if (bmet) {
 		if (bmet != SIPANSBEEP_LOCAL && aluri &&
-				alert_uri_supported(aluri))
+				alert_uri_supported(aluri)) {
 			beep = menu_play(call, NULL, aluri, 1, DEVICE_ALERT);
+		}
 
-		if (!beep)
+		if (!beep) {
 			beep = menu_play(call, "sip_autoanswer_aufile",
 					 "autoanswer.wav", 1, DEVICE_ALERT);
+		}
 	}
 
-	if (beep) {
-		play_set_finish_handler(menu.play, auans_play_finished, call);
+	if (beep)
+		play_set_finish_handler(menu.play, auans_play_finished, NULL);
+	else
+		menu_autoanwser_call(call);
+}
+
+
+static void start_autoanswer(struct call *call)
+{
+	int32_t adelay = call_answer_delay(call);
+	if (adelay <= -1)
+		return;
+
+	if (adelay >= MIN_RINGTIME)
+		play_incoming(call);
+
+	tmr_start(&menu.tmr_answ, adelay, auto_answer_handler, NULL);
+}
+
+
+static bool check_delayed_answer(struct call *call)
+{
+	if (call != menu.curcall)
+		return false;
+
+	struct account *acc = call_account(call);
+	int32_t adelay = -1;
+
+	if (account_sip_autoanswer(acc))
+		adelay = call_answer_delay(call);
+
+	if (account_answerdelay(acc)) {
+		int32_t accdelay = account_answerdelay(acc);
+
+		if (accdelay >= 0 && (adelay < 0 || accdelay < adelay))
+			adelay = accdelay;
+
+		if (adelay >= 0)
+			call_set_answer_delay(call, adelay);
 	}
-	else {
-		call_start_answtmr(call, adelay);
-		if (adelay >= MIN_RINGTIME)
-			play_incoming(call);
+
+	if (adelay >= 0) {
+		start_autoanswer(call);
+		return true;
 	}
+
+	return false;
 }
 
 
@@ -694,7 +743,6 @@ static void apply_contact_mediadir(struct call *call)
 static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 {
 	struct call *call2 = NULL;
-	int32_t adelay = -1;
 	bool incall;
 	enum sdp_dir ardir, vrdir;
 	uint32_t count;
@@ -775,18 +823,8 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 		     account_aor(acc), call_peername(call), call_peeruri(call),
 		     sdp_dir_name(ardir), sdp_dir_name(vrdir));
 
-		if (account_sip_autoanswer(acc)) {
-			adelay = call_answer_delay(call);
-		}
-		else if (account_answerdelay(acc)) {
-			adelay = account_answerdelay(acc);
-			call_set_answer_delay(call, adelay);
-		}
-
-		if (adelay == -1)
+		if (!check_delayed_answer(call))
 			play_incoming(call);
-		else
-			start_autoanswer(call);
 
 		break;
 
@@ -1323,6 +1361,8 @@ static int module_close(void)
 	dynamic_menu_unregister();
 
 	tmr_cancel(&menu.tmr_stat);
+	tmr_cancel(&menu.tmr_play);
+	tmr_cancel(&menu.tmr_answ);
 	menu.dialbuf = mem_deref(menu.dialbuf);
 	menu.invite_uri = mem_deref(menu.invite_uri);
 	menu.ovaufile = mem_deref(menu.ovaufile);
