@@ -18,6 +18,7 @@ enum {
 	CONTROL_WAIT_MS    = 2,
 	SHUTDOWN_WAIT_MS   = 1000,
 	SHUTDOWN_POLL_MS   = 10,
+	MAX_RECORD_BUFFER_MS = 1000,
 };
 
 
@@ -139,6 +140,7 @@ static void end_quiesce(struct ausrc_state *state)
 static int ensure_recorder_buffer(struct ausrc_state *state, size_t frames)
 {
 	void *buf;
+	size_t bytes;
 
 	if (!state)
 		return EINVAL;
@@ -146,7 +148,12 @@ static int ensure_recorder_buffer(struct ausrc_state *state, size_t frames)
 	if (frames <= state->sampc)
 		return 0;
 
-	buf = mem_realloc(state->sampv, state->bytes_per_frame * frames);
+	bytes = state->bytes_per_frame * frames;
+	buf = mem_realloc(state->sampv, bytes);
+	if (!buf)
+		warning("aaudio: recorder: buffer realloc failed: "
+				"frames=%zu bytes_per_frame=%zu total=%zu\n",
+				frames, state->bytes_per_frame, bytes);
 	if (!buf)
 		return ENOMEM;
 
@@ -368,7 +375,9 @@ static int prepare_recorder_stream(struct ausrc_state *state,
 	int32_t frames_per_burst;
 	int32_t buffer_capacity;
 	int32_t buffer_size;
+	size_t ptime_frames;
 	size_t want_frames;
+	size_t max_frames;
 	int err;
 
 	if (!state || !stream)
@@ -380,12 +389,30 @@ static int prepare_recorder_stream(struct ausrc_state *state,
 	buffer_capacity = AAudioStream_getBufferCapacityInFrames(stream);
 	buffer_size = AAudioStream_getBufferSizeInFrames(stream);
 
-	want_frames = state->src_prm.ptime * state->src_prm.ch *
+	ptime_frames = state->src_prm.ptime * state->src_prm.ch *
 			state->src_prm.srate / 1000;
+	want_frames = ptime_frames;
 	if (buffer_capacity > 0 && (size_t)buffer_capacity > want_frames)
 		want_frames = (size_t)buffer_capacity;
 	if (frames_per_burst > 0 && (size_t)frames_per_burst > want_frames)
 		want_frames = (size_t)frames_per_burst;
+
+	max_frames = (size_t)(((uint64_t)state->src_prm.srate *
+			state->src_prm.ch * MAX_RECORD_BUFFER_MS) / 1000);
+	if (max_frames == 0)
+		max_frames = want_frames;
+
+	info("aaudio: recorder: prep buffer: ptime_frames=%zu "
+		 "frames_per_burst=%d buffer_capacity=%d "
+		 "buffer_size=%d want_frames=%zu max_frames=%zu\n",
+			ptime_frames, frames_per_burst, buffer_capacity,
+			buffer_size, want_frames, max_frames);
+
+	if (want_frames > max_frames) {
+		warning("aaudio: recorder: clamping want_frames %zu -> %zu\n",
+				want_frames, max_frames);
+		want_frames = max_frames;
+	}
 
 	err = ensure_recorder_buffer(state, want_frames);
 	if (err)
