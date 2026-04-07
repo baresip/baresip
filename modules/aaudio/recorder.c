@@ -149,11 +149,20 @@ static int ensure_recorder_buffer(struct ausrc_state *state, size_t frames)
 		return 0;
 
 	bytes = state->bytes_per_frame * frames;
-	buf = mem_realloc(state->sampv, bytes);
-	if (!buf)
-		warning("aaudio: recorder: buffer realloc failed: "
-				"frames=%zu bytes_per_frame=%zu total=%zu\n",
-				frames, state->bytes_per_frame, bytes);
+	if (!state->sampv) {
+		buf = mem_alloc(bytes, NULL);
+		if (!buf)
+			warning("aaudio: recorder: buffer alloc failed: "
+					"frames=%zu bytes_per_frame=%zu total=%zu\n",
+					frames, state->bytes_per_frame, bytes);
+	}
+	else {
+		buf = mem_realloc(state->sampv, bytes);
+		if (!buf)
+			warning("aaudio: recorder: buffer realloc failed: "
+					"frames=%zu bytes_per_frame=%zu total=%zu\n",
+					frames, state->bytes_per_frame, bytes);
+	}
 	if (!buf)
 		return ENOMEM;
 
