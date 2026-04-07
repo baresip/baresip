@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## v4.7.0 - 2026-04-07
+
+### What's Changed
+* uag: allow registered ua catchall by @sreimers in https://github.com/baresip/baresip/pull/3660
+* bevent: rename bevent_odict_encode() and add to test by @alfredh in https://github.com/baresip/baresip/pull/3665
+* uag: log selected account in uag_find_msg() at level DEBUG by @petercolberg in https://github.com/baresip/baresip/pull/3661
+* modules/selfview: added support for screen rotation by @juha-h in https://github.com/baresip/baresip/pull/3666
+* Revert "call: do not go back to RINGING state if already in EARLY" by @dddaniel in https://github.com/baresip/baresip/pull/3667
+* test: check for real IP-address in test_peerconn by @alfredh in https://github.com/baresip/baresip/pull/3668
+* net,ua: add default network address family fallback by @sreimers in https://github.com/baresip/baresip/pull/3675
+* call: remove unused call_af() by @alfredh in https://github.com/baresip/baresip/pull/3669
+* test: minor increase in test-coverage of command module by @alfredh in https://github.com/baresip/baresip/pull/3670
+* test: add audio_debug() and video_debug() in BUNDLE test by @alfredh in https://github.com/baresip/baresip/pull/3676
+* test: check ua/call print and debug functions by @alfredh in https://github.com/baresip/baresip/pull/3678
+* call: improve emission of hold/resume events by @maximilianfridrich in https://github.com/baresip/baresip/pull/3677
+* ci/coverage: bump minimum coverage to 70% by @alfredh in https://github.com/baresip/baresip/pull/3679
+
+### New Contributors
+* @petercolberg made their first contribution in https://github.com/baresip/baresip/pull/3661
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v4.6.0...v4.7.0
+
+
 ## v4.6.0 - 2026-03-04
 
 ### What's Changed
