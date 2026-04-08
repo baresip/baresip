@@ -653,11 +653,10 @@ static bool check_delayed_answer(struct call *call)
 	if (account_answerdelay(acc)) {
 		int32_t accdelay = account_answerdelay(acc);
 
-		if (accdelay >= 0 && (adelay < 0 || accdelay < adelay))
+		if (accdelay >= 0 && (adelay < 0 || accdelay < adelay)) {
 			adelay = accdelay;
-
-		if (adelay >= 0)
 			call_set_answer_delay(call, adelay);
+		}
 	}
 
 	if (adelay >= 0) {
