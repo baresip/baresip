@@ -3442,3 +3442,65 @@ int test_call_uag_find_msg(void)
 
 	return err;
 }
+
+
+int test_call_samplerate_switch(void)
+{
+	struct fixture fix, *f = &fix;
+	struct audio *au;
+	char *debug_str = NULL;
+	int err = 0;
+	const char *dp = test_datapath();
+	char *prm = NULL;
+
+	err = re_sdprintf(&prm, ";audio_source=aufile,%s/%s", dp,
+			  "wav/square_500Hz_0.8.wav");
+	TEST_ERR(err);
+
+	err = module_load(".", "l16");
+	err |= module_load(".", "auresamp");
+	err |= module_load(".", "auconv");
+	err |= module_load(".", "aufile");
+	TEST_ERR(err);
+
+	fixture_init_prm(f, prm);
+	mem_deref(prm);
+
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	err = re_main_timeout(2000);
+	TEST_ERR(err);
+
+	au = call_audio(ua_call(f->a.ua));
+	ASSERT_TRUE(au != NULL);
+
+	/* Verify auresamp is present initially */
+	err = re_sdprintf(&debug_str, "%H", audio_debug, au);
+	TEST_ERR(err);
+	ASSERT_TRUE(strstr(debug_str, "auresamp") != NULL);
+
+	debug_str = mem_deref(debug_str);
+
+	/* Simulate a payload change to PCMA (PT 8) */
+	const struct aucodec *pcma;
+	pcma = aucodec_find(baresip_aucodecl(), "PCMA", 8000, 1);
+	ASSERT_TRUE(pcma != NULL);
+
+	err = audio_decoder_set(au, pcma, 8, NULL);
+	TEST_ERR(err);
+
+	/* Verify auresamp is still present */
+	err = re_sdprintf(&debug_str, "%H", audio_debug, au);
+	TEST_ERR(err);
+	ASSERT_TRUE(strstr(debug_str, "auresamp") != NULL);
+
+ out:
+	fixture_close(f);
+	module_unload("l16");
+	module_unload("aufile");
+	module_unload("auconv");
+	module_unload("auresamp");
+	mem_deref(debug_str);
+	return err;
+}

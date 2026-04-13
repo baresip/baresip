@@ -1332,6 +1332,12 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 
 		tx->enc = mem_deref(tx->enc);
 		tx->ac = ac;
+
+		if (!list_isempty(baresip_aufiltl())) {
+			err = aufilt_setup(a, baresip_aufiltl());
+			if (err)
+				return err;
+		}
 	}
 
 	if (ac->encupdh) {
@@ -1399,6 +1405,13 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 	err = aurecv_decoder_set(a->aur, ac, pt, params);
 	if (err)
 		return err;
+
+	if (reset && !list_isempty(baresip_aufiltl())) {
+		err = aufilt_setup(a, baresip_aufiltl());
+		if (err) {
+			return err;
+		}
+	}
 
 	stream_set_srate(a->strm, 0, ac->crate);
 	if (reset || !aurecv_player_started(a->aur))

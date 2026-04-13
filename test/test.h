@@ -230,6 +230,7 @@ int test_call_100rel_video(void);
 int test_call_hold_resume(void);
 int test_call_srtp_tx_rekey(void);
 int test_call_uag_find_msg(void);
+int test_call_samplerate_switch(void);
 #ifdef USE_TLS
 int test_call_sni(void);
 int test_call_cert_select(void);
