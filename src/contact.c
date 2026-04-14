@@ -511,7 +511,7 @@ struct contact *contact_find_call(const struct contacts *contacts,
 
 	/* replace the user */
 	aor.user = from_addr.uri.user;
-	char *uri;
+	char *uri = NULL;
 	err = re_sdprintf(&uri, "%H", uri_encode, &aor);
 	if (err)
 		return NULL;
