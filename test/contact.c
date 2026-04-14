@@ -7,6 +7,7 @@
 #include <re.h>
 #include <baresip.h>
 #include "test.h"
+#include "call.h"
 
 
 int test_contact(void)
@@ -52,6 +53,49 @@ int test_contact(void)
 
  out:
 	mem_deref(contacts);
+
+	return err;
+}
+
+
+int test_contact_find_call(void)
+{
+	struct contacts *contacts = NULL;
+	const char *cstr[] = {
+		"B <sip:b@127.0.0.1>",
+		"A <sip:a@127.0.0.1>"};
+	struct contact *c;
+	struct pl pl_addr;
+	struct fixture fix, *f = &fix;
+	int err;
+
+	fixture_init(f);
+
+	err = contact_init(&contacts);
+	TEST_ERR(err);
+
+	for (size_t i = 0; i < RE_ARRAY_SIZE(cstr); i++) {
+		pl_set_str(&pl_addr, cstr[i]);
+		err = contact_add(contacts, &c, &pl_addr);
+		TEST_ERR(err);
+	}
+
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_ON);
+	TEST_ERR(err);
+
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+
+	struct call *call = ua_call(f->b.ua);
+	struct contact *contact = contact_find_call(contacts, call);
+	ASSERT_TRUE(contact != NULL);
+	ASSERT_STREQ(cstr[1], contact_str(contact));
+
+	ua_hangup(f->a.ua, call, 0, 0);
+
+out:
+	mem_deref(contacts);
+	fixture_close(f);
 
 	return err;
 }

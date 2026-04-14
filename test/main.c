@@ -67,6 +67,7 @@ static const struct test tests[] = {
 	TEST(test_cparam_call_decode),
 	TEST(test_cparam_ua_decode),
 	TEST(test_contact),
+	TEST(test_contact_find_call),
 	TEST(test_bevent_register),
 	TEST(test_jbuf),
 	TEST(test_jbuf_adaptive),
