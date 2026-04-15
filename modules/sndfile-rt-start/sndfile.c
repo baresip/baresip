@@ -7,6 +7,7 @@
 #include <sndfile.h>
 #include <time.h>
 #include <sys/time.h>
+#include <inttypes.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -35,6 +36,8 @@ struct sndfile_enc {
 	int err;
 	const struct audio *audio;
 	char *filename;
+	uint64_t t0_us;
+	uint64_t nsamp_written;
 };
 
 struct sndfile_dec {
@@ -43,9 +46,83 @@ struct sndfile_dec {
 	int err;
 	const struct audio *audio;
 	char *filename;
+	uint64_t t0_us;
+	uint64_t nsamp_written;
 };
 
 static char file_path[512] = ".";
+static bool dump_wallclock = true;
+static bool dump_wallclock_drop_ahead = true;
+static uint32_t dump_wallclock_ahead_tolerance_ms = 20;
+static uint32_t dump_wallclock_max_silence_ms = 200;
+
+static inline uint64_t now_usec_monotonic(void)
+{
+	struct timespec ts;
+	if (0 != clock_gettime(CLOCK_MONOTONIC, &ts))
+		return 0;
+	return (uint64_t)ts.tv_sec * 1000000ULL + (uint64_t)ts.tv_nsec / 1000ULL;
+}
+
+static size_t bytes_per_sample(enum aufmt fmt)
+{
+	switch (fmt) {
+	case AUFMT_S16LE: return 2;
+	case AUFMT_FLOAT: return 4;
+	default:          return 0;
+	}
+}
+
+static void write_silence(SNDFILE *sf, enum aufmt fmt, uint32_t ch,
+			  uint64_t nsamp)
+{
+	uint8_t zbuf[4096];
+	size_t bps;
+	uint64_t nbytes;
+
+	if (!sf || !nsamp)
+		return;
+
+	bps = bytes_per_sample(fmt);
+	if (!bps || !ch)
+		return;
+
+	memset(zbuf, 0, sizeof(zbuf));
+
+	nbytes = nsamp * (uint64_t)ch * (uint64_t)bps;
+
+	while (nbytes) {
+		size_t chunk = (size_t)min(nbytes, (uint64_t)sizeof(zbuf));
+		sf_write_raw(sf, zbuf, chunk);
+		nbytes -= chunk;
+	}
+}
+
+static bool pacing_should_drop(uint64_t nsamp_written, uint64_t exp,
+			       uint32_t srate)
+{
+	uint64_t tol;
+
+	if (!dump_wallclock_drop_ahead || !srate)
+		return false;
+
+	tol = ((uint64_t)dump_wallclock_ahead_tolerance_ms * (uint64_t)srate) /
+	      1000ULL;
+
+	return nsamp_written > exp + tol;
+}
+
+static uint64_t pacing_cap_silence(uint64_t nsamp, uint32_t srate)
+{
+	uint64_t cap;
+	if (!srate)
+		return 0;
+
+	cap = ((uint64_t)dump_wallclock_max_silence_ms * (uint64_t)srate) /
+	      1000ULL;
+
+	return min(nsamp, cap);
+}
 
 static int timestamp_print_usec(struct re_printf *pf, const struct timeval *tv)
 {
@@ -219,6 +296,8 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 {
 	struct sndfile_enc *sf = (struct sndfile_enc *)st;
 	size_t num_bytes;
+	size_t bps;
+	uint64_t nsamp;
 
 	if (!st || !af)
 		return EINVAL;
@@ -243,8 +322,35 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 	}
 
 	num_bytes = auframe_size(af);
+	bps = bytes_per_sample(af->fmt);
+	nsamp = bps && af->ch ? (uint64_t)num_bytes / ((uint64_t)bps *
+						      (uint64_t)af->ch) : 0;
+
+	if (dump_wallclock && nsamp && af->srate) {
+		uint64_t t = now_usec_monotonic();
+		uint64_t exp = 0;
+
+		if (!sf->t0_us) {
+			sf->t0_us = t;
+			sf->nsamp_written = 0;
+		}
+		else if (t > sf->t0_us) {
+			exp = ((t - sf->t0_us) * (uint64_t)af->srate) /
+			      1000000ULL;
+			if (exp > sf->nsamp_written) {
+				uint64_t gap = exp - sf->nsamp_written;
+				gap = pacing_cap_silence(gap, af->srate);
+				write_silence(sf->encf, af->fmt, af->ch, gap);
+				sf->nsamp_written += gap;
+			}
+		}
+
+		if (pacing_should_drop(sf->nsamp_written, exp, af->srate))
+			return 0;
+	}
 
 	sf_write_raw(sf->encf, af->sampv, num_bytes);
+	sf->nsamp_written += nsamp;
 
 	return 0;
 }
@@ -254,6 +360,8 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 {
 	struct sndfile_dec *sf = (struct sndfile_dec *)st;
 	size_t num_bytes;
+	size_t bps;
+	uint64_t nsamp;
 
 	if (!st || !af)
 		return EINVAL;
@@ -278,8 +386,35 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 	}
 
 	num_bytes = auframe_size(af);
+	bps = bytes_per_sample(af->fmt);
+	nsamp = bps && af->ch ? (uint64_t)num_bytes / ((uint64_t)bps *
+						      (uint64_t)af->ch) : 0;
+
+	if (dump_wallclock && nsamp && af->srate) {
+		uint64_t t = now_usec_monotonic();
+		uint64_t exp = 0;
+
+		if (!sf->t0_us) {
+			sf->t0_us = t;
+			sf->nsamp_written = 0;
+		}
+		else if (t > sf->t0_us) {
+			exp = ((t - sf->t0_us) * (uint64_t)af->srate) /
+			      1000000ULL;
+			if (exp > sf->nsamp_written) {
+				uint64_t gap = exp - sf->nsamp_written;
+				gap = pacing_cap_silence(gap, af->srate);
+				write_silence(sf->decf, af->fmt, af->ch, gap);
+				sf->nsamp_written += gap;
+			}
+		}
+
+		if (pacing_should_drop(sf->nsamp_written, exp, af->srate))
+			return 0;
+	}
 
 	sf_write_raw(sf->decf, af->sampv, num_bytes);
+	sf->nsamp_written += nsamp;
 
 	return 0;
 }
@@ -299,8 +434,22 @@ static int module_init(void)
 	aufilt_register(baresip_aufiltl(), &sndfile);
 
 	conf_get_str(conf_cur(), "snd_path", file_path, sizeof(file_path));
+	(void)conf_get_bool(conf_cur(), "snd_dump_wallclock", &dump_wallclock);
+	(void)conf_get_bool(conf_cur(), "snd_dump_wallclock_drop_ahead",
+			    &dump_wallclock_drop_ahead);
+	(void)conf_get_u32(conf_cur(), "snd_dump_wallclock_ahead_tol_ms",
+			   &dump_wallclock_ahead_tolerance_ms);
+	(void)conf_get_u32(conf_cur(), "snd_dump_wallclock_max_silence_ms",
+			   &dump_wallclock_max_silence_ms);
 
 	info("sndfile-rt-start: saving files in %s\n", file_path);
+	info("sndfile-rt-start: dump wallclock pacing %s\n",
+	     dump_wallclock ? "enabled" : "disabled");
+	info("sndfile-rt-start: dump wallclock drop-ahead %s (tol=%ums)\n",
+	     dump_wallclock_drop_ahead ? "enabled" : "disabled",
+	     dump_wallclock_ahead_tolerance_ms);
+	info("sndfile-rt-start: dump wallclock max silence %ums\n",
+	     dump_wallclock_max_silence_ms);
 
 	return 0;
 }
