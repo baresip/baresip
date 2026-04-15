@@ -29,15 +29,21 @@ struct test_gnack {
 
 /* Simulate single Video Frame 90000 Hz / 30 fps = 3000 with lost */
 static const struct test_rtp testv_rtps[] = {
-	{0, 3000},
-	{1, 3000},
-	{5, 3000},
-	{10, 3000},
+	{.seq = 0, .ts = 3000},
+	{.seq = 1, .ts = 3000},
+	{.seq = 3, .ts = 3000},
+	{.seq = 6, .ts = 3000},
+	{.seq = 10, .ts = 3000},
+	{.seq = 28, .ts = 3000},
+	{.seq = 50, .ts = 3000},
 };
 
 static const struct test_gnack testv_gnacks[] = {
-	{2, 3},
-	{6, 7},
+	{.pid = 2, .blp = 0},
+	{.pid = 4, .blp = 1},
+	{.pid = 7, .blp = 3},
+	{.pid = 11, .blp = 65535},
+	{.pid = 29, .blp = 65535},
 };
 
 
