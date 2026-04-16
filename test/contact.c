@@ -7,6 +7,7 @@
 #include <re.h>
 #include <baresip.h>
 #include "test.h"
+#include "call.h"
 
 
 int test_contact(void)
@@ -52,6 +53,75 @@ int test_contact(void)
 
  out:
 	mem_deref(contacts);
+
+	return err;
+}
+
+
+int test_contact_find_call(void)
+{
+	struct contacts *contacts = NULL;
+	const char *cstr[] = {
+		"B <sip:b@127.0.0.1>",
+		"A <sip:a@127.0.0.1>"};
+	struct contact *c;
+	struct pl pl_addr;
+	struct fixture fix, *f = &fix;
+	int err;
+
+	fixture_init(f);
+
+	err = contact_init(&contacts);
+	TEST_ERR(err);
+
+	/* contact_find_smart() with peer_uri */
+	for (size_t i = 0; i < RE_ARRAY_SIZE(cstr); i++) {
+		pl_set_str(&pl_addr, cstr[i]);
+		err = contact_add(contacts, &c, &pl_addr);
+		TEST_ERR(err);
+	}
+
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_ON);
+	TEST_ERR(err);
+
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+
+	struct call *call = ua_call(f->b.ua);
+	struct contact *contact = contact_find_call(contacts, call);
+	ASSERT_TRUE(contact != NULL);
+	ASSERT_STREQ(cstr[1], contact_str(contact));
+
+	ua_hangup(f->a.ua, call, 0, 0);
+
+	/* host only match */
+	contact_remove(contacts, contact);
+	ASSERT_EQ(1, list_count(contact_list(contacts)));
+
+	mem_deref(f->a.ua);
+	err = ua_alloc(&f->a.ua, "A <sip:a@localhost>;regint=0");
+	TEST_ERR(err);
+
+	pl_set_str(&pl_addr, "X <sip:x@localhost>");
+	contact_add(contacts, &c, &pl_addr);
+
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_ON);
+	TEST_ERR(err);
+
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+
+	call = ua_call(f->b.ua);
+	contact = contact_find_call(contacts, call);
+	ASSERT_TRUE(contact != NULL);
+	ASSERT_STREQ(contact_str(c), contact_str(contact));
+	ASSERT_STREQ("sip:x@localhost", contact_uri(contact));
+
+	ua_hangup(f->a.ua, call, 0, 0);
+
+out:
+	mem_deref(contacts);
+	fixture_close(f);
 
 	return err;
 }
