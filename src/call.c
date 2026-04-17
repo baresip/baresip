@@ -313,8 +313,10 @@ static int update_media(struct call *call)
 {
 	debug("call: update media\n");
 
-	bevent_call_emit(BEVENT_CALL_REMOTE_SDP, call,
-			 call->got_offer ? "offer" : "answer");
+	int err = bevent_call_emit(BEVENT_CALL_REMOTE_SDP, call,
+				   call->got_offer ? "offer" : "answer");
+	if (err)
+		return err;
 
 	return call_update_media(call);
 }
@@ -1913,8 +1915,8 @@ static int sipsess_offer_handler(struct mbuf **descp,
 
 		err = update_media(call);
 		if (err) {
-			warning("call: reinvite: could not update media: %m\n",
-				err);
+			warning("call: reinvite - update media failed/rejected"
+				" (%m)\n", err);
 			return err;
 		}
 	}
@@ -1931,10 +1933,9 @@ static int sipsess_offer_handler(struct mbuf **descp,
 	if (err)
 		return err;
 
-	bevent_call_emit(BEVENT_CALL_LOCAL_SDP, call, "%s",
-			 got_offer ? "answer" : "offer");
-
-	return 0;
+	err = bevent_call_emit(BEVENT_CALL_LOCAL_SDP, call, "%s",
+			       got_offer ? "answer" : "offer");
+	return err;
 }
 
 
