@@ -12,7 +12,6 @@
 #define RE_TRACE_ENABLED 1
 #endif
 #include <string.h>
-#include <stdlib.h>
 
 #include <re.h>
 #include <baresip.h>
@@ -472,18 +471,20 @@ static uint32_t calc_playout_time(struct jbuf *jb, struct packet *p)
 }
 
 
-static inline void send_gnack(struct jbuf *jb, uint16_t last_seq,
-			     int16_t seq_diff)
+static inline void send_gnack(struct jbuf *jb, uint16_t pid, int16_t blp_pkts)
 {
-	uint16_t pid = last_seq + 1;
 	uint16_t blp = 0;
 
-	for (int i = 0; i < seq_diff - 2; i++) {
-		blp |= (1 << i);
+	if (blp_pkts > 16) {
+		warning("jbuf: RTCP_GNACK too big blp_pkts %d\n", blp_pkts);
+		blp_pkts = 16;
 	}
 
+	if (blp_pkts > 0)
+		blp = (1u << blp_pkts) - 1u;
+
 	debug("jbuf: RTCP_GNACK missing: %u diff: %d blp: %02X\n", pid,
-		seq_diff, blp);
+	      blp_pkts, blp);
 
 	rtcp_send_gnack(jb->gnack_rtp, jb->ssrc, pid, blp);
 	STAT_INC(n_gnacks);
@@ -564,7 +565,7 @@ int jbuf_put(struct jbuf *jb, const struct rtp_header *hdr, void *mem)
 		const int16_t seq_diff = seq - last_seq;
 
 		if (jb->gnack_rtp && seq_diff > 1)
-			send_gnack(jb, last_seq, seq_diff);
+			send_gnack(jb, last_seq + 1, seq_diff - 2);
 
 		list_append(&jb->packetl, &f->le, f);
 		goto success;
