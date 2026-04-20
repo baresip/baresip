@@ -108,7 +108,6 @@ module			stdio.so
 #module			g7221.so
 #module			libg722.so
 #module			g722.so
-#module			g726.so
 module			g711.so
 #module			l16.so
 #module			mpa.so
