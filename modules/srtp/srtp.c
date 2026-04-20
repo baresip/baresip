@@ -124,19 +124,6 @@ static bool is_rtp_or_rtcp(const struct mbuf *mb)
 }
 
 
-static bool is_rtcp_packet(const struct mbuf *mb)
-{
-	uint8_t pt;
-
-	if (mbuf_get_left(mb) < 2)
-		return false;
-
-	pt = mbuf_buf(mb)[1] & 0x7f;
-
-	return rtp_pt_is_rtcp(pt);
-}
-
-
 static enum srtp_suite resolve_suite(const char *suite)
 {
 	if (0 == str_casecmp(suite, aes_cm_128_hmac_sha1_32))
@@ -225,7 +212,7 @@ static bool send_handler(int *err, struct sa *dst, struct mbuf *mb, void *arg)
 		goto unlock_out;
 	}
 
-	if (is_rtcp_packet(mb)) {
+	if (rtp_is_rtcp_packet(mb)) {
 		lerr = srtcp_encrypt(st->srtp_tx, mb);
 	}
 	else {
@@ -238,7 +225,7 @@ out:
 	if (lerr) {
 		warning("srtp: failed to encrypt %s-packet"
 			      " with %zu bytes (%m)\n",
-			      is_rtcp_packet(mb) ? "RTCP" : "RTP",
+			      rtp_is_rtcp_packet(mb) ? "RTCP" : "RTP",
 			      len, lerr);
 		*err = lerr;
 		return false;
@@ -272,7 +259,7 @@ static bool recv_handler(struct sa *src, struct mbuf *mb, void *arg)
 		goto out;
 	}
 
-	if (is_rtcp_packet(mb)) {
+	if (rtp_is_rtcp_packet(mb)) {
 		err = srtcp_decrypt(st->srtp_rx, mb);
 		if (err) {
 			warning("srtp: failed to decrypt RTCP packet"

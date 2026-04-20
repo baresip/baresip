@@ -39,19 +39,6 @@ static inline bool is_rtp_or_rtcp(const struct mbuf *mb)
 }
 
 
-static inline bool is_rtcp_packet(const struct mbuf *mb)
-{
-	uint8_t pt;
-
-	if (mbuf_get_left(mb) < 2)
-		return false;
-
-	pt = mbuf_buf(mb)[1] & 0x7f;
-
-	return rtp_pt_is_rtcp(pt);
-}
-
-
 static bool is_dtls_packet(const struct mbuf *mb)
 {
 	uint8_t b;
@@ -81,7 +68,7 @@ static bool send_handler(int *err, struct sa *dst, struct mbuf *mb, void *arg)
 	if (!is_rtp_or_rtcp(mb))
 		return false;
 
-	if (is_rtcp_packet(mb)) {
+	if (rtp_is_rtcp_packet(mb)) {
 		*err = srtcp_encrypt(comp->tx->srtp, mb);
 		if (*err) {
 			warning("srtp: srtcp_encrypt failed (%m)\n", *err);
@@ -112,7 +99,7 @@ static bool recv_handler(struct sa *src, struct mbuf *mb, void *arg)
 	if (!is_rtp_or_rtcp(mb))
 		return false;
 
-	if (is_rtcp_packet(mb)) {
+	if (rtp_is_rtcp_packet(mb)) {
 		err = srtcp_decrypt(comp->rx->srtp, mb);
 	}
 	else {
@@ -121,7 +108,7 @@ static bool recv_handler(struct sa *src, struct mbuf *mb, void *arg)
 
 	if (err) {
 		warning("srtp: recv: failed to decrypt %s-packet (%m)\n",
-			is_rtcp_packet(mb) ? "RTCP" : "RTP", err);
+			rtp_is_rtcp_packet(mb) ? "RTCP" : "RTP", err);
 		return true;   /* error - drop packet */
 	}
 
