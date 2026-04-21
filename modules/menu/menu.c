@@ -523,7 +523,8 @@ static void menu_invite(const char *prm)
 static int menu_autoanwser_call(struct call *call)
 {
 	struct call *outgoing;
-	if (menu_find_call(established_call_test, call))
+	bool single = conf_config()->call.hold_other_calls;
+	if (single && menu_find_call(established_call_test, call))
 		return EINVAL;
 
 	outgoing = menu_find_call(outgoing_call_test, call);
