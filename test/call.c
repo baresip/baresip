@@ -1393,21 +1393,27 @@ int test_call_format_float(void)
 }
 
 
-int test_call_mediaenc(void)
+static int test_call_mediaenc_param(const char *name, bool rtcp_mux)
 {
 	struct fixture fix = {0}, *f = &fix;
 	struct cancel_rule *cr;
+	char prm[512] = "";
 	int err = 0;
 
-	err = module_load(".", "srtp");
+	err = module_load(".", name);
 	TEST_ERR(err);
 
 	/* Enable a dummy media encryption protocol */
-	fixture_init_prm(f, ";mediaenc=srtp;ptime=1");
+	re_snprintf(prm, sizeof(prm), ";mediaenc=%s;ptime=1%s",
+		    name,
+		    rtcp_mux ? ";rtcp_mux=yes" : "");
+
+	fixture_init_prm(f, prm);
+
 	cancel_rule_new(BEVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
 	cancel_rule_and(BEVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
 
-	ASSERT_STREQ("srtp", account_mediaenc(ua_account(f->a.ua)));
+	ASSERT_STREQ(name, account_mediaenc(ua_account(f->a.ua)));
 
 	err = module_load(".", "ausine");
 	TEST_ERR(err);
@@ -1434,8 +1440,8 @@ int test_call_mediaenc(void)
 	ASSERT_EQ(0, fix.b.n_closed);
 
 	/* verify that the call was encrypted */
-	ASSERT_EQ(1, fix.a.n_mediaenc);
-	ASSERT_EQ(1, fix.b.n_mediaenc);
+	ASSERT_TRUE(fix.a.n_mediaenc >= 1);
+	ASSERT_TRUE(fix.b.n_mediaenc >= 1);
 
 	ASSERT_TRUE(fix.a.n_rtpestab > 0);
 	ASSERT_TRUE(fix.b.n_rtpestab > 0);
@@ -1445,11 +1451,32 @@ int test_call_mediaenc(void)
 	module_unload("aufile");
 	module_unload("ausine");
 
-	module_unload("srtp");
+	module_unload(name);
 
 	if (fix.err)
 		return fix.err;
 
+	return err;
+}
+
+
+int test_call_mediaenc(void)
+{
+	int err;
+
+	err = test_call_mediaenc_param("srtp", false);
+	TEST_ERR(err);
+
+	err = test_call_mediaenc_param("srtp", true);
+	TEST_ERR(err);
+
+	err = test_call_mediaenc_param("dtls_srtp", false);
+	TEST_ERR(err);
+
+	err = test_call_mediaenc_param("dtls_srtp", true);
+	TEST_ERR(err);
+
+ out:
 	return err;
 }
 

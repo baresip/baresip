@@ -434,12 +434,15 @@ static void menc_event_handler(enum menc_event event,
 
 	debug("call: mediaenc event '%s' (%s)\n", menc_event_name(event), prm);
 
+	bool secure_rtcp = NULL != strstr(prm, "RTCP");
+
 	switch (event) {
 
 	case MENC_EVENT_SECURE:
 		if (strstr(prm, "audio")) {
 			stream_set_secure(audio_strm(call->audio), true);
-			stream_start_rtcp(audio_strm(call->audio));
+			if (secure_rtcp)
+				stream_start_rtcp(audio_strm(call->audio));
 			err = audio_update(call->audio);
 			if (err) {
 				warning("call: secure: could not"
@@ -448,7 +451,8 @@ static void menc_event_handler(enum menc_event event,
 		}
 		else if (strstr(prm, "video")) {
 			stream_set_secure(video_strm(call->video), true);
-			stream_start_rtcp(video_strm(call->video));
+			if (secure_rtcp)
+				stream_start_rtcp(video_strm(call->video));
 			err = video_update(call->video, call->peer_uri);
 			if (err) {
 				warning("call: secure: could not"
