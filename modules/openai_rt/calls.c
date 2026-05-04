@@ -123,6 +123,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 	switch (ev) {
 	case UA_EVENT_CALL_INCOMING:
 		{
+			int qerr;
 			info("openai_rt: Call INCOMING from %s\n", call_peeruri(call));
 			DEBUG_INFO("Incoming call - initiating session setup\n");
 			
@@ -134,12 +135,16 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 			g_oairt.session_cfg_applied = false;
 			
 			/* Queue event to start WebSocket connection and session setup */
-			audio_queue_event(EVENT_CALL_START, call);
+			qerr = audio_queue_event(EVENT_CALL_START, call);
+			if (qerr) {
+				warning("openai_rt: Failed to queue call start event (incoming): %m\n", qerr);
+			}
 		}
 		break;
 		
 	case UA_EVENT_CALL_OUTGOING:
 		{
+			int qerr;
 			info("openai_rt: Call OUTGOING to %s\n", call_peeruri(call));
 			DEBUG_INFO("Outgoing call - initiating session setup\n");
 			
@@ -151,7 +156,10 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 			g_oairt.session_cfg_applied = false;
 			
 			/* Queue event to start WebSocket connection and session setup */
-			audio_queue_event(EVENT_CALL_START, call);
+			qerr = audio_queue_event(EVENT_CALL_START, call);
+			if (qerr) {
+				warning("openai_rt: Failed to queue call start event (outgoing): %m\n", qerr);
+			}
 		}
 		break;
 		
@@ -169,12 +177,21 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 			
 			/* Check if session setup is ready - if not, we need to wait or hang up */
 			if (!websocket_is_ready()) {
-				warning("openai_rt: Call established but WebSocket not ready\n");
+				int qerr;
+				warning("openai_rt: Call established but WebSocket not ready (status=%s)\n",
+				        websocket_status_string());
+
+				/* Re-trigger call start handling to force reconnect/session.update now. */
+				qerr = audio_queue_event(EVENT_CALL_START, call);
+				if (qerr) {
+					warning("openai_rt: Failed to queue call start event (established): %m\n", qerr);
+				}
 				
-				/* Wait up to 5 seconds for session to be ready */
-				int wait_err = websocket_wait_ready(5000);
+				/* Wait for WebSocket + session.updated to complete */
+				int wait_err = websocket_wait_ready(10000);
 				if (wait_err) {
-					warning("openai_rt: Session setup failed or timed out after 5 seconds - hanging up call\n");
+					warning("openai_rt: Session setup failed or timed out after 10 seconds (status=%s) - hanging up call\n",
+					        websocket_status_string());
 					calls_hangup();
 					break;
 				}

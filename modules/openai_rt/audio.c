@@ -936,8 +936,8 @@ int audio_queue_read_frame(const int16_t *sampv, size_t sampc, uint32_t srate, u
 /* Add event to event queue (from main thread) */
 int audio_queue_event(enum event_type type, void *data)
 {
-    /* Allow call end events even when no call is active */
-    if (type != EVENT_CALL_END && !g_oairt.call_active) {
+    /* Allow call lifecycle events even before call_active flips to true */
+    if (type != EVENT_CALL_END && type != EVENT_CALL_START && !g_oairt.call_active) {
         return EINVAL;
     }
     

@@ -903,6 +903,15 @@ static void handle_response_done_cb(const char *response_json, void *arg)
                      if (err) {
                          warning("openai_rt: Failed to connect to OpenAI: %m\n", err);
                      }
+                } else if (g_oairt.ws_state == WS_CONNECTED && !g_oairt.session_ready) {
+                    info("openai_rt: Call start - WebSocket connected but session not ready, sending session.update\n");
+                    send_session_update();
+                    if (g_oairt.ws_client) {
+                        lws_callback_on_writable(g_oairt.ws_client);
+                    }
+                } else {
+                    DEBUG_INFO("Call start event ignored (ws_state=%d, session_ready=%d)\n",
+                               g_oairt.ws_state, g_oairt.session_ready);
                  }
                  break;
  
