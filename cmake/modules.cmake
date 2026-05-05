@@ -68,6 +68,7 @@ set(MODULES
   sdl
   selfview
   serreg
+  sf_aufileloop
   snapshot
   sndfile
   sndfile-rt-start
