@@ -3,13 +3,13 @@
  *
  * Copyright (C) 2015 Charles E. Lehner
  */
+#include <stdlib.h>
+#include <gtk/gtk.h>
+#include <ctype.h>
 
 #include <re.h>
 #include <baresip.h>
-#include <stdlib.h>
-#include <gtk/gtk.h>
 #include "gtk_mod.h"
-#include <ctype.h>
 
 
 struct dial_dialog {
