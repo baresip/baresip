@@ -4,13 +4,14 @@
  * Copyright (C) 2015 Charles E. Lehner
  * Copyright (C) 2010 - 2015 Alfred E. Heggestad
  */
-#include <re.h>
-#include <rem.h>
 #include <time.h>
-#include <baresip.h>
 #include <stdlib.h>
 #include <gtk/gtk.h>
 #include <gio/gio.h>
+
+#include <re.h>
+#include <rem.h>
+#include <baresip.h>
 #include "gtk_mod.h"
 
 #ifdef USE_LIBNOTIFY

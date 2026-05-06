@@ -6,14 +6,14 @@
  *     Media Magic Technologies <developer@mediamagictechnologies.com>
  *     and Divus GmbH <developer@divus.eu>
  */
+#include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
+#include <libavutil/pixdesc.h>
 
 #include <re_atomic.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#include <libavformat/avformat.h>
-#include <libavcodec/avcodec.h>
-#include <libavutil/pixdesc.h>
 #include "mod_avformat.h"
 
 

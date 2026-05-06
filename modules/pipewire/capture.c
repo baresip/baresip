@@ -6,11 +6,12 @@
 
 #include <string.h>
 #include <errno.h>
+#include <spa/param/audio/format-utils.h>
+#include <pipewire/pipewire.h>
+
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#include <spa/param/audio/format-utils.h>
-#include <pipewire/pipewire.h>
 
 #include "pipewire.h"
 

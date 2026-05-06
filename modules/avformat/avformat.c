@@ -10,14 +10,15 @@
 #include <unistd.h>
 #endif
 #include <string.h>
-#include <re_atomic.h>
-#include <re.h>
-#include <rem.h>
-#include <baresip.h>
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
 #include <libavdevice/avdevice.h>
 #include <libavutil/hwcontext.h>
+
+#include <re_atomic.h>
+#include <re.h>
+#include <rem.h>
+#include <baresip.h>
 #include "mod_avformat.h"
 
 

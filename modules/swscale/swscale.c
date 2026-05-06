@@ -3,10 +3,11 @@
  *
  * Copyright (C) 2010 - 2016 Alfred E. Heggestad
  */
+#include <libswscale/swscale.h>
+
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#include <libswscale/swscale.h>
 
 
 struct swscale_enc {
