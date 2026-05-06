@@ -48,7 +48,6 @@ static void destructor(void *arg)
 	mem_deref(acc->extra);
 	mem_deref(acc->uas_user);
 	mem_deref(acc->uas_pass);
-	mem_deref(acc->rcode);
 	mem_deref(acc->rreason);
 }
 
