@@ -3,12 +3,12 @@
  *
  * Copyright (C) 2015 Charles E. Lehner
  */
+#include <gtk/gtk.h>
+#include <string.h>
 
 #include <re.h>
 #include <baresip.h>
-#include <gtk/gtk.h>
 #include "gtk_mod.h"
-#include <string.h>
 
 struct call_window {
 	struct gtk_mod *mod;

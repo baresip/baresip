@@ -3,11 +3,12 @@
  *
  * Copyright (C) 2010 - 2016 Alfred E. Heggestad
  */
+#include <libavutil/pixdesc.h>
+#include <libavcodec/avcodec.h>
+
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#include <libavutil/pixdesc.h>
-#include <libavcodec/avcodec.h>
 #include "h26x.h"
 #include "avcodec.h"
 

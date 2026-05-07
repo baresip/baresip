@@ -3,15 +3,15 @@
  *
  * Copyright (C) 2010 - 2020 Alfred E. Heggestad
  */
+#include <libavutil/opt.h>
+#include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
+#include <libswresample/swresample.h>
 
 #include <re_atomic.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#include <libavutil/opt.h>
-#include <libavformat/avformat.h>
-#include <libavcodec/avcodec.h>
-#include <libswresample/swresample.h>
 #include "mod_avformat.h"
 
 
