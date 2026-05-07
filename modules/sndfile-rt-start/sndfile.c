@@ -38,6 +38,9 @@ struct sndfile_enc {
 	char *filename;
 	uint64_t t0_us;
 	uint64_t nsamp_written;
+	uint32_t srate;
+	uint32_t ch;
+	enum aufmt fmt;
 };
 
 struct sndfile_dec {
@@ -48,6 +51,9 @@ struct sndfile_dec {
 	char *filename;
 	uint64_t t0_us;
 	uint64_t nsamp_written;
+	uint32_t srate;
+	uint32_t ch;
+	enum aufmt fmt;
 };
 
 static char file_path[512] = ".";
@@ -305,6 +311,18 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 	if (sf->err)
 		return sf->err;
 
+	if (sf->encf && (sf->srate != af->srate || sf->ch != af->ch ||
+			 sf->fmt != af->fmt)) {
+		/* Rotate file on format change */
+		sf_close(sf->encf);
+		module_event("sndfile-rt-start", "close_enc", NULL, NULL, "%s",
+			     sf->filename);
+		sf->encf = NULL;
+		sf->filename = mem_deref(sf->filename);
+		sf->t0_us = 0;
+		sf->nsamp_written = 0;
+	}
+
 	if (!sf->encf) {
 		const struct stream *strm = audio_strm(sf->audio);
 		struct aufilt_prm prm = {af->srate, af->ch, af->fmt};
@@ -319,6 +337,10 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 		sf->err = openfile(&sf->encf, sf->filename, &prm, true);
 		if (sf->err)
 			return sf->err;
+
+		sf->srate = af->srate;
+		sf->ch    = af->ch;
+		sf->fmt   = af->fmt;
 	}
 
 	num_bytes = auframe_size(af);
@@ -369,6 +391,18 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 	if (sf->err)
 		return sf->err;
 
+	if (sf->decf && (sf->srate != af->srate || sf->ch != af->ch ||
+			 sf->fmt != af->fmt)) {
+		/* Rotate file on format change */
+		sf_close(sf->decf);
+		module_event("sndfile-rt-start", "close_dec", NULL, NULL, "%s",
+			     sf->filename);
+		sf->decf = NULL;
+		sf->filename = mem_deref(sf->filename);
+		sf->t0_us = 0;
+		sf->nsamp_written = 0;
+	}
+
 	if (!sf->decf) {
 		const struct stream *strm = audio_strm(sf->audio);
 		struct aufilt_prm prm = {af->srate, af->ch, af->fmt};
@@ -383,6 +417,10 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 		sf->err = openfile(&sf->decf, sf->filename, &prm, false);
 		if (sf->err)
 			return sf->err;
+
+		sf->srate = af->srate;
+		sf->ch    = af->ch;
+		sf->fmt   = af->fmt;
 	}
 
 	num_bytes = auframe_size(af);
