@@ -842,9 +842,7 @@ int ua_accept(struct ua *ua, const struct sip_msg *msg)
 static const struct sa *ua_regladdr(const struct ua *ua)
 {
 	struct le *le;
-	size_t i;
-
-	for (le = ua->regl.head, i=0; le; le = le->next, i++) {
+	LIST_FOREACH(&ua->regl, le) {
 		const struct reg *reg = le->data;
 		if (reg_isok(reg))
 			return reg_laddr(reg);
