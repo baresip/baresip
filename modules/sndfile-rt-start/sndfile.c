@@ -57,9 +57,11 @@ struct sndfile_dec {
 };
 
 static char file_path[512] = ".";
-static bool dump_wallclock = true;
-static bool dump_wallclock_drop_ahead = true;
-static uint32_t dump_wallclock_ahead_tolerance_ms = 20;
+static bool dump_wallclock = true;        /* RX (decoder) pacing */
+static bool dump_wallclock_enc = false;   /* TX (encoder) pacing - off */
+static bool dump_wallclock_drop_ahead = false; 
+
+static uint32_t dump_wallclock_ahead_tolerance_ms = 200;
 static uint32_t dump_wallclock_max_silence_ms = 200;
 
 static inline uint64_t now_usec_monotonic(void)
@@ -348,7 +350,7 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 	nsamp = bps && af->ch ? (uint64_t)num_bytes / ((uint64_t)bps *
 						      (uint64_t)af->ch) : 0;
 
-	if (dump_wallclock && nsamp && af->srate) {
+	if (dump_wallclock_enc && nsamp && af->srate) {
 		uint64_t t = now_usec_monotonic();
 		uint64_t exp = 0;
 
@@ -473,6 +475,8 @@ static int module_init(void)
 
 	conf_get_str(conf_cur(), "snd_path", file_path, sizeof(file_path));
 	(void)conf_get_bool(conf_cur(), "snd_dump_wallclock", &dump_wallclock);
+	(void)conf_get_bool(conf_cur(), "snd_dump_wallclock_enc",
+			    &dump_wallclock_enc);
 	(void)conf_get_bool(conf_cur(), "snd_dump_wallclock_drop_ahead",
 			    &dump_wallclock_drop_ahead);
 	(void)conf_get_u32(conf_cur(), "snd_dump_wallclock_ahead_tol_ms",
@@ -481,8 +485,9 @@ static int module_init(void)
 			   &dump_wallclock_max_silence_ms);
 
 	info("sndfile-rt-start: saving files in %s\n", file_path);
-	info("sndfile-rt-start: dump wallclock pacing %s\n",
-	     dump_wallclock ? "enabled" : "disabled");
+	info("sndfile-rt-start: dump wallclock pacing dec=%s enc=%s\n",
+	     dump_wallclock ? "enabled" : "disabled",
+	     dump_wallclock_enc ? "enabled" : "disabled");
 	info("sndfile-rt-start: dump wallclock drop-ahead %s (tol=%ums)\n",
 	     dump_wallclock_drop_ahead ? "enabled" : "disabled",
 	     dump_wallclock_ahead_tolerance_ms);
