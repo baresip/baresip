@@ -2876,7 +2876,7 @@ int call_notify_sipfrag(struct call *call, uint16_t scode,
 		return ENOMEM;
 
 	va_start(ap, reason);
-	(void)mbuf_printf(mb, "SIP/2.0 %u %v\n", scode, reason, &ap);
+	(void)mbuf_printf(mb, "SIP/2.0 %u %v\r\n", scode, reason, &ap);
 	va_end(ap);
 
 	mb->pos = 0;
