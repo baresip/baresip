@@ -1,5 +1,5 @@
 /**
- * @file test/menu.c  Baresip selftest -- menu
+ * @file test/dial_number.c  Baresip selftest -- dial number
  *
  * Copyright (C) 2010 - 2017 Alfred E. Heggestad
  */
