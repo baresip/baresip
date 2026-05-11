@@ -17,7 +17,11 @@
 #define MAGIC 0xca11ca11
 #include "magic.h"
 
-/** Delay before emitting CALL_CODEC so rapid SDP/encoder updates coalesce */
+/** CALL_CODEC debounce [ms] during explicit signaling media update
+ *  (\ref call_update_media) and for one debounce period afterward so
+ *  trailing codec notifies (e.g. first RTP still on old PT) coalesce.
+ *  Otherwise delay is 0. Override: -DCALL_CODEC_DEBOUNCE_MS=N
+ */
 #ifndef CALL_CODEC_DEBOUNCE_MS
 #define CALL_CODEC_DEBOUNCE_MS 50
 #endif
@@ -97,6 +101,8 @@ struct call {
 	char codec_state_fp[384]; /**< last emitted CALL_CODEC fingerprint   */
 	struct tmr tmr_codec;     /**< debounce rapid codec notifications    */
 	char codec_prm[32];        /**< param for debounced CALL_CODEC emit   */
+	unsigned codec_sdp_batch; /**< >0 during call_update_media only      */
+	uint64_t codec_postmedia_jfs; /**< tmr_jiffies: coalesce tail notifies */
 	struct tmr tmr_codec_rinv; /**< retry codec re-INVITE when SDP busy   */
 	char codec_rinv_spec[128]; /**< pending spec for tmr_codec_rinv       */
 	uint8_t codec_rinv_retry;  /**< retry count for deferred re-INVITE      */
@@ -321,8 +327,14 @@ int call_update_media(struct call *call)
 {
 	int err;
 
+	++call->codec_sdp_batch;
 	err = call_apply_sdp(call);
 	err |= update_streams(call);
+	--call->codec_sdp_batch;
+	if (call->codec_sdp_batch == 0) {
+		call->codec_postmedia_jfs =
+			tmr_jiffies() + (uint64_t)CALL_CODEC_DEBOUNCE_MS;
+	}
 
 	return err;
 }
@@ -715,10 +727,19 @@ static void call_codec_debounce_handler(void *arg)
 
 static void call_codec_notify(struct call *call, const char *param)
 {
+	uint32_t ms;
+	uint64_t now;
+
 	if (!call)
 		return;
 
 	MAGIC_CHECK(call);
+
+	now = tmr_jiffies();
+	if (call->codec_sdp_batch || now < call->codec_postmedia_jfs)
+		ms = CALL_CODEC_DEBOUNCE_MS;
+	else
+		ms = 0;
 
 	if (str_isset(param))
 		str_ncpy(call->codec_prm, param, sizeof(call->codec_prm));
@@ -726,8 +747,7 @@ static void call_codec_notify(struct call *call, const char *param)
 		call->codec_prm[0] = '\0';
 
 	tmr_cancel(&call->tmr_codec);
-	tmr_start(&call->tmr_codec, CALL_CODEC_DEBOUNCE_MS,
-		  call_codec_debounce_handler, call);
+	tmr_start(&call->tmr_codec, ms, call_codec_debounce_handler, call);
 }
 
 
