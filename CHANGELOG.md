@@ -6,6 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## v4.8.0 - 2026-05-13
+
+## What's Changed
+* contact: null pointer check by @cspiel1 in https://github.com/baresip/baresip/pull/3698
+* misc: auresamp lost after dynamic codec switch by @negbie in https://github.com/baresip/baresip/pull/3685
+* ci,windows: remove openssl version number by @alfredh in https://github.com/baresip/baresip/pull/3701
+* menu: delayed answer fixes by @cspiel1 in https://github.com/baresip/baresip/pull/3687
+* contact: avoid duplicate contacts by @cspiel1 in https://github.com/baresip/baresip/pull/3697
+* contact: intelligent matching for incoming calls by @cspiel1 in https://github.com/baresip/baresip/pull/3699
+* call: support rejecting re-INVITE by @cspiel1 in https://github.com/baresip/baresip/pull/3702
+* jbuf/gnack: improve RTCP_GNACK handling (fixes UB) by @sreimers in https://github.com/baresip/baresip/pull/3703
+* srtp: use rtp_is_rtcp_packet() from libre by @alfredh in https://github.com/baresip/baresip/pull/3708
+* g726: remove deprecated module by @alfredh in https://github.com/baresip/baresip/pull/3704
+* menu: multiple call auto answer by @cspiel1 in https://github.com/baresip/baresip/pull/3710
+* test: expand mediaenc to include dtls_srtp and mux by @alfredh in https://github.com/baresip/baresip/pull/3712
+* misc/modules: fix redefinition once_flag errors by @sreimers in https://github.com/baresip/baresip/pull/3721
+* ua: ua_regladdr LIST_FOREACH cleanup by @cspiel1 in https://github.com/baresip/baresip/pull/3722
+* test: update doxygen header for dial_number.c by @alfredh in https://github.com/baresip/baresip/pull/3724
+* call: Use CRLF in REFER NOTIFY sipfrag body by @SnowMaster12 in https://github.com/baresip/baresip/pull/3726
+
+## New Contributors
+* @SnowMaster12 made their first contribution in https://github.com/baresip/baresip/pull/3726
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v4.7.0...v4.8.0
+
+
 ## v4.7.0 - 2026-04-07
 
 ### What's Changed
