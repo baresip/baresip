@@ -795,6 +795,11 @@ static void handle_telev(struct audio *a, struct mbuf *mb)
 }
 
 
+static void audio_flush_tx_filt(struct audio *a);
+static int audio_decoder_set_ex(struct audio *a, const struct aucodec *ac,
+				int pt, const char *params, bool flush_tx_chain);
+
+
 static int stream_pt_handler(uint8_t pt, struct mbuf *mb, void *arg)
 {
 	struct audio *a = arg;
@@ -818,7 +823,7 @@ static int stream_pt_handler(uint8_t pt, struct mbuf *mb, void *arg)
 	if (ptc != -1)
 		info("Audio decoder changed payload %d -> %u\n", ptc, pt);
 
-	return audio_decoder_set(a, lc->data, lc->pt, lc->rparams);
+	return audio_decoder_set_ex(a, lc->data, lc->pt, lc->rparams, false);
 }
 
 
@@ -1337,15 +1342,23 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 }
 
 
-static void audio_flush_filters(struct audio *a)
+static void audio_flush_tx_filt(struct audio *a)
 {
 	struct autx *tx = &a->tx;
 
-	aurecv_flush(a->aur);
-
-	mtx_lock(a->tx.mtx);
+	mtx_lock(tx->mtx);
 	list_flush(&tx->filtl);
-	mtx_unlock(a->tx.mtx);
+	mtx_unlock(tx->mtx);
+
+	if (tx->aubuf)
+		aubuf_flush(tx->aubuf);
+}
+
+
+static void audio_flush_filters(struct audio *a)
+{
+	aurecv_flush(a->aur);
+	audio_flush_tx_filt(a);
 }
 
 
@@ -1380,6 +1393,11 @@ int audio_update(struct audio *a)
 		audio_stop(a);
 		return 0;
 	}
+
+	/* Drop buffered TX audio when receive stops (e.g. hold); must run before
+	 * aufilt_setup so encode filters are reattached afterwards. */
+	if (!(dir & SDP_RECVONLY))
+		audio_flush_tx_filt(a);
 
 	if (dir & SDP_RECVONLY)
 		err |= audio_decoder_set(a, sc->data, sc->pt, sc->params);
@@ -1603,6 +1621,14 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 		      int pt, const char *params)
 {
+	return audio_decoder_set_ex(a, ac, pt, params, true);
+}
+
+
+static int audio_decoder_set_ex(struct audio *a, const struct aucodec *ac,
+				int pt, const char *params, bool flush_tx_chain)
+{
+	struct list *aufiltl = baresip_aufiltl();
 	int err = 0;
 	bool reset = false;
 
@@ -1617,8 +1643,10 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 		reset |= !(sdp_media_dir(m) & SDP_RECVONLY);
 		if (reset) {
 			aurecv_stop(a->aur);
-			 //audio_flush_filters(a);
+			aurecv_flush(a->aur);
 			stream_flush(a->strm);
+			if (flush_tx_chain)
+				audio_flush_tx_filt(a);
 		}
 	}
 
@@ -1631,6 +1659,9 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 		err |= aurecv_start_player(a->aur, baresip_auplayl());
 
 	stream_codec_changed(a->strm);
+
+	if (reset && !list_isempty(aufiltl))
+		err |= aufilt_setup(a, aufiltl);
 
 	return err;
 }
