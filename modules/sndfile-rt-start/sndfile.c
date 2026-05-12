@@ -59,9 +59,9 @@ struct sndfile_dec {
 static char file_path[512] = ".";
 static bool dump_wallclock = true;        /* RX (decoder) pacing */
 static bool dump_wallclock_enc = false;   /* TX (encoder) pacing - off */
-static bool dump_wallclock_drop_ahead = false; 
+static bool dump_wallclock_drop_ahead = true;
 
-static uint32_t dump_wallclock_ahead_tolerance_ms = 200;
+static uint32_t dump_wallclock_ahead_tolerance_ms = 50;
 static uint32_t dump_wallclock_max_silence_ms = 200;
 
 static inline uint64_t now_usec_monotonic(void)
