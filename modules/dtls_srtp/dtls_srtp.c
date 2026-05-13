@@ -513,7 +513,7 @@ static int module_init(void)
 	const char *cn = "dtls@baresip";
 	int err;
 
-	err = tls_alloc(&tls, TLS_METHOD_DTLSV1, NULL, NULL);
+	err = tls_alloc(&tls, TLS_METHOD_DTLS, NULL, NULL);
 	if (err) {
 		warning("dtls_srtp: failed to create DTLS context (%m)\n",
 			err);
