@@ -366,7 +366,7 @@ static int uag_transp_add(const struct sa *laddr)
 				info("SIP Certificate: %s\n", cert);
 			}
 
-			err = tls_alloc(&uag.tls, TLS_METHOD_SSLV23,
+			err = tls_alloc(&uag.tls, TLS_METHOD_TLS,
 					cert, NULL);
 			if (err) {
 				warning("ua: tls_alloc() failed: %m\n", err);
@@ -429,7 +429,7 @@ static int uag_transp_add(const struct sa *laddr)
 #ifdef USE_TLS
 	if (u32mask_enabled(uag.transports, SIP_TRANSP_WSS)) {
 		if (!uag.wss_tls) {
-			err = tls_alloc(&uag.wss_tls, TLS_METHOD_SSLV23,
+			err = tls_alloc(&uag.wss_tls, TLS_METHOD_TLS,
 					NULL, NULL);
 			if (err) {
 				warning("ua: wss tls_alloc() failed: %m\n",
