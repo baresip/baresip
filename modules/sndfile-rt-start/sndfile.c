@@ -132,6 +132,30 @@ static uint64_t pacing_cap_silence(uint64_t nsamp, uint32_t srate)
 	return min(nsamp, cap);
 }
 
+/**
+ * Silence to insert for wall-clock catch-up.
+ * Small gaps use the usual per-frame cap (jitter / clock skew).
+ * Large gaps (e.g. no RTP for seconds) insert the full hole once so the WAV
+ * is not filled with many short silence strips interleaved with burst media.
+ */
+static uint64_t pacing_silence_for_gap(uint64_t gap, uint32_t srate)
+{
+	uint64_t cap_samp;
+
+	if (!gap || !srate)
+		return 0;
+
+	cap_samp = ((uint64_t)dump_wallclock_max_silence_ms * (uint64_t)srate) /
+		   1000ULL;
+	if (!cap_samp)
+		return gap;
+
+	if (gap > 2 * cap_samp)
+		return gap;
+
+	return pacing_cap_silence(gap, srate);
+}
+
 static int timestamp_print_usec(struct re_printf *pf, const struct timeval *tv)
 {
 	long long usec;
@@ -363,7 +387,7 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 			      1000000ULL;
 			if (exp > sf->nsamp_written) {
 				uint64_t gap = exp - sf->nsamp_written;
-				gap = pacing_cap_silence(gap, af->srate);
+				gap = pacing_silence_for_gap(gap, af->srate);
 				write_silence(sf->encf, af->fmt, af->ch, gap);
 				sf->nsamp_written += gap;
 			}
@@ -443,7 +467,7 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 			      1000000ULL;
 			if (exp > sf->nsamp_written) {
 				uint64_t gap = exp - sf->nsamp_written;
-				gap = pacing_cap_silence(gap, af->srate);
+				gap = pacing_silence_for_gap(gap, af->srate);
 				write_silence(sf->decf, af->fmt, af->ch, gap);
 				sf->nsamp_written += gap;
 			}
