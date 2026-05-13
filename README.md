@@ -109,7 +109,6 @@ Distributed under BSD license
   - MacOSX AVCapture video-source
   - Linux V4L/V4L2 video-source
   - X11 grabber video-source
-  - DirectFB video-output
   - SDL2 video-output
   - X11 video-output
 
@@ -264,7 +263,6 @@ coreaudio     Apple macOS Coreaudio driver
 ctrl_dbus     Control interface using DBUS
 ctrl_tcp      TCP control interface using JSON payload
 debug_cmd     Debug commands
-directfb      DirectFB video display module
 dshow         Windows DirectShow video source
 dtls_srtp     DTLS-SRTP end-to-end encryption
 echo          Echo server module

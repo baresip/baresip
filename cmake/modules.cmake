@@ -24,7 +24,6 @@ set(MODULES
   ctrl_dbus
   ctrl_tcp
   debug_cmd
-  directfb
   dshow
   dtls_srtp
   echo
