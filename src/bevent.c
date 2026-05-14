@@ -767,6 +767,7 @@ const char *bevent_str(enum bevent_ev ev)
 	case BEVENT_MODULE:               return "MODULE";
 	case BEVENT_END_OF_FILE:          return "END_OF_FILE";
 	case BEVENT_CUSTOM:               return "CUSTOM";
+	case BEVENT_SIPSESS_FAILED:       return "SIPSESS_FAILED";
 	default: return "?";
 	}
 }
