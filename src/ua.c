@@ -803,6 +803,11 @@ int ua_accept(struct ua *ua, const struct sip_msg *msg)
 	err = ua_call_alloc(&call, ua, VIDMODE_ON, msg, NULL, to_uri, true);
 	if (err) {
 		warning("ua: call_alloc: %m\n", err);
+		if (err == EAFNOSUPPORT) {
+			mem_deref(to_uri);
+			return err;
+		}
+
 		goto error;
 	}
 
@@ -915,7 +920,7 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 				net_af2name(af));
 		(void)sip_treply(NULL, uag_sip(), msg, 488,
 				 "Not Acceptable Here");
-		return EINVAL;
+		return EAFNOSUPPORT;
 	}
 
 	memset(&cprm, 0, sizeof(cprm));
@@ -985,8 +990,11 @@ void ua_handle_options(struct ua *ua, const struct sip_msg *msg)
 		err = ua_call_alloc(&call, ua, VIDMODE_ON, msg, NULL, NULL,
 				    false);
 		if (err) {
-			(void)sip_treply(NULL, uag_sip(), msg,
-					 500, "Call Error");
+			if (err != EAFNOSUPPORT) {
+				(void)sip_treply(NULL, uag_sip(), msg,
+						500, "Call Error");
+			}
+
 			return;
 		}
 
