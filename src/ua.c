@@ -764,6 +764,7 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 				  421, "Extension required",
 				  "Require: 100rel\r\n"
 				  "Content-Length: 0\r\n\r\n");
+		return;
 	}
 
 	if (config->call.accept)
