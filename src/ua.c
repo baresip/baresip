@@ -700,6 +700,8 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 	if (pl_strncmp(&msg->via.branch, magic_branch, sizeof(magic_branch)-1)
 	    != 0) {
 		info("ua: received INVITE with incorrect Via branch.\n");
+		(void)bevent_sip_msg_emit(BEVENT_SIPSESS_FAILED, msg,
+				"606 Not Acceptable");
 		(void)sip_treply(NULL, uag_sip(), msg, 606, "Not Acceptable");
 		return;
 	}
@@ -708,11 +710,15 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 	if (!ua) {
 		info("ua: %r: UA not found: %H\n",
 		     &msg->from.auri, uri_encode, &msg->uri);
+		(void)bevent_sip_msg_emit(BEVENT_SIPSESS_FAILED, msg,
+					"404 Not Found");
 		(void)sip_treply(NULL, uag_sip(), msg, 404, "Not Found");
 		return;
 	}
 
 	if (!ua_req_check_origin(ua, msg)) {
+		(void)bevent_sip_msg_emit(BEVENT_SIPSESS_FAILED, msg,
+					"403 Forbidden");
 		(void)sip_treply(NULL, uag_sip(), msg, 403, "Forbidden");
 		return;
 	}
@@ -723,6 +729,8 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 
 		info("ua: rejected call from %r (maximum %d calls)\n",
 		     &msg->from.auri, config->call.max_calls);
+		(void)bevent_sip_msg_emit(BEVENT_SIPSESS_FAILED, msg,
+					"486 Max Calls");
 		(void)sip_treply(NULL, uag_sip(), msg, 486, "Max Calls");
 		return;
 	}
@@ -735,6 +743,8 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 			     " -- option-tag '%r' not supported\n",
 			     &msg->from.auri, &hdr->val);
 
+		(void)bevent_sip_msg_emit(BEVENT_SIPSESS_FAILED, msg,
+					"420 Bad Extension");
 		(void)sip_treplyf(NULL, NULL, uag_sip(), msg, false,
 				  420, "Bad Extension",
 				  "Unsupported: %r\r\n"
@@ -754,6 +764,7 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 				  421, "Extension required",
 				  "Require: 100rel\r\n"
 				  "Content-Length: 0\r\n\r\n");
+		return;
 	}
 
 	if (config->call.accept)
@@ -793,6 +804,11 @@ int ua_accept(struct ua *ua, const struct sip_msg *msg)
 	err = ua_call_alloc(&call, ua, VIDMODE_ON, msg, NULL, to_uri, true);
 	if (err) {
 		warning("ua: call_alloc: %m\n", err);
+		if (err == EAFNOSUPPORT) {
+			mem_deref(to_uri);
+			return err;
+		}
+
 		goto error;
 	}
 
@@ -905,7 +921,7 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 				net_af2name(af));
 		(void)sip_treply(NULL, uag_sip(), msg, 488,
 				 "Not Acceptable Here");
-		return EINVAL;
+		return EAFNOSUPPORT;
 	}
 
 	memset(&cprm, 0, sizeof(cprm));
@@ -975,8 +991,11 @@ void ua_handle_options(struct ua *ua, const struct sip_msg *msg)
 		err = ua_call_alloc(&call, ua, VIDMODE_ON, msg, NULL, NULL,
 				    false);
 		if (err) {
-			(void)sip_treply(NULL, uag_sip(), msg,
-					 500, "Call Error");
+			if (err != EAFNOSUPPORT) {
+				(void)sip_treply(NULL, uag_sip(), msg,
+						500, "Call Error");
+			}
+
 			return;
 		}
 
