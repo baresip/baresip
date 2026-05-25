@@ -227,6 +227,7 @@ int test_call_bundle(void);
 int test_call_ipv6ll(void);
 int test_call_100rel_audio(void);
 int test_call_100rel_video(void);
+int test_call_100rel_required_reject(void);
 int test_call_hold_resume(void);
 int test_call_srtp_tx_rekey(void);
 int test_call_uag_find_msg(void);
