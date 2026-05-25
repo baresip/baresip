@@ -1074,6 +1074,57 @@ int test_call_100rel_video(void)
 }
 
 
+int test_call_100rel_required_reject(void)
+{
+	struct fixture fix, *f = &fix;
+	bool accept = conf_config()->call.accept;
+	int err;
+
+	fixture_init(f);
+
+	/* Apply 100rel=required onlyt to the callee */
+	f->b.ua = mem_deref(f->b.ua);
+
+	err = ua_alloc(&f->b.ua,
+		       "B <sip:b@127.0.0.1>;regint=0;100rel=required");
+	TEST_ERR(err);
+
+	f->a.peer = &f->b;
+	f->b.peer = &f->a;
+
+	/* Force the INVITE to reach sipsess_conn_handler */
+	conf_config()->call.accept = false;
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	/* The callee must not allocate a call */
+	f->b.failed = true;
+
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(0, fix.a.n_incoming);
+	ASSERT_EQ(0, fix.a.n_established);
+	ASSERT_EQ(1, fix.a.n_closed);
+	ASSERT_EQ(421, fix.a.close_scode);
+	ASSERT_STREQ("421 Extension required", fix.a.close_prm);
+
+	ASSERT_EQ(0, fix.b.n_incoming);
+	ASSERT_EQ(0, fix.b.n_established);
+	ASSERT_EQ(0, fix.b.n_closed);
+	ASSERT_EQ(0, list_count(ua_calls(f->b.ua)));
+
+out:
+	conf_config()->call.accept = accept;
+	fixture_close(f);
+	return err;
+}
+
+
 static void auframe_handler(struct auframe *af, const char *dev, void *arg)
 {
 	struct fixture *fix = arg;
