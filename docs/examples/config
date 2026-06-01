@@ -86,6 +86,7 @@ rtp_stats		no
 #dns_server		1.0.0.1:53
 #dns_fallback		8.8.8.8:53
 #net_interface		eth0
+
 # Play tones
 #file_ausrc		aufile
 #file_srate		16000
@@ -110,9 +111,7 @@ module			stdio.so
 #module			g722.so
 module			g711.so
 #module			l16.so
-#module			mpa.so
 #module			codec2.so
-#module			ilbc.so
 
 # Audio filter Modules (in encoding order)
 module			auconv.so
@@ -160,7 +159,6 @@ module			alsa.so
 #module			gst.so
 
 # Compatibility modules
-#module			ebuacip.so
 module			uuid.so
 
 # Media NAT modules
@@ -290,9 +288,6 @@ video_selfview		window # {window,pip}
 
 # sndfile
 #snd_path		/tmp
-
-# EBU ACIP
-#ebuacip_jb_type	fixed	# auto,fixed
 
 # HTTP request module
 #httpreq_ca		trusted1.pem
