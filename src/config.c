@@ -739,7 +739,7 @@ static const char *default_audio_device(void)
 #if defined (DEFAULT_AUDIO_DEVICE)
 	return DEFAULT_AUDIO_DEVICE;
 #elif defined (ANDROID)
-	return "opensles,nil";
+	return "aaudio,default";
 #elif defined (DARWIN)
 	#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE || \
 	    defined(TARGET_OS_SIMULATOR) && TARGET_OS_SIMULATOR
@@ -1121,7 +1121,7 @@ int config_write_template(const char *file, const struct config *cfg)
 
 	(void)re_fprintf(f, "\n# Audio driver Modules\n");
 #if defined (ANDROID)
-	(void)re_fprintf(f, "module\t\t\t" "opensles" MOD_EXT "\n");
+	(void)re_fprintf(f, "module\t\t\t" "aaudio" MOD_EXT "\n");
 #elif defined (DARWIN)
 	#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE || \
 	    defined(TARGET_OS_SIMULATOR) && TARGET_OS_SIMULATOR
