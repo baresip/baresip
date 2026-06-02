@@ -45,7 +45,7 @@ jobs:
       with:
         path: baresip-win32/baresip
 
-    - uses: actions/cache@v4
+    - uses: actions/cache@v5
       id: openssl
       with:
         path: baresip-win32/openssl
@@ -62,7 +62,7 @@ jobs:
     - name: "build"
       run: make -j$(nproc) -C baresip-win32 baresip
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: selftest-exe
         path: baresip-win32/baresip/build/test/selftest.exe
@@ -73,7 +73,7 @@ jobs:
     needs: MinGW-w64-build
 
     steps:
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v8
     - uses: actions/checkout@v5
       with:
         path: baresip
