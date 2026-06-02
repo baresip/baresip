@@ -166,20 +166,9 @@ static char *png_filename(const struct tm *tmx, const char *name,
 		return buf;
 	}
 
-	sprintf(buf, (tmx->tm_mon < 9 ? "%s-%d-0%d" : "%s-%d-%d"), name,
-					1900 + tmx->tm_year, tmx->tm_mon + 1);
-
-	sprintf(buf + strlen(buf), (tmx->tm_mday < 10 ? "-0%d" : "-%d"),
-					tmx->tm_mday);
-
-	sprintf(buf + strlen(buf), (tmx->tm_hour < 10 ? "-0%d" : "-%d"),
-					tmx->tm_hour);
-
-	sprintf(buf + strlen(buf), (tmx->tm_min < 10 ? "-0%d" : "-%d"),
-					tmx->tm_min);
-
-	sprintf(buf + strlen(buf), (tmx->tm_sec < 10 ? "-0%d.png" : "-%d.png"),
-					tmx->tm_sec);
+	snprintf(buf, length, "%s-%d-%02d-%02d-%02d-%02d-%02d.png",
+		 name, 1900 + tmx->tm_year, tmx->tm_mon + 1,
+		 tmx->tm_mday, tmx->tm_hour, tmx->tm_min, tmx->tm_sec);
 
 	return buf;
 }
