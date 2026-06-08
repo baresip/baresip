@@ -110,6 +110,7 @@ struct account {
 
 struct audio;
 
+bool audio_telev_supported(const struct audio *a);
 int  audio_send_digit(struct audio *a, char key);
 void audio_sdp_attr_decode(struct audio *a);
 

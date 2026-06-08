@@ -2087,6 +2087,7 @@ int call_send_digit(struct call *call, char key)
 	int err = 0;
 	const struct sdp_format *fmt;
 	bool info = true;
+	bool sent = false;
 
 	if (!call)
 		return EINVAL;
@@ -2107,67 +2108,20 @@ int call_send_digit(struct call *call, char key)
 			break;
 	}
 
-	bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_START, call, "%c", key);
 	if (info) {
 		if (key != KEYCODE_REL) {
 			err = send_dtmf_info(call, key);
+			sent = err == 0;
 		}
 	}
 	else {
 		err = audio_send_digit(call->audio, key);
+		sent = err == 0;
 	}
 
-	if (key == '0') {
-		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_0, call, "%c", key);
-	}
-	else if (key == '1') {
-		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_1, call, "%c", key);
-	}
-	else if (key == '2') {
-		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_2, call, "%c", key);
-	}
-	else if (key == '3') {
-		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_3, call, "%c", key);
-	}
-	else if (key == '4') {
-		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_4, call, "%c", key);
-	}
-	else if (key == '5') {
-		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_5, call, "%c", key);
-	}
-	else if (key == '6') {
-		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_6, call, "%c", key);
-	}
-	else if (key == '7') {
-		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_7, call, "%c", key);
-	}
-	else if (key == '8') {
-		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_8, call, "%c", key);
-	}
-	else if (key == '9') {
-		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_9, call, "%c", key);
-	}
-	else if (key == 'A') {
-		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_A, call, "%c", key);
-	}
-	else if (key == 'B') {
-		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_B, call, "%c", key);
-	}
-	else if (key == 'C') {
-		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_C, call, "%c", key);
-	}
-	else if (key == 'D') {
-		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_D, call, "%c", key);
-	}
-	else if (key == '*') {
-		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_ASTERISK,
-			call, "%c", key);
-	}
-	else if (key == '#') {
-		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_POUND,
-			call, "%c", key);
-	}
-	bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_END, call, "%c", key);
+	if (sent)
+		call_emit_send_dtmf(call->audio, key);
+
 	return err;
 }
 

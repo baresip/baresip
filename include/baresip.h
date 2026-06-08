@@ -1504,6 +1504,7 @@ int audio_rx_payload_type(const struct audio *au);
 struct config_audio *audio_config(struct audio *au);
 bool audio_txtelev_empty(const struct audio *au);
 void audio_call_telev_handler(const struct audio *au, int key, bool end);
+void call_emit_send_dtmf(const struct audio *au, char key);
 
 
 /*

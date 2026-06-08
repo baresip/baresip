@@ -710,6 +710,76 @@ void audio_call_telev_handler(const struct audio *au, int key, bool end)
 }
 
 
+bool audio_telev_supported(const struct audio *a)
+{
+	if (!a)
+		return false;
+
+	return sdp_media_rformat(stream_sdpmedia(audio_strm(a)),
+			       telev_rtpfmt) != NULL;
+}
+
+
+void call_emit_send_dtmf(const struct audio *au, char key)
+{
+	struct call *call = au ? au->arg : NULL;
+
+	if (!call)
+		return;
+
+	bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_START, call, "%c", key);
+	if (key == '0') {
+		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_0, call, "%c", key);
+	}
+	else if (key == '1') {
+		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_1, call, "%c", key);
+	}
+	else if (key == '2') {
+		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_2, call, "%c", key);
+	}
+	else if (key == '3') {
+		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_3, call, "%c", key);
+	}
+	else if (key == '4') {
+		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_4, call, "%c", key);
+	}
+	else if (key == '5') {
+		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_5, call, "%c", key);
+	}
+	else if (key == '6') {
+		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_6, call, "%c", key);
+	}
+	else if (key == '7') {
+		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_7, call, "%c", key);
+	}
+	else if (key == '8') {
+		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_8, call, "%c", key);
+	}
+	else if (key == '9') {
+		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_9, call, "%c", key);
+	}
+	else if (key == 'A') {
+		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_A, call, "%c", key);
+	}
+	else if (key == 'B') {
+		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_B, call, "%c", key);
+	}
+	else if (key == 'C') {
+		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_C, call, "%c", key);
+	}
+	else if (key == 'D') {
+		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_D, call, "%c", key);
+	}
+	else if (key == '*') {
+		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_ASTERISK, call, "%c", key);
+	}
+	else if (key == '#') {
+		bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_POUND, call, "%c", key);
+	}
+	bevent_call_emit(UA_EVENT_CALL_SEND_DTMF_END, call, "%c", key);
+}
+
+
 /*
  * Read samples from Audio Source
  *
@@ -1687,6 +1757,9 @@ int audio_send_digit(struct audio *a, char key)
 	if (!a)
 		return EINVAL;
 
+	if (!audio_telev_supported(a))
+		return ENOENT;
+
 	if (key != KEYCODE_REL) {
 		int event = telev_digit2code(key);
 		info("audio: send DTMF digit: '%c'\n", key);
@@ -1708,6 +1781,9 @@ int audio_send_digit(struct audio *a, char key)
 		err = telev_send(a->telev,
 				 telev_digit2code(a->tx.cur_key), true);
 		mtx_unlock(a->tx.mtx);
+	}
+	else {
+		return ENOENT;
 	}
 
 	a->tx.cur_key = key;
