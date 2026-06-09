@@ -26,9 +26,11 @@ The reader thread continuously captures audio data from the SIP call. Since audi
 
 ### SIP to OpenAI
 
-Audio is read in the audio.c `ausrc_read_thread()` in a loop, then:
+Uplink PCM is tapped on the **RTP decode thread** via an `aufilt` decode handler (after `auresamp`, before `aubuf`). This avoids relying on a detached `auplay` poll thread that can chronically underrun `aubuf` under container scheduling.
 
-1. The reader thread captures audio from the SIP call via the ausrc interface.
+The `auplay` thread only drains `aubuf` so the RX buffer does not overflow; it does not feed OpenAI.
+
+1. Each decoded RTP frame passes through the `openai_rt` decode filter at 24 kHz.
 2. Audio data (PCM16 24kHz mono) is encoded to base64.
 3. A JSON message with type `input_audio_buffer.append` is created containing the base64 audio.
 4. The message is queued to the websocket thread via the `to_openai_queue`.
@@ -69,9 +71,11 @@ Also ensure the `auresamp` module is loaded to handle sample rate conversion:
 
 ```
 module_path         /path/to/modules
-module              auresamp.so
 module              openai_rt.so
+module              auresamp.so
 ```
+
+`openai_rt.so` must load **before** `auresamp.so` so the uplink decode filter runs after resampling.
 
 ## Session Setup
 

@@ -30,6 +30,15 @@ static void send_audio_commit(void);
 static void force_audio_commit(void);
 static void maybe_shrink_injection_buffer(void);
 
+/* Decode-path uplink tap (runs on RTP thread after auresamp) */
+struct uplink_filt_dec {
+	struct aufilt_dec_st af;
+};
+
+static struct aufilt uplink_filt;
+static bool uplink_filt_registered;
+static bool uplink_filt_warned_srate;
+
 /* Audio source structure - provides audio to baresip */
 struct ausrc_st {
     struct ausrc_prm prm;
@@ -127,6 +136,15 @@ int audio_init(void)
     g_audio.injection_read_pos = 0;
     g_audio.injection_write_pos = 0;
     g_audio.injection_available = 0;
+
+    g_audio.uplink_batch_cap = UPLINK_BATCH_BYTES / sizeof(int16_t);
+    g_audio.uplink_batch_len = 0;
+    g_audio.uplink_batch = mem_alloc(g_audio.uplink_batch_cap * sizeof(int16_t),
+                                     NULL);
+    if (!g_audio.uplink_batch) {
+        warning("openai_rt: Failed to allocate uplink batch buffer\n");
+        goto cleanup;
+    }
     
     /* Initialize injection buffer mutex */
     int err = mtx_init(&g_audio.injection_buffer_mutex, mtx_plain);
@@ -194,6 +212,7 @@ cleanup:
     mem_deref(g_audio.g711u_input_buffer);
     mem_deref(g_audio.g711u_output_buffer);
     mem_deref(g_audio.injection_buffer);
+    mem_deref(g_audio.uplink_batch);
     /* Note: src_st and play_st are not allocated during init, so no need to free them here */
     return ENOMEM;
 }
@@ -201,6 +220,11 @@ cleanup:
 /* Clean up audio subsystem */
 void audio_close(void)
 {
+    if (uplink_filt_registered) {
+        aufilt_unregister(&uplink_filt);
+        uplink_filt_registered = false;
+    }
+
     /* Always clean up, regardless of whether audio threads were active */
     
     /* Stop audio threads if they exist */
@@ -233,6 +257,9 @@ void audio_close(void)
     
     /* Free injection buffer */
     g_audio.injection_buffer = mem_deref(g_audio.injection_buffer);
+    g_audio.uplink_batch = mem_deref(g_audio.uplink_batch);
+    g_audio.uplink_batch_len = 0;
+    g_audio.uplink_batch_cap = 0;
     
     /* Free audio structures - only if they were allocated */
     if (g_audio.src_st) {
@@ -245,38 +272,27 @@ void audio_close(void)
     DEBUG_INFO("Audio subsystem closed\n");
 }
 
-void handle_incoming_audio(const int16_t *s16_data, size_t sampc)
+static void queue_pcm_append(const int16_t *s16_data, size_t sampc)
 {
     struct ai_model *model = get_ai_model();
     char *json_msg = NULL;
     int err;
+    size_t byte_len;
 
-    if (!s16_data || sampc == 0) {
-        DEBUG_INFO("handle_incoming_audio: No audio data or zero samples\n");
+    if (!s16_data || sampc == 0)
         return;
-    }
-    
-    if (!g_oairt.call_active) {
-        DEBUG_INFO("handle_incoming_audio: Call not active, dropping audio\n");
-        return;
-    }
-    
+
     if (!model || !model->build_audio_append) {
         warning("openai_rt: AI model not initialized\n");
         return;
     }
 
-    size_t byte_len = sampc * sizeof(int16_t);
-    //info("[AUDIO TX] Received %zu samples (%zu bytes) from pipeline\n", sampc, byte_len);
-    
+    byte_len = sampc * sizeof(int16_t);
     char *b64 = encode_audio_base64((const uint8_t *)s16_data, byte_len);
     if (!b64) {
         warning("openai_rt: base64 encode failed for %zu bytes\n", byte_len);
         return;
     }
-
-    //size_t b64_len = str_len(b64);
-    //info("[AUDIO TX] Base64 encoded %zu bytes to %zu chars\n", byte_len, b64_len);
 
     err = model->build_audio_append(b64, &json_msg);
     mem_deref(b64);
@@ -286,28 +302,139 @@ void handle_incoming_audio(const int16_t *s16_data, size_t sampc)
         return;
     }
 
-    if (json_msg) {
-        size_t msg_len = str_len(json_msg);
-        //info("[AUDIO TX] Built audio message (%zu bytes), queuing to WebSocket (ws_state=%d, ws_client=%p)\n",
-        //           msg_len, g_oairt.ws_state, g_oairt.ws_client);
-        
-        err = queue_message_to_openai(json_msg, msg_len, NULL, NULL);
-        if (err) {
-            warning("openai_rt: Failed to queue PCM audio: %m\n", err);
-        } else {
-            //info("[AUDIO TX] Audio message queued successfully (total queued: %zu bytes)\n", g_audio.audio_accumulated + byte_len);
-            g_audio.audio_accumulated += byte_len;
-            if (g_audio.audio_accumulated >= g_audio.commit_threshold) {
-                if (g_oairt.session_cfg_applied) {
-                    //info("[AUDIO TX] Threshold reached, sending commit\n");
-                    send_audio_commit();
-                } else {
-                    DEBUG_INFO("Skipping commit - session not ready yet\n");
-                }
-                g_audio.audio_accumulated = 0;
-            }
+    if (!json_msg)
+        return;
+
+    err = queue_message_to_openai(json_msg, str_len(json_msg), NULL, NULL);
+    if (err) {
+        warning("openai_rt: Failed to queue PCM audio: %m\n", err);
+    } else {
+        g_audio.audio_accumulated += byte_len;
+        if (g_audio.audio_accumulated >= g_audio.commit_threshold) {
+            if (g_oairt.session_cfg_applied)
+                send_audio_commit();
+            else
+                DEBUG_INFO("Skipping commit - session not ready yet\n");
+            g_audio.audio_accumulated = 0;
         }
-        mem_deref(json_msg);
+    }
+    mem_deref(json_msg);
+}
+
+static void flush_uplink_batch_internal(bool force)
+{
+    if (!g_audio.uplink_batch || g_audio.uplink_batch_len == 0)
+        return;
+
+    if (!force &&
+        g_audio.uplink_batch_len * sizeof(int16_t) < UPLINK_BATCH_BYTES)
+        return;
+
+    queue_pcm_append(g_audio.uplink_batch, g_audio.uplink_batch_len);
+    g_audio.uplink_batch_len = 0;
+}
+
+static void uplink_filt_dec_destructor(void *arg)
+{
+	struct uplink_filt_dec *st = arg;
+
+	list_unlink(&st->af.le);
+}
+
+static int uplink_filt_dec_update(struct aufilt_dec_st **stp, void **ctx,
+				  const struct aufilt *af, struct aufilt_prm *prm,
+				  const struct audio *au)
+{
+	struct uplink_filt_dec *st;
+
+	(void)ctx;
+	(void)af;
+	(void)prm;
+	(void)au;
+
+	if (!stp)
+		return EINVAL;
+
+	if (*stp)
+		return 0;
+
+	st = mem_zalloc(sizeof(*st), uplink_filt_dec_destructor);
+	if (!st)
+		return ENOMEM;
+
+	*stp = (struct aufilt_dec_st *)st;
+	uplink_filt_warned_srate = false;
+	info("openai_rt: uplink decode filter active (rtp-thread capture)\n");
+
+	return 0;
+}
+
+static int uplink_filt_decode(struct aufilt_dec_st *st, struct auframe *af)
+{
+	(void)st;
+
+	if (!g_oairt.call_active || !af || af->sampc == 0)
+		return 0;
+
+	if (af->fmt != AUFMT_S16LE)
+		return 0;
+
+	if (af->srate != 24000 && !uplink_filt_warned_srate) {
+		warning("openai_rt: uplink tap srate=%u (expected 24000); "
+			"load openai_rt.so before auresamp.so in config\n",
+			af->srate);
+		uplink_filt_warned_srate = true;
+	}
+
+	openai_rt_receive_audio(af->sampv, af->sampc);
+
+	return 0;
+}
+
+void audio_register_uplink_filter(void)
+{
+	uplink_filt.name    = "openai_rt_uplink";
+	uplink_filt.encupdh = NULL;
+	uplink_filt.ench    = NULL;
+	uplink_filt.decupdh = uplink_filt_dec_update;
+	uplink_filt.dech    = uplink_filt_decode;
+
+	aufilt_register(baresip_aufiltl(), &uplink_filt);
+	uplink_filt_registered = true;
+}
+
+void audio_flush_uplink_batch(void)
+{
+    flush_uplink_batch_internal(true);
+}
+
+void handle_incoming_audio(const int16_t *s16_data, size_t sampc)
+{
+    size_t copy;
+    size_t space;
+
+    if (!s16_data || sampc == 0)
+        return;
+
+    if (!g_oairt.call_active)
+        return;
+
+    if (!g_audio.uplink_batch)
+        return;
+
+    while (sampc > 0) {
+        if (g_audio.uplink_batch_len >= g_audio.uplink_batch_cap)
+            flush_uplink_batch_internal(true);
+
+        space = g_audio.uplink_batch_cap - g_audio.uplink_batch_len;
+        copy = sampc < space ? sampc : space;
+        memcpy(g_audio.uplink_batch + g_audio.uplink_batch_len,
+               s16_data, copy * sizeof(int16_t));
+        g_audio.uplink_batch_len += copy;
+        s16_data += copy;
+        sampc -= copy;
+
+        flush_uplink_batch_internal(false);
     }
 }
 
@@ -486,7 +613,13 @@ static int ausrc_read_thread(void *arg)
         }
 
         if (have < st->sampc) {
-            memset(st->sampv + have, 0, (st->sampc - have) * sizeof(int16_t));
+            static int16_t last_sample;
+            size_t i;
+
+            if (have > 0)
+                last_sample = st->sampv[have - 1];
+            for (i = have; i < st->sampc; i++)
+                st->sampv[i] = last_sample;
         } else if (have > st->sampc) {
             have = st->sampc;
         }
@@ -514,7 +647,12 @@ static int ausrc_read_thread(void *arg)
     return 0;
 }
 
-/* Audio playback write thread - continuously calls st->wh() to get audio from baresip */
+/*
+ * Drain aubuf via baresip's auplay handler so the RX buffer does not grow
+ * without bound.  Uplink to OpenAI is captured on the RTP decode thread by
+ * the openai_rt aufilt (after auresamp), not here — a separate poll thread
+ * racing aubuf caused sustained underruns (all-zero uplink) on ECS.
+ */
 static int auplay_write_thread(void *arg)
 {
     struct auplay_st *st = arg;
@@ -523,40 +661,27 @@ static int auplay_write_thread(void *arg)
         return 0;
     }
     
-    DEBUG_INFO("Audio playback thread started\n");
+    DEBUG_INFO("Audio playback drain thread started\n");
     
-    /* Create a single auframe ONCE at the beginning (like WASAPI/ALSA) */
     struct auframe af;
     auframe_init(&af, st->prm.fmt, st->sampv, st->sampc,
                st->prm.srate, st->prm.ch);
     
     while (st->run && st->ready) {
-        /* Check if call is still active - stop if not */
         if (!g_oairt.call_active) {
-            DEBUG_INFO("Audio playback thread stopping - call ended\n");
+            DEBUG_INFO("Audio playback drain thread stopping - call ended\n");
             break;
         }
         
-        /* Wait for audio data from the SIP call */
-        /* This is the key: we need to wait for actual audio, not return immediately */
         if (st->wh) {
-            /* Call baresip's write handler - this should provide audio data */
             st->wh(&af, st->arg);
             st->total_samples_received += af.sampc;
-            
-            /* Process the audio data from the populated frame */
-            if (af.sampc > 0) {
-                openai_rt_receive_audio(af.sampv, af.sampc);
-            }
-        } else {
-            DEBUG_INFO("No write handler available\n");
         }
         
-        /* Sleep to maintain proper timing - this prevents the 1ms loop */
         sys_msleep(st->prm.ptime);
     }
     
-    DEBUG_INFO("Audio playback thread ended\n");
+    DEBUG_INFO("Audio playback drain thread ended\n");
     return 0;
 }
 
@@ -709,7 +834,8 @@ void openai_rt_check_messages(void)
 /* Stop audio threads when call ends */
 void audio_stop_threads(void)
 {
-    
+    audio_flush_uplink_batch();
+
     /* Properly free all audio frames in queues to prevent memory leaks */
     free_audio_queue(&g_audio.read_queue, &g_audio.read_queue_mutex);
     free_event_queue(&g_audio.event_queue, &g_audio.event_queue_mutex);
@@ -893,11 +1019,11 @@ bool audio_source_ready_for_injection(void)
 /* Public function to receive audio from baresip */
 void openai_rt_receive_audio(const int16_t *sampv, size_t sampc)
 {
-    if (!g_audio.play_st || !g_audio.play_st->ready || !g_oairt.call_active) {
+    if (!g_oairt.call_active || !sampv || sampc == 0)
         return;
-    }
 
-    g_audio.play_st->total_samples_received += sampc;
+    if (g_audio.play_st)
+        g_audio.play_st->total_samples_received += sampc;
     handle_incoming_audio(sampv, sampc);
 }
 
@@ -953,6 +1079,9 @@ int audio_queue_event(enum event_type type, void *data)
     list_append(&g_audio.event_queue, &event->le, event);
     cnd_signal(&g_audio.event_queue_cond);
     mtx_unlock(&g_audio.event_queue_mutex);
+
+    if (type == EVENT_CALL_START)
+        websocket_kick_session_setup();
     
     /* If this is a call start event and audio drivers are ready, start threads */
     if (type == EVENT_CALL_START && audio_ready_for_call()) {
@@ -1100,10 +1229,13 @@ static void force_audio_commit(void)
 /* Reset audio state for new call */
 void audio_reset_for_new_call(void)
 {
-    
+    audio_flush_uplink_batch();
+
     /* Reset accumulation tracking */
     g_audio.audio_accumulated = 0;
     g_audio.response_created = false;
+    if (g_audio.uplink_batch)
+        g_audio.uplink_batch_len = 0;
     
     /* Reset injection buffer state */
     mtx_lock(&g_audio.injection_buffer_mutex);
@@ -1126,6 +1258,8 @@ void audio_reset_for_new_call(void)
 /* Flush accumulated audio when session becomes ready */
 void audio_flush_accumulated(void)
 {
+    audio_flush_uplink_batch();
+
     if (g_audio.audio_accumulated > 0) {
         double ms = (double)g_audio.audio_accumulated / 2 / 24000.0 * 1000.0;
         info("openai_rt: flushing %.1f ms (%u bytes) of accumulated audio\n",

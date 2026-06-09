@@ -71,7 +71,8 @@ static int module_init(void)
 		goto out;
 	}
 
-    
+	audio_register_uplink_filter();
+
 	err = calls_init();
 	if (err) {
 		warning("openai_rt: failed to initialize call management: %m\n", err);

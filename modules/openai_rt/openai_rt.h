@@ -110,6 +110,7 @@ bool websocket_is_ready(void);
 int websocket_wait_ready(int timeout_ms);
 const char *websocket_status_string(void);
 void send_session_update(void);
+void websocket_kick_session_setup(void);
 int queue_message_to_openai(const char *json_msg, size_t len, 
                            void (*callback)(void *arg, int err), void *arg);
 int queue_message_from_openai(const uint8_t *data, size_t len);
@@ -118,6 +119,7 @@ void websocket_clear_message_queue(void);
 /* Audio functions - Audio driver implementation */
 int audio_init(void);
 void audio_close(void);
+void audio_register_uplink_filter(void);
 void handle_incoming_audio(const int16_t *s16_data, size_t sampc);
 void handle_outgoing_audio(const uint8_t *g711u_data, size_t len);
 void openai_rt_check_messages(void);
@@ -127,6 +129,7 @@ void audio_stop_threads(void);
 void audio_restart_threads(void);
 void audio_reset_for_new_call(void);
 void audio_flush_accumulated(void);
+void audio_flush_uplink_batch(void);
 bool audio_source_ready_for_injection(void);
 bool audio_threads_running(void);
 bool audio_ready_for_call(void);
@@ -203,12 +206,23 @@ struct audio_state {
     size_t injection_write_pos;        /* Write position in circular buffer */
     size_t injection_available;        /* Number of samples available for reading */
     mtx_t injection_buffer_mutex;      /* Mutex for injection buffer access */
-    
+
+    /* Batched PCM uplink (phone -> OpenAI), flushed as one append */
+    int16_t *uplink_batch;
+    size_t uplink_batch_cap;           /* capacity in samples */
+    size_t uplink_batch_len;           /* samples currently buffered */
 };
 
 /* Audio commit threshold - commit after accumulating this many bytes */
 /* 800ms at 24kHz PCM16 = 24000 * 2 * 0.8 = 38400 bytes */
 #define AUDIO_COMMIT_THRESHOLD 38400
+
+/* PoC: batch uplink PCM before one WS append (reduces queue pressure on ECS) */
+#define UPLINK_BATCH_MS 100
+#define UPLINK_BATCH_BYTES ((24000 * UPLINK_BATCH_MS / 1000) * sizeof(int16_t))
+
+/* Skip near-silent output deltas (leading AAAA chunks from API) */
+#define OUTPUT_DELTA_PEAK_MIN 64
 
 /* Injection buffer sizing limits */
 #define INJECTION_BUFFER_INITIAL_SIZE 128000    /* Initial size in samples (16 seconds @ 8kHz) */

@@ -175,38 +175,24 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 			/* Reset audio state for new call */
 			audio_reset_for_new_call();
 			
-			/* Check if session setup is ready - if not, we need to wait or hang up */
+			/* Kick session.update without blocking the UA event chain (sndfile etc.) */
 			if (!websocket_is_ready()) {
 				int qerr;
+
 				warning("openai_rt: Call established but WebSocket not ready (status=%s)\n",
 				        websocket_status_string());
 
-				/* Re-trigger call start handling to force reconnect/session.update now. */
 				qerr = audio_queue_event(EVENT_CALL_START, call);
 				if (qerr) {
 					warning("openai_rt: Failed to queue call start event (established): %m\n", qerr);
 				}
-				
-				/* Wait for WebSocket + session.updated to complete */
-				int wait_err = websocket_wait_ready(10000);
-				if (wait_err) {
-					warning("openai_rt: Session setup failed or timed out after 10 seconds (status=%s) - hanging up call\n",
-					        websocket_status_string());
-					calls_hangup();
-					break;
-				}
+				websocket_kick_session_setup();
+			}
+			else {
+				info("openai_rt: Session ready, call can proceed\n");
 			}
 			
-			/* Verify session is actually ready */
-			if (!g_oairt.session_ready || !g_oairt.session_cfg_applied) {
-				warning("openai_rt: Session setup not complete - hanging up call\n");
-				calls_hangup();
-				break;
-			}
-			
-			info("openai_rt: Session ready, call can proceed\n");
-			
-			/* Start audio threads now that call is established and session is ready */
+			/* Start audio threads; uplink commits wait for session_cfg_applied */
 			if (audio_ready_for_call()) {
 				DEBUG_INFO("Call established - starting audio threads\n");
 				audio_restart_threads();
