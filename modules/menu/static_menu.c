@@ -877,6 +877,28 @@ static int print_commands(struct re_printf *pf, void *unused)
 	return cmd_print(pf, baresip_commands());
 }
 
+static int send_dtmf_digits(struct re_printf *pf, void *arg)
+{
+
+	const struct cmd_arg *carg = arg;
+	struct ua *ua = carg->data ? carg->data : menu_uacur();
+	struct call *call;
+	size_t i;
+	int err = 0;
+	(void)pf;
+	warning("send_dtmf_digits\n", err);
+
+	call = ua_call(ua);
+
+	for (i = 0; i < str_len(carg->prm) && !err; i++) {
+		err = call_send_digit(call, carg->prm[i]);
+	}
+	if (!err) {
+		err = call_send_digit(call, KEYCODE_REL);
+	}
+
+	return err;
+}
 
 static int cmd_print_calls(struct re_printf *pf, void *arg)
 {
@@ -1475,6 +1497,7 @@ static const struct cmd cmdv[] = {
 {"hangup",    'b',        0, "Hangup call",             cmd_hangup           },
 {"hangupall", 0,    CMD_PRM, "Hangup all calls with direction"
                                                        ,cmd_hangupall        },
+{"dtmf",      0,    CMD_PRM, "Send DTMF",               send_dtmf_digits     },
 {"help",      'h',        0, "Help menu",               print_commands       },
 {"listcalls", 'l',        0, "List active calls",       cmd_print_calls      },
 {"options",   'o',  CMD_PRM, "Options",                 options_command      },
