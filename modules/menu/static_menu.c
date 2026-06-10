@@ -879,14 +879,12 @@ static int print_commands(struct re_printf *pf, void *unused)
 
 static int send_dtmf_digits(struct re_printf *pf, void *arg)
 {
-
 	const struct cmd_arg *carg = arg;
 	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	struct call *call;
 	size_t i;
 	int err = 0;
 	(void)pf;
-	warning("send_dtmf_digits\n", err);
 
 	call = ua_call(ua);
 
