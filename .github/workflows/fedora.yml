@@ -95,7 +95,7 @@ jobs:
           'spandsp-devel' \
           '/usr/bin/gdbus-codegen'
 
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v8
       with:
         name: re-fedora
         path: re/placeholder-0-build
