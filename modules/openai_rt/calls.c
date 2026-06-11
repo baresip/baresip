@@ -130,9 +130,12 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 			/* Store call reference for later use */
 			g_oairt.current_call = call;
 			
-			/* Reset session state */
-			g_oairt.session_ready = false;
-			g_oairt.session_cfg_applied = false;
+			/* Only reset Gemini session if WS is down or setup never completed */
+			if (g_oairt.ws_state != WS_CONNECTED ||
+			    !g_oairt.session_cfg_applied) {
+				g_oairt.session_ready = false;
+				g_oairt.session_cfg_applied = false;
+			}
 			
 			/* Queue event to start WebSocket connection and session setup */
 			qerr = audio_queue_event(EVENT_CALL_START, call);
@@ -151,9 +154,12 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 			/* Store call reference for later use */
 			g_oairt.current_call = call;
 			
-			/* Reset session state */
-			g_oairt.session_ready = false;
-			g_oairt.session_cfg_applied = false;
+			/* Only reset Gemini session if WS is down or setup never completed */
+			if (g_oairt.ws_state != WS_CONNECTED ||
+			    !g_oairt.session_cfg_applied) {
+				g_oairt.session_ready = false;
+				g_oairt.session_cfg_applied = false;
+			}
 			
 			/* Queue event to start WebSocket connection and session setup */
 			qerr = audio_queue_event(EVENT_CALL_START, call);
@@ -209,10 +215,12 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 		/* Stop audio threads before marking call as inactive */
 		audio_stop_threads();
 
-		/* Mark call as inactive */
+		/* Mark call as inactive; keep Gemini session if WS stays up */
 		g_oairt.call_active = false;
-		g_oairt.session_ready = false;
-		g_oairt.session_cfg_applied = false;
+		if (g_oairt.ws_state != WS_CONNECTED) {
+			g_oairt.session_ready = false;
+			g_oairt.session_cfg_applied = false;
+		}
 		g_oairt.current_call = NULL;
 
 		/* Queue event for WebSocket thread to handle */

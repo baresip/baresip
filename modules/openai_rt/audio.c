@@ -227,16 +227,15 @@ void audio_close(void)
 
     /* Always clean up, regardless of whether audio threads were active */
     
-    /* Stop audio threads if they exist */
-    if (g_audio.src_st && g_audio.src_st->thread) {
-        /* Log queue sizes before cleanup */
-        DEBUG_INFO("Cleaning up audio system - read queue: %u, event queue: %u\n",
-                   list_count(&g_audio.read_queue), list_count(&g_audio.event_queue));
-        
-        /* Properly free all remaining audio frames and events in queues */
-        free_audio_queue(&g_audio.read_queue, &g_audio.read_queue_mutex);
-        free_event_queue(&g_audio.event_queue, &g_audio.event_queue_mutex);
-    }
+    DEBUG_INFO("Cleaning up audio system - read queue: %u, write queue: %u, "
+               "event queue: %u\n",
+               list_count(&g_audio.read_queue),
+               list_count(&g_audio.write_queue),
+               list_count(&g_audio.event_queue));
+
+    free_audio_queue(&g_audio.read_queue, &g_audio.read_queue_mutex);
+    free_audio_queue(&g_audio.write_queue, &g_audio.write_queue_mutex);
+    free_event_queue(&g_audio.event_queue, &g_audio.event_queue_mutex);
     
     /* Always clean up synchronization objects and buffers */
     /* Note: Only destroy if they were initialized - but we can't check, so we assume they were */
@@ -280,6 +279,9 @@ static void queue_pcm_append(const int16_t *s16_data, size_t sampc)
     size_t byte_len;
 
     if (!s16_data || sampc == 0)
+        return;
+
+    if (g_oairt.ws_state != WS_CONNECTED || !g_oairt.ws_client)
         return;
 
     if (!model || !model->build_audio_append) {
@@ -1193,13 +1195,17 @@ static void send_audio_commit(void)
     char *response_msg = NULL;
     int err;
 
+    if (g_oairt.ws_state != WS_CONNECTED || !g_oairt.ws_client)
+        return;
+
     /* Note: explicit commit not needed since we're using server_vad */
     
     if (g_oairt.wait_for_greeting) {
         g_audio.response_created = true;
     }
     
-    if (!g_audio.response_created && model && model->build_response_create) {
+    if (!g_audio.response_created && g_oairt.call_active &&
+        model && model->build_response_create) {
         err = model->build_response_create(g_oairt.prompt, &response_msg);
         
         if (!err && response_msg) {

@@ -195,10 +195,12 @@ int read_config(void)
     /* Gemini VAD config */
     g_oairt.gemini_vad_enabled = true;
     conf_get_bool(conf_cur(), "openai_rt_gemini_vad_enabled", &g_oairt.gemini_vad_enabled);
-    if (!conf_get_str(conf_cur(), "openai_rt_gemini_vad_start_sensitivity", 
-                      g_oairt.gemini_vad_start_sensitivity, sizeof(g_oairt.gemini_vad_start_sensitivity))) {
-        str_ncpy(g_oairt.gemini_vad_start_sensitivity, "START_SENSITIVITY_HIGH", sizeof(g_oairt.gemini_vad_start_sensitivity));
-    }
+    conf_get_str(conf_cur(), "openai_rt_gemini_vad_start_sensitivity",
+                 g_oairt.gemini_vad_start_sensitivity,
+                 sizeof(g_oairt.gemini_vad_start_sensitivity));
+    if (!str_isset(g_oairt.gemini_vad_start_sensitivity))
+        str_ncpy(g_oairt.gemini_vad_start_sensitivity, "START_SENSITIVITY_HIGH",
+                 sizeof(g_oairt.gemini_vad_start_sensitivity));
     g_oairt.gemini_vad_silence_duration_ms = 300;
     conf_get_i32(conf_cur(), "openai_rt_gemini_vad_silence_duration_ms", &g_oairt.gemini_vad_silence_duration_ms);
     g_oairt.gemini_vad_prefix_padding_ms = 100;

@@ -69,7 +69,9 @@ struct openai_rt {
     struct lws_context *ws_context;
     struct lws *ws_client;
     bool session_ready;
+    bool setup_sent;            /* Gemini setup queued for current WS connection */
     bool speech_active;
+    bool conversation_kick_pending;
     
     /* WebSocket thread */
     pthread_t ws_thread;

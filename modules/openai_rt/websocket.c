@@ -18,6 +18,7 @@ static int add_auth_headers(void *in, size_t len);
 static void process_outgoing_messages(void);
 static void send_function_call_output(const char *call_id, const char *output);
 static void send_response_create(void);
+static void process_conversation_kick_pending(void);
 
 /* Callbacks for AI model message parsing */
 static void handle_audio_delta(const char *base64_audio, void *arg);
@@ -152,25 +153,34 @@ static void send_function_call_output(const char *call_id, const char *output)
 static void send_response_create(void)
 {
     struct ai_model *model = get_ai_model();
+    char *json_msg = NULL;
+    int err;
+
+    if (g_audio.response_created)
+        return;
+
     if (!model || !model->build_response_create) {
         warning("openai_rt: AI model not initialized for response.create\n");
         return;
     }
-    
-    char *json_msg = NULL;
-    int err = model->build_response_create(NULL, &json_msg);
+
+    err = model->build_response_create(NULL, &json_msg);
     if (err) {
         warning("openai_rt: Failed to build response.create: %m\n", err);
         return;
     }
-    
-    if (json_msg) {
-        err = queue_message_to_openai(json_msg, str_len(json_msg), NULL, NULL);
-        if (err) {
-            warning("openai_rt: Failed to queue response.create: %m\n", err);
-        }
-        mem_deref(json_msg);
+
+    if (!json_msg)
+        return;
+
+    err = queue_message_to_openai(json_msg, str_len(json_msg), NULL, NULL);
+    if (err) {
+        warning("openai_rt: Failed to queue response.create: %m\n", err);
+    } else {
+        info("openai_rt: Conversation start message queued\n");
+        g_audio.response_created = true;
     }
+    mem_deref(json_msg);
 }
  
 /* Callbacks for AI model message parsing */
@@ -232,6 +242,8 @@ static void handle_session_updated_cb(void *arg)
     g_oairt.session_ready = true;
     info("openai_rt: session.updated received; input_audio_format now active\n");
     audio_flush_accumulated();
+    if (!g_oairt.wait_for_greeting)
+        g_oairt.conversation_kick_pending = true;
 }
 
 static void handle_speech_started_cb(void *arg)
@@ -419,6 +431,7 @@ static void handle_response_done_cb(const char *response_json, void *arg)
              /* not ready yet: wait for server to ack session.update */
              g_oairt.session_ready = false;
              g_oairt.session_cfg_applied = false;
+             g_oairt.conversation_kick_pending = false;
 
              send_session_update();
              
@@ -484,8 +497,12 @@ static void handle_response_done_cb(const char *response_json, void *arg)
          g_oairt.ws_state = WS_DISCONNECTED;
          g_oairt.ws_client = NULL;
          g_oairt.session_ready = false;
+         g_oairt.session_cfg_applied = false;
+         g_oairt.setup_sent = false;
+         g_oairt.conversation_kick_pending = false;
+         websocket_clear_message_queue();
          break;
- 
+
     case LWS_CALLBACK_CLIENT_CLOSED:
         info("openai_rt: WebSocket disconnected\n");
         if (len > 0 && in) {
@@ -494,6 +511,10 @@ static void handle_response_done_cb(const char *response_json, void *arg)
         g_oairt.ws_state = WS_DISCONNECTED;
         g_oairt.ws_client = NULL;
         g_oairt.session_ready = false;
+        g_oairt.session_cfg_applied = false;
+        g_oairt.setup_sent = false;
+        g_oairt.conversation_kick_pending = false;
+        websocket_clear_message_queue();
         break;
  
      case LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER: {
@@ -655,11 +676,15 @@ static void handle_response_done_cb(const char *response_json, void *arg)
          g_oairt.ws_state = WS_DISCONNECTING;
          lws_callback_on_writable(g_oairt.ws_client);
      }
- 
+
      g_oairt.ws_state = WS_DISCONNECTED;
      g_oairt.ws_client = NULL;
      g_oairt.session_ready = false;
- 
+     g_oairt.session_cfg_applied = false;
+     g_oairt.setup_sent = false;
+     g_oairt.conversation_kick_pending = false;
+     websocket_clear_message_queue();
+
      info("openai_rt: WebSocket disconnected from AI model\n");
  }
  
@@ -708,12 +733,34 @@ static void handle_response_done_cb(const char *response_json, void *arg)
  
 void websocket_kick_session_setup(void)
 {
-	if (g_oairt.ws_state == WS_CONNECTED && !g_oairt.session_ready)
+	if (g_oairt.ws_state == WS_CONNECTED && !g_oairt.session_ready &&
+	    !g_oairt.setup_sent)
 		send_session_update();
 
 	ws_wake_service();
 
 	if (g_oairt.ws_state == WS_CONNECTED && g_oairt.ws_client)
+		lws_callback_on_writable(g_oairt.ws_client);
+}
+
+
+static void process_conversation_kick_pending(void)
+{
+	if (!g_oairt.conversation_kick_pending)
+		return;
+	if (g_oairt.ws_state != WS_CONNECTED || !g_oairt.ws_client)
+		return;
+	if (!g_oairt.session_cfg_applied || g_oairt.wait_for_greeting)
+		return;
+	if (!g_oairt.call_active)
+		return;
+	if (g_audio.response_created)
+		return;
+
+	g_oairt.conversation_kick_pending = false;
+	info("openai_rt: Starting AI conversation (wait_for_greeting=no)\n");
+	send_response_create();
+	if (g_oairt.ws_client)
 		lws_callback_on_writable(g_oairt.ws_client);
 }
 
@@ -725,6 +772,11 @@ void websocket_kick_session_setup(void)
 
     if (g_oairt.ws_state != WS_CONNECTED) {
         warning("openai_rt: Cannot send session update - WebSocket not connected\n");
+        return;
+    }
+
+    if (g_oairt.setup_sent) {
+        DEBUG_INFO("openai_rt: Setup already sent on this connection, skipping\n");
         return;
     }
 
@@ -746,6 +798,7 @@ void websocket_kick_session_setup(void)
         if (err) {
             warning("openai_rt: Failed to queue session update: %m\n", err);
         } else {
+            g_oairt.setup_sent = true;
             info("openai_rt: Session update queued (PCM16 format)\n");
         }
         mem_deref(json_msg);
@@ -755,6 +808,11 @@ void websocket_kick_session_setup(void)
  int queue_message_to_openai(const char *json_msg, size_t len,
     void (*callback)(void *arg, int err), void *arg)
  {
+    if (g_oairt.ws_state == WS_DISCONNECTED ||
+        g_oairt.ws_state == WS_DISCONNECTING) {
+        return ENOTCONN;
+    }
+
     struct ws_message *msg = mem_zalloc(sizeof(*msg), ws_message_destructor);
     if (!msg) return ENOMEM;
  
@@ -885,6 +943,7 @@ void websocket_kick_session_setup(void)
                  warning("openai_rt: WebSocket connection timeout, aborting\n");
                  g_oairt.ws_state = WS_DISCONNECTED;
                  g_oairt.ws_client = NULL;
+                 g_oairt.setup_sent = false;
                  connection_start_time = 0;
                  last_connecting_log = 0;
              }
@@ -916,7 +975,8 @@ void websocket_kick_session_setup(void)
                      if (err) {
                          warning("openai_rt: Failed to connect to OpenAI: %m\n", err);
                      }
-                } else if (g_oairt.ws_state == WS_CONNECTED && !g_oairt.session_ready) {
+                } else if (g_oairt.ws_state == WS_CONNECTED && !g_oairt.session_ready &&
+                           !g_oairt.setup_sent) {
                     info("openai_rt: Call start - WebSocket connected but session not ready, sending session.update\n");
                     send_session_update();
                     if (g_oairt.ws_client) {
@@ -936,6 +996,8 @@ void websocket_kick_session_setup(void)
              }
             mem_deref(event);
         }
+
+        process_conversation_kick_pending();
 
         /* Gentle pacing */
         sys_msleep(g_oairt.ws_state == WS_CONNECTING ? 1 : 10);
@@ -1021,6 +1083,8 @@ void websocket_kick_session_setup(void)
      g_oairt.ws_client = NULL;
      g_oairt.ws_state = WS_DISCONNECTED;
      g_oairt.session_ready = false;
+     g_oairt.session_cfg_applied = false;
+     g_oairt.setup_sent = false;
  
          /* Clear message queues properly */
     websocket_clear_message_queue();

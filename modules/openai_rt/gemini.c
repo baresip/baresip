@@ -369,15 +369,20 @@ static int gemini_build_session_update(const char *prompt, char **json_msg)
 	/* Build VAD config JSON if enabled */
 	char *vad_json = NULL;
 	if (g_oairt.gemini_vad_enabled) {
-		re_sdprintf(&vad_json, 
+		const char *vad_sensitivity =
+			str_isset(g_oairt.gemini_vad_start_sensitivity) ?
+			g_oairt.gemini_vad_start_sensitivity :
+			"START_SENSITIVITY_HIGH";
+
+		re_sdprintf(&vad_json,
 			"\"realtimeInputConfig\":{"
 				"\"automaticActivityDetection\":{"
 					"\"startOfSpeechSensitivity\":\"%s\","
 					"\"prefixPaddingMs\":%d,"
 					"\"silenceDurationMs\":%d"
 				"}"
-			"},", 
-			g_oairt.gemini_vad_start_sensitivity,
+			"},",
+			vad_sensitivity,
 			g_oairt.gemini_vad_prefix_padding_ms,
 			g_oairt.gemini_vad_silence_duration_ms);
 	}
