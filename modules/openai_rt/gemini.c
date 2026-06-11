@@ -654,9 +654,9 @@ static int gemini_parse_message(const char *json_str,
 		/* Check for interrupted flag - when True, clear audio buffer (similar to OpenAI speech_started) */
 		struct json_object *interrupted_obj = get_json_object_field_optional(server_content, "interrupted");
 		if (interrupted_obj && json_object_is_type(interrupted_obj, json_type_boolean)) {
-			if (json_object_get_boolean(interrupted_obj) && speech_started_cb) {
+			if (json_object_get_boolean(interrupted_obj)) {
 				DEBUG_INFO("openai_rt: Gemini serverContent.interrupted=True, clearing audio buffer\n");
-				speech_started_cb(cb_arg);
+				audio_clear_injection_buffer();
 			}
 		}
 

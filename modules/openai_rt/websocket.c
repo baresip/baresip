@@ -250,20 +250,8 @@ static void handle_speech_started_cb(void *arg)
 {
     (void)arg;
 
-    /* Caller waits for remote greeting: do not wipe outbound buffer on their speech */
-    if (g_oairt.wait_for_greeting) {
-        DEBUG_INFO("openai_rt: speech.started (wait_for_greeting), "
-                   "keeping injection buffer\n");
-        return;
-    }
-
-    DEBUG_INFO("openai_rt: speech.started received, interrupt ongoing audio output\n");
-    mtx_lock(&g_audio.injection_buffer_mutex);
-    g_audio.injection_read_pos = 0;
-    g_audio.injection_write_pos = 0;
-    g_audio.injection_available = 0;
-    mtx_unlock(&g_audio.injection_buffer_mutex);
-    DEBUG_INFO("openai_rt: injection buffer cleared\n");
+    DEBUG_INFO("openai_rt: speech.started, interrupting outbound TTS\n");
+    audio_clear_injection_buffer();
 }
 
 static void handle_function_call_cb(const char *call_id, const char *name,

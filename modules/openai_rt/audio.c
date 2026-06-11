@@ -615,13 +615,17 @@ static int ausrc_read_thread(void *arg)
         }
 
         if (have < st->sampc) {
-            static int16_t last_sample;
             size_t i;
 
-            if (have > 0)
-                last_sample = st->sampv[have - 1];
-            for (i = have; i < st->sampc; i++)
-                st->sampv[i] = last_sample;
+            if (have == 0) {
+                memset(st->sampv, 0, st->sampc * sizeof(int16_t));
+            }
+            else {
+                int16_t last = st->sampv[have - 1];
+
+                for (i = have; i < st->sampc; i++)
+                    st->sampv[i] = last;
+            }
         } else if (have > st->sampc) {
             have = st->sampc;
         }
@@ -1243,12 +1247,7 @@ void audio_reset_for_new_call(void)
     if (g_audio.uplink_batch)
         g_audio.uplink_batch_len = 0;
     
-    /* Reset injection buffer state */
-    mtx_lock(&g_audio.injection_buffer_mutex);
-    g_audio.injection_read_pos = 0;
-    g_audio.injection_write_pos = 0;
-    g_audio.injection_available = 0;
-    mtx_unlock(&g_audio.injection_buffer_mutex);
+    audio_clear_injection_buffer();
     
     /* Clear any stale audio data */
     if (g_audio.g711u_input_buffer) {
@@ -1274,7 +1273,14 @@ void audio_flush_accumulated(void)
     }
 }
 
-/* audio.c */
+void audio_clear_injection_buffer(void)
+{
+    mtx_lock(&g_audio.injection_buffer_mutex);
+    g_audio.injection_read_pos = 0;
+    g_audio.injection_write_pos = 0;
+    g_audio.injection_available = 0;
+    mtx_unlock(&g_audio.injection_buffer_mutex);
+}
 
 /* Resize the injection buffer to accommodate more data */
 int resize_injection_buffer(size_t new_size_samples)

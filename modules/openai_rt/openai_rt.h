@@ -132,6 +132,7 @@ void audio_restart_threads(void);
 void audio_reset_for_new_call(void);
 void audio_flush_accumulated(void);
 void audio_flush_uplink_batch(void);
+void audio_clear_injection_buffer(void);
 bool audio_source_ready_for_injection(void);
 bool audio_threads_running(void);
 bool audio_ready_for_call(void);
