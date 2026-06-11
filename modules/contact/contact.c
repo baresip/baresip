@@ -257,6 +257,15 @@ static int cmd_add_contact(struct re_printf *pf, void *arg)
 }
 
 
+static int cmd_clr_contacts(struct re_printf *pf, void *arg)
+{
+	(void)arg;
+
+	list_flush(contact_list(baresip_contacts()));
+	return re_hprintf(pf, "contact: all contacts cleared\n");
+}
+
+
 static int cmd_rm_contact(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
@@ -299,6 +308,7 @@ static const struct cmd cmdv[] = {
 {"contact_next", '>',        0, "Set next contact",       cmd_current_next  },
 {"addcontact",     0,  CMD_PRM, "Add a contact",          cmd_add_contact   },
 {"rmcontact",      0,  CMD_PRM, "Remove a contact",       cmd_rm_contact   },
+{"clrcontacts",    0,        0, "Clear all contacts",     cmd_clr_contacts },
 };
 
 
