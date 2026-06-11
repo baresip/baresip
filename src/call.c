@@ -3411,7 +3411,7 @@ void call_start_answtmr(struct call *call, uint32_t ms)
  *
  * @return true if check succeeds, false otherwise
  */
-bool call_supported(struct call *call, uint16_t tags)
+bool call_supported(const struct call *call, uint16_t tags)
 {
 	if (!call)
 		return false;
