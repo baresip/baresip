@@ -947,7 +947,7 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 			return ua;
 		}
 
-		if (!uaf && ua_catchall(ua))
+		if (!uaf && ua_catchall(ua) && ua_isregistered(ua))
 			uaf = ua;
 	}
 
