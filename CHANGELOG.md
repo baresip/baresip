@@ -5,10 +5,28 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v4.9.0 - 2026-06-17
+
+### What's Changed
+* tls: change to non-deprecated TLS_METHOD_XXX by @alfredh in https://github.com/baresip/baresip/pull/3732
+* ua: emit event for failed incoming INVITE by @SnowMaster12 in https://github.com/baresip/baresip/pull/3733
+* ua: avoid fallback 500 after unsupported address family by @SnowMaster12 in https://github.com/baresip/baresip/pull/3735
+* ua: stop processing INVITE after 421 response by @SnowMaster12 in https://github.com/baresip/baresip/pull/3736
+* test: add 100rel required reject testcase by @SnowMaster12 in https://github.com/baresip/baresip/pull/3738
+* ci/coverage: upgrade to actions/upload-artifact@v7 by @alfredh in https://github.com/baresip/baresip/pull/3743
+* config: switch to Aaudio module for Android by @alfredh in https://github.com/baresip/baresip/pull/3745
+* docs: minor cleanup of example config by @alfredh in https://github.com/baresip/baresip/pull/3744
+* contact: add command to clear all contacts by @cspiel1 in https://github.com/baresip/baresip/pull/3751
+* ci: bump actions scripts to fix Node.js warning by @alfredh in https://github.com/baresip/baresip/pull/3747
+* uag: check registration state of fallback UA by @cspiel1 in https://github.com/baresip/baresip/pull/3752
+* call: make call_supported() input argument const by @alfredh in https://github.com/baresip/baresip/pull/3748
+
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v4.8.0...v4.9.0
 
 ## v4.8.0 - 2026-05-13
 
-## What's Changed
+### What's Changed
 * contact: null pointer check by @cspiel1 in https://github.com/baresip/baresip/pull/3698
 * misc: auresamp lost after dynamic codec switch by @negbie in https://github.com/baresip/baresip/pull/3685
 * ci,windows: remove openssl version number by @alfredh in https://github.com/baresip/baresip/pull/3701
@@ -26,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * test: update doxygen header for dial_number.c by @alfredh in https://github.com/baresip/baresip/pull/3724
 * call: Use CRLF in REFER NOTIFY sipfrag body by @SnowMaster12 in https://github.com/baresip/baresip/pull/3726
 
-## New Contributors
+### New Contributors
 * @SnowMaster12 made their first contribution in https://github.com/baresip/baresip/pull/3726
 
 **Full Changelog**: https://github.com/baresip/baresip/compare/v4.7.0...v4.8.0
