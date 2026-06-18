@@ -149,7 +149,6 @@ module			alsa.so
 #module			vidbridge.so
 
 # Video display modules
-#module			directfb.so
 #module			x11.so
 #module			sdl.so
 #module			fakevideo.so
