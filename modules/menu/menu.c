@@ -125,7 +125,7 @@ static char *errorcode_key_aufile(uint16_t scode)
 
 static void limit_earlymedia(struct call* call, void *arg)
 {
-	enum sdp_dir ldir, ndir;
+	enum sdp_dir rdir, ndir;
 	uint32_t maxcnt = 32;
 	bool update = false;
 	(void)arg;
@@ -133,8 +133,8 @@ static void limit_earlymedia(struct call* call, void *arg)
 	if (!call_is_outgoing(call))
 		return;
 
-	ldir = sdp_media_ldir(stream_sdpmedia(audio_strm(call_audio(call))));
-	ndir = ldir;
+	rdir = sdp_media_rdir(stream_sdpmedia(audio_strm(call_audio(call))));
+	ndir = rdir;
 	conf_get_u32(conf_cur(), "menu_max_earlyaudio", &maxcnt);
 
 	if (menu.outcnt > maxcnt)
@@ -142,7 +142,7 @@ static void limit_earlymedia(struct call* call, void *arg)
 	else if (menu.outcnt > 1)
 		ndir &= SDP_SENDONLY;
 
-	if (ndir != ldir) {
+	if (ndir != rdir) {
 		call_set_audio_ldir(call, ndir);
 		update = true;
 	}
@@ -155,8 +155,8 @@ static void limit_earlymedia(struct call* call, void *arg)
 	}
 
 	/* video */
-	ldir = sdp_media_ldir(stream_sdpmedia(video_strm(call_video(call))));
-	ndir = ldir;
+	rdir = sdp_media_rdir(stream_sdpmedia(video_strm(call_video(call))));
+	ndir = rdir;
 
 	maxcnt = 32;
 	conf_get_u32(conf_cur(), "menu_max_earlyvideo_rx", &maxcnt);
@@ -168,7 +168,7 @@ static void limit_earlymedia(struct call* call, void *arg)
 	if (menu.outcnt > maxcnt)
 		ndir &= SDP_RECVONLY;
 
-	if (ndir != ldir) {
+	if (ndir != rdir) {
 		call_set_video_ldir(call, ndir);
 		update = true;
 	}
