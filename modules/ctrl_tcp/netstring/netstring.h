@@ -28,8 +28,6 @@ int netstring_read(char *buffer, size_t buffer_length,
 size_t netstring_num_len(size_t num);
 size_t netstring_buffer_size(size_t data_length);
 
-size_t netstring_encode_new(char **netstring, char *data, size_t len);
-
 #define NETSTRING_MAX_SIZE 999999999
 
 #endif
