@@ -8,6 +8,48 @@
 #include "core.h"
 
 
+static struct {
+	char *name;
+	char *reason;
+	char *version;
+} notfound[] =  {
+	/* moved */
+	{"b2bua", "moved to baresip-apps", ""},
+	{"auloop", "moved to baresip-apps", ""},
+	{"vidloop", "moved to baresip-apps", ""},
+	{"mc", "moved to baresip-apps", ""},
+	{"mpa", "moved to baresip-apps", "v4.2.0"},
+	{"ebuacip", "moved to baresip-apps", "v4.0.0"},
+	/* replaced */
+	{"winwave", "replaced by wasapi module", "v3.18.0"},
+	{"zrtp", "use gzrtp instead", "v2.9.0"},
+	{"x11grab", "use avformat.so instead", "v1.x"},
+	{"celt", "module deleted, use opus.so instead", "v0.4.12"},
+	{"v4l", "deprecated module, use v4l2.so instead", "v0.6.2"},
+	/* deleted */
+	{"directfb", "deprecated module", "v4.10.0"},
+	{"g726", "deprecated module", "v4.8.0"},
+	{"webrtc_aecm", "removed module", "v4.2.0"},
+	{"sndio", "deprecated module", "v3.0.0"},
+	{"i2s", "deprecated module", "v2.9.0"},
+	{"omx", "deprecated module", ""},
+	{"gsm", "deprecated module", ""},
+	{"gst_video", "deprecated module", "v2.x"},
+	{"speex_pp", "deprecated module", "v1.x"},
+	{"rst", "deprecated module", "v1.x"},
+	{"ilbc", "deprecated module", "v1.x"},
+	{"oss", "deprecated module", ""},
+	{"cairo", "deprecated module", ""},
+	{"opengl", "deprecated module", ""},
+	{"isac", "deprecated module", ""},
+	{"qtcapture", "deprecated module", ""},
+	{"opengles", "deprecated module (not working)", ""},
+	{"avahi", "deprecated module", ""},
+	{"dtmfio", "deprecated module", ""},
+	{"sdl", "deprecated module", "v0.6.2"},
+};
+
+
 /*
  * Append module extension, if not exist
  *
@@ -97,6 +139,14 @@ static int load_module(struct mod **modp, const struct pl *modpath,
  out:
 	if (err) {
 		warning("module %r: %m\n", name, err);
+		for (size_t i = 0; i < RE_ARRAY_SIZE(notfound); i++) {
+			if (0 == pl_strcasecmp(name, notfound[i].name)) {
+				warning("\t%s (since %s)\n",
+					notfound[i].reason,
+					notfound[i].version);
+				break;
+			}
+		}
 	}
 	else if (modp)
 		*modp = m;
