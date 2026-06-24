@@ -235,7 +235,7 @@ class ccheck:
                 return
             return
 
-        if 'LIST_FOREACH' in line and not 'LIST_FOREACH_SAFE' in line:
+        if 'LIST_FOREACH' in line and 'LIST_FOREACH_SAFE' not in line:
             self.listfor_depth = 1
             return
 
