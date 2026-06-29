@@ -500,6 +500,17 @@ int config_print(struct re_printf *pf, const struct config *cfg);
 int config_write_template(const char *file, const struct config *cfg);
 struct config *conf_config(void);
 
+/** Sip Info Configuration*/
+typedef bool (call_sip_info_h)(
+    struct call *call,
+    const char *content_type,
+    const uint8_t *body,
+    size_t body_len,
+    const struct sip_msg *msg,
+    void *arg
+);
+void call_set_sip_info_handler(call_sip_info_h *handler, void *arg);
+
 
 /*
  * Contact
