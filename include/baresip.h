@@ -502,12 +502,12 @@ struct config *conf_config(void);
 
 /** Sip Info Configuration*/
 typedef bool (call_sip_info_h)(
-    struct call *call,
-    const char *content_type,
-    const uint8_t *body,
-    size_t body_len,
-    const struct sip_msg *msg,
-    void *arg
+	struct call *call,
+	const char *content_type,
+	const uint8_t *body,
+	size_t body_len,
+	const struct sip_msg *msg,
+	void *arg
 );
 void call_set_sip_info_handler(call_sip_info_h *handler, void *arg);
 
@@ -1347,8 +1347,9 @@ typedef int(viddec_update_h)(struct viddec_state **vdsp,
 			     const struct vidcodec *vc, const char *fmtp,
 			     const struct video *vid);
 
-typedef int (viddec_decode_h)(struct viddec_state *vds, struct vidframe *frame,
-                              struct viddec_packet *pkt);
+typedef int (viddec_decode_h)(struct viddec_state *vds,
+			      struct vidframe *frame,
+			      struct viddec_packet *pkt);
 
 struct vidcodec {
 	struct le le;
