@@ -90,7 +90,8 @@ struct call {
 
 static int send_invite(struct call *call);
 static int send_dtmf_info(struct call *call, char key);
-
+static call_sip_info_h *sip_info_handler = NULL;
+static void *sip_info_arg = NULL;
 
 static const char *state_name(enum call_state st)
 {
@@ -236,7 +237,7 @@ static void mnat_handler(int err, uint16_t scode, const char *reason,
 
 	case CALL_STATE_INCOMING:
 		call_event_handler(call, CALL_EVENT_INCOMING, "%s",
-                                   call->peer_uri);
+				   call->peer_uri);
 		break;
 
 	default:
@@ -974,6 +975,11 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	return err;
 }
 
+void call_set_sip_info_handler(call_sip_info_h *handler, void *arg)
+{
+	sip_info_handler = handler;
+	sip_info_arg = arg;
+}
 
 void call_set_custom_hdrs(struct call *call, const struct list *hdrs)
 {
@@ -1963,7 +1969,7 @@ static int sipsess_answer_handler(const struct sip_msg *msg, void *arg)
 	    msg->scode >= 200 && msg->scode < 300 &&
 	    call_state(call) != CALL_STATE_ESTABLISHED)
 		call_event_handler(call, CALL_EVENT_ANSWERED, "%s",
-                                   call->peer_uri);
+				   call->peer_uri);
 
 	if (msg_ctype_cmp(&msg->ctyp, "multipart", "mixed"))
 		(void)sdp_decode_multipart(&msg->ctyp.params, msg->mb);
@@ -2010,6 +2016,48 @@ static uint32_t randwait(uint32_t minwait, uint32_t maxwait)
 	return minwait + rand_u16() % (maxwait - minwait);
 }
 
+static void call_emit_sip_info(struct call *call, const struct sip_msg *msg)
+{
+	struct pl body;
+	char content_type[256] = "";
+
+	if (!call || !msg || !sip_info_handler) {
+		return;
+	}
+
+	if (pl_isset(&msg->ctyp.type) && pl_isset(&msg->ctyp.subtype)) {
+		if (pl_isset(&msg->ctyp.params)) {
+			re_snprintf(
+				content_type,
+				sizeof(content_type),
+				"%r/%r;%r",
+				&msg->ctyp.type,
+				&msg->ctyp.subtype,
+				&msg->ctyp.params
+			);
+		}
+		else {
+			re_snprintf(
+				content_type,
+				sizeof(content_type),
+				"%r/%r",
+				&msg->ctyp.type,
+				&msg->ctyp.subtype
+			);
+		}
+	}
+
+	pl_set_mbuf(&body, msg->mb);
+
+	sip_info_handler(
+		call,
+		content_type[0] ? content_type : NULL,
+		(const uint8_t *)body.p,
+		body.l,
+		msg,
+		sip_info_arg
+	);
+}
 
 static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 {
@@ -2081,6 +2129,7 @@ static void sipsess_info_handler(struct sip *sip, const struct sip_msg *msg,
 				 void *arg)
 {
 	struct call *call = arg;
+	call_emit_sip_info(call, msg);
 
 	if (msg_ctype_cmp(&msg->ctyp, "application", "dtmf-relay")) {
 
@@ -2181,7 +2230,7 @@ static void xfer_cleanup(struct call *call, char *reason)
 	if (call->xcall->state == CALL_STATE_TRANSFER) {
 		set_state(call->xcall, CALL_STATE_ESTABLISHED);
 		call_event_handler(call->xcall, CALL_EVENT_TRANSFER_FAILED,
-                                   "%s", reason);
+						"%s", reason);
 	}
 
 	call->xcall->xcall = NULL;
@@ -2500,7 +2549,7 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 	call->estvdir = stream_ldir(video_strm(call_video(call)));
 	if (!call->acc->mnat)
 		call_event_handler(call, CALL_EVENT_INCOMING, "%s",
-                                   call->peer_uri);
+						call->peer_uri);
 
 	return 0;
 }
@@ -2577,13 +2626,13 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 	if (media) {
 		mem_ref(call);
 		call_event_handler(call, CALL_EVENT_PROGRESS, "%s",
-                                   call->peer_uri);
+						call->peer_uri);
 		mem_deref(call);
 	}
 	else {
 		call_stream_stop(call);
 		call_event_handler(call, CALL_EVENT_RINGING, "%s",
-                                   call->peer_uri);
+						call->peer_uri);
 	}
 }
 
