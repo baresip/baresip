@@ -110,6 +110,9 @@ struct call {
 
 
 static int send_invite(struct call *call);
+static int call_print_replaces(struct re_printf *pf, const struct call *call);
+static void call_event_handler(struct call *call, enum call_event ev,
+			       const char *fmt, ...);
 static int send_dtmf_info(struct call *call, char key);
 static int codec_reinvite_internal(struct call *call, const char *spec,
 				   bool user_init);
@@ -190,6 +193,15 @@ static void call_stream_stop(struct call *call)
 	video_stop(call->video);
 
 	tmr_cancel(&call->tmr_inv);
+}
+
+
+static void deferred_answer_reject(void *arg)
+{
+	struct call *call = arg;
+
+	call_stream_stop(call);
+	call_event_handler(call, CALL_EVENT_CLOSED, "Rejected");
 }
 
 
@@ -369,13 +381,15 @@ static void call_destructor(void *arg)
 	if (call->state != CALL_STATE_IDLE)
 		print_summary(call);
 
-	if (call_is_peerterm(call)) {
-		info("call ended by peer\n");
-	    bevent_call_emit(UA_EVENT_CALL_ENDED_REMOTE, call, "");
-	}
-	else {
-		info("call ended by local\n");
-		bevent_call_emit(UA_EVENT_CALL_ENDED_LOCAL, call, "");
+	if (call->state != CALL_STATE_IDLE) {
+		if (call_is_peerterm(call)) {
+			info("call ended by peer\n");
+			bevent_call_emit(UA_EVENT_CALL_ENDED_REMOTE, call, "");
+		}
+		else {
+			info("call ended by local\n");
+			bevent_call_emit(UA_EVENT_CALL_ENDED_LOCAL, call, "");
+		}
 	}
 
 
@@ -1232,6 +1246,87 @@ void call_set_custom_hdrs(struct call *call, const struct list *hdrs)
 }
 
 
+int call_custom_hdr_add(struct call *call, const char *name, const char *fmt,
+			...)
+{
+	va_list ap;
+	char *value = NULL;
+	int err;
+
+	if (!call || !name || !fmt)
+		return EINVAL;
+
+	va_start(ap, fmt);
+	err = re_vsdprintf(&value, fmt, ap);
+	va_end(ap);
+	if (err)
+		return err;
+
+	err = custom_hdrs_add(&call->custom_hdrs, name, "%s", value);
+	mem_deref(value);
+
+	return err;
+}
+
+
+void call_custom_hdr_remove(struct call *call, const char *name)
+{
+	struct le *le, *next;
+	struct pl pl_name;
+
+	if (!call || !name)
+		return;
+
+	pl_set_str(&pl_name, name);
+
+	for (le = list_head(&call->custom_hdrs); le; le = next) {
+		struct sip_hdr *hdr = le->data;
+
+		next = le->next;
+		if (!pl_casecmp(&hdr->name, &pl_name)) {
+			list_unlink(le);
+			mem_deref(hdr);
+		}
+	}
+}
+
+
+int call_set_sess_hdrs(struct call *call, const char *hdrs)
+{
+	size_t len;
+
+	if (!call || !call->sess)
+		return EINVAL;
+
+	if (!hdrs || !*hdrs)
+		return sipsess_set_hdrs(call->sess, NULL);
+
+	len = str_len(hdrs);
+	return sipsess_set_hdrs(call->sess, "%b", hdrs, len);
+}
+
+
+int call_refresh_outgoing_hdrs(struct call *call)
+{
+	if (!call || !call->sess)
+		return EINVAL;
+
+	return sipsess_set_hdrs(call->sess,
+				"Allow: %H\r\n%H%H%H%H",
+				ua_print_allowed, call->ua,
+				ua_print_supported, call->ua,
+				ua_print_require, call->ua,
+				call_print_replaces, call,
+				custom_hdrs_print, &call->custom_hdrs);
+}
+
+
+struct sipsess *call_sipsess(struct call *call)
+{
+	return call ? call->sess : NULL;
+}
+
+
 /**
  * Get the list of custom SIP headers
  *
@@ -1721,21 +1816,32 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 
 	if (scode >= 200 && scode < 300) {
 		err = sipsess_answer(call->sess, scode, "Answering", desc,
-				"Allow: %H\r\n"
-				"%H", ua_print_allowed, call->ua,
-				ua_print_supported, call->ua);
+				     "Allow: %H\r\n"
+				     "%H", ua_print_allowed, call->ua,
+				     ua_print_supported, call->ua);
 	}
 	else {
 		err = sipsess_answer(call->sess, scode, "Answering", desc,
 				"Allow: %H\r\n", ua_print_allowed, call->ua);
 	}
 
+	mem_deref(desc);
+
+	if (err == EPROTO) {
+		set_state(call, CALL_STATE_TERMINATED);
+		call->sess = mem_deref(call->sess);
+		tmr_cancel(&call->tmr_answ);
+		tmr_start(&call->tmr_answ, 0, deferred_answer_reject, call);
+		return err;
+	}
+
+	if (err)
+		return err;
+
 	call->answered = true;
 	call->ans_queued = false;
 
-	mem_deref(desc);
-
-	return err;
+	return 0;
 }
 
 
@@ -2327,6 +2433,7 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 	struct call *call = arg;
 	const uint64_t now = tmr_jiffies();
 	uint32_t wait;
+
 	(void)msg;
 
 	MAGIC_CHECK(call);
@@ -2777,6 +2884,11 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 			     ua_print_allowed, call->ua,
 			     ua_print_require, call->ua);
 
+	if (err == EPROTO) {
+		mem_deref(call);
+		return 0;
+	}
+
 	if (err) {
 		warning("call: sipsess_accept: %m\n", err);
 		return err;
@@ -2817,6 +2929,30 @@ bool call_sess_cmp(const struct call *call, const struct sip_msg *msg)
 		return false;
 
 	return sipsess_msg(call->sess) == msg;
+}
+
+
+bool call_dialog_cmp(const struct call *call, const struct pl *callid)
+{
+	struct sip_dialog *dlg;
+
+	if (!call || !callid || !call->sess)
+		return false;
+
+	dlg = sipsess_dialog(call->sess);
+	if (!dlg)
+		return false;
+
+	return 0 == pl_strcmp(callid, sip_dialog_callid(dlg));
+}
+
+
+const struct sip_msg *call_msg(const struct call *call)
+{
+	if (!call || !call->sess)
+		return NULL;
+
+	return sipsess_msg(call->sess);
 }
 
 

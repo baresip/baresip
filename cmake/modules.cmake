@@ -69,6 +69,7 @@ set(MODULES
   selfview
   serreg
   sf_aufileloop
+  sessiontimer
   snapshot
   sndfile
   sndfile-rt-start

@@ -86,6 +86,15 @@ void ua_printf(const struct ua *ua, const char *fmt, ...)
 void ua_add_extension(struct ua *ua, const char *extension)
 {
 	struct pl e;
+	size_t i;
+
+	if (!ua || !extension)
+		return;
+
+	for (i = 0; i < ua->extensionc; i++) {
+		if (!pl_strcmp(&ua->extensionv[i], extension))
+			return;
+	}
 
 	if (ua->extensionc >= RE_ARRAY_SIZE(ua->extensionv)) {
 		warning("ua: maximum %zu number of SIP extensions\n",
