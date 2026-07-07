@@ -85,13 +85,13 @@ struct call {
 	bool use_video;
 	bool use_rtp;
 	struct pl *user_data;      /**< User data related to the call       */
+	call_sip_info_h *sip_infoh;/**< SIP INFO handler for this call      */
+	void *sip_info_arg;        /**< SIP INFO handler argument           */
 };
 
 
 static int send_invite(struct call *call);
 static int send_dtmf_info(struct call *call, char key);
-static call_sip_info_h *sip_info_handler = NULL;
-static void *sip_info_arg = NULL;
 
 static const char *state_name(enum call_state st)
 {
@@ -975,10 +975,14 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	return err;
 }
 
-void call_set_sip_info_handler(call_sip_info_h *handler, void *arg)
+void call_set_sip_info_handler(struct call *call,
+			       call_sip_info_h *handler, void *arg)
 {
-	sip_info_handler = handler;
-	sip_info_arg = arg;
+	if (!call)
+		return;
+
+	call->sip_infoh = handler;
+	call->sip_info_arg = arg;
 }
 
 void call_set_custom_hdrs(struct call *call, const struct list *hdrs)
@@ -2021,7 +2025,7 @@ static void call_emit_sip_info(struct call *call, const struct sip_msg *msg)
 	struct pl body;
 	char content_type[256] = "";
 
-	if (!call || !msg || !sip_info_handler) {
+	if (!call || !msg || !call->sip_infoh) {
 		return;
 	}
 
@@ -2049,13 +2053,13 @@ static void call_emit_sip_info(struct call *call, const struct sip_msg *msg)
 
 	pl_set_mbuf(&body, msg->mb);
 
-	sip_info_handler(
+	call->sip_infoh(
 		call,
 		content_type[0] ? content_type : NULL,
 		(const uint8_t *)body.p,
 		body.l,
 		msg,
-		sip_info_arg
+		call->sip_info_arg
 	);
 }
 
@@ -2230,7 +2234,7 @@ static void xfer_cleanup(struct call *call, char *reason)
 	if (call->xcall->state == CALL_STATE_TRANSFER) {
 		set_state(call->xcall, CALL_STATE_ESTABLISHED);
 		call_event_handler(call->xcall, CALL_EVENT_TRANSFER_FAILED,
-						"%s", reason);
+                                   "%s", reason);
 	}
 
 	call->xcall->xcall = NULL;
