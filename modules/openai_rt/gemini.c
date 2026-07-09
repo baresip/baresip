@@ -45,8 +45,20 @@ static int gemini_add_auth_headers(void *in, size_t len);
 static int gemini_build_session_update(const char *prompt, char **json_msg);
 static int gemini_build_audio_append(const char *base64_audio, char **json_msg);
 static int gemini_build_response_create(const char *instructions, char **json_msg);
-static int gemini_build_function_call_output(const char *call_id, const char *output,
-                                             char **json_msg);
+static int gemini_build_function_call_output(const char *call_id, const char *name,
+                                             const char *output, char **json_msg);
+static void gemini_dispatch_function_call(struct json_object *fc,
+                               void (*function_call_cb)(const char *call_id,
+                                                       const char *name,
+                                                       const char *arguments,
+                                                       void *arg),
+                               void *cb_arg);
+static void gemini_dispatch_function_calls(struct json_object *function_calls,
+                               void (*function_call_cb)(const char *call_id,
+                                                       const char *name,
+                                                       const char *arguments,
+                                                       void *arg),
+                               void *cb_arg);
 static int gemini_parse_message(const char *json_str,
                                void (*audio_delta_cb)(const char *base64_audio, void *arg),
                                void (*session_updated_cb)(void *arg),
@@ -518,32 +530,29 @@ static int gemini_build_response_create(const char *instructions, char **json_ms
 
 /**
  * Build function call output message for Gemini
- * 
- * Note: Gemini uses "tool_response" format with functionResponses array.
  */
-static int gemini_build_function_call_output(const char *call_id, const char *output,
-                                            char **json_msg)
+static int gemini_build_function_call_output(const char *call_id, const char *name,
+                                            const char *output, char **json_msg)
 {
 	char *escaped_output = NULL;
 	int err;
 
-	if (!call_id || !output || !json_msg) {
+	if (!call_id || !name || !output || !json_msg) {
 		return EINVAL;
 	}
 
-	/* Escape output text for JSON */
 	err = json_escape(&escaped_output, output);
 	if (err) {
 		return err;
 	}
 
-	/* Gemini Live API uses "tool_response" format */
 	err = re_sdprintf(json_msg,
 		"{"
-			"\"tool_response\": {"
+			"\"toolResponse\": {"
 				"\"functionResponses\": ["
 					"{"
 						"\"id\": \"%s\","
+						"\"name\": \"%s\","
 						"\"response\": {"
 							"\"result\": \"%s\""
 						"}"
@@ -551,10 +560,67 @@ static int gemini_build_function_call_output(const char *call_id, const char *ou
 				"]"
 			"}"
 		"}",
-		call_id, escaped_output);
+		call_id, name, escaped_output);
 	mem_deref(escaped_output);
 
 	return err;
+}
+
+
+static void gemini_dispatch_function_call(struct json_object *fc,
+                               void (*function_call_cb)(const char *call_id,
+                                                       const char *name,
+                                                       const char *arguments,
+                                                       void *arg),
+                               void *cb_arg)
+{
+	const char *name;
+	const char *call_id;
+	struct json_object *args_obj = NULL;
+	const char *arguments;
+
+	if (!fc || !function_call_cb)
+		return;
+
+	name = get_json_string_field_optional(fc, "name");
+	if (!name)
+		return;
+
+	call_id = get_json_string_field_optional(fc, "id");
+	if (!call_id)
+		call_id = name;
+
+	if (!json_object_object_get_ex(fc, "args", &args_obj))
+		json_object_object_get_ex(fc, "arguments", &args_obj);
+
+	arguments = args_obj ? json_object_to_json_string(args_obj) : "{}";
+	if (!arguments)
+		arguments = "{}";
+
+	info("openai_rt: Gemini tool call: %s (id=%s)\n", name, call_id);
+	function_call_cb(call_id, name, arguments, cb_arg);
+}
+
+
+static void gemini_dispatch_function_calls(struct json_object *function_calls,
+                               void (*function_call_cb)(const char *call_id,
+                                                       const char *name,
+                                                       const char *arguments,
+                                                       void *arg),
+                               void *cb_arg)
+{
+	size_t calls_len;
+	size_t i;
+
+	if (!function_calls || !json_object_is_type(function_calls, json_type_array))
+		return;
+
+	calls_len = json_object_array_length(function_calls);
+	for (i = 0; i < calls_len; i++) {
+		struct json_object *fc = json_object_array_get_idx(function_calls, i);
+
+		gemini_dispatch_function_call(fc, function_call_cb, cb_arg);
+	}
 }
 
 /* JSON parsing helpers */
@@ -669,16 +735,32 @@ static int gemini_parse_message(const char *json_str,
 				for (size_t i = 0; i < parts_len; i++) {
 					struct json_object *part = json_object_array_get_idx(parts, i);
 					if (part) {
-						/* Check for inlineData with audio - optional field (text parts don't have it) */
-						struct json_object *inline_data = get_json_object_field_optional(part, "inlineData");
+						struct json_object *inline_data;
+						struct json_object *fc_part;
+
+						inline_data = get_json_object_field_optional(part,
+						                                           "inlineData");
 						if (inline_data) {
-							const char *mime_type = get_json_string_field_optional(inline_data, "mimeType");
-							const char *data = get_json_string_field_optional(inline_data, "data");
-							
-							if (data && mime_type && strstr(mime_type, "audio") != NULL && audio_delta_cb) {
-								/* Gemini audio output is at 24kHz PCM16, base64 encoded */
+							const char *mime_type =
+							    get_json_string_field_optional(inline_data,
+							                                   "mimeType");
+							const char *data =
+							    get_json_string_field_optional(inline_data,
+							                                   "data");
+
+							if (data && mime_type &&
+							    strstr(mime_type, "audio") != NULL &&
+							    audio_delta_cb) {
 								audio_delta_cb(data, cb_arg);
 							}
+						}
+
+						fc_part = get_json_object_field_optional(part,
+						                                        "functionCall");
+						if (fc_part) {
+							gemini_dispatch_function_call(
+							    fc_part, function_call_cb,
+							    cb_arg);
 						}
 					}
 				}
@@ -704,29 +786,10 @@ static int gemini_parse_message(const char *json_str,
 	/* Check for toolCall (function calls) - optional field */
 	struct json_object *tool_call = get_json_object_field_optional(root, "toolCall");
 	if (tool_call) {
-		struct json_object *function_calls = get_json_object_field_optional(tool_call, "functionCalls");
-		if (function_calls && json_object_is_type(function_calls, json_type_array)) {
-			size_t calls_len = json_object_array_length(function_calls);
-			for (size_t i = 0; i < calls_len; i++) {
-				struct json_object *fc = json_object_array_get_idx(function_calls, i);
-				if (fc && function_call_cb) {
-					const char *call_id = get_json_string_field(fc, "id", "functionCall");
-					const char *name = get_json_string_field(fc, "name", "functionCall");
-					
-					/* Get arguments as JSON string */
-					struct json_object *args_obj = get_json_object_field(fc, "args", "functionCall");
-					const char *arguments = NULL;
-					if (args_obj) {
-						arguments = json_object_to_json_string(args_obj);
-					}
-
-					if (name && call_id && arguments) {
-						function_call_cb(call_id, name, arguments, cb_arg);
-					}
-				}
-			}
-		}
-		goto cleanup; /* Don't process other fields if we got toolCall */
+		gemini_dispatch_function_calls(
+		    get_json_object_field_optional(tool_call, "functionCalls"),
+		    function_call_cb, cb_arg);
+		goto cleanup;
 	}
 
 	/* Check for goAway (server will disconnect) - optional field */

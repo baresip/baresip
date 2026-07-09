@@ -16,7 +16,10 @@ static int ws_callback(struct lws *wsi, enum lws_callback_reasons reason,
                        void *user, void *in, size_t len);
 static int add_auth_headers(void *in, size_t len);
 static void process_outgoing_messages(void);
-static void send_function_call_output(const char *call_id, const char *output);
+static void send_function_call_output(const char *call_id, const char *name,
+                                      const char *output);
+static bool parse_transfer_destination(struct json_object *args_obj,
+                                       char *destination, size_t destination_len);
 static void send_response_create(void);
 static void process_conversation_kick_pending(void);
 
@@ -27,6 +30,9 @@ static void handle_speech_started_cb(void *arg);
 static void handle_function_call_cb(const char *call_id, const char *name,
                                     const char *arguments, void *arg);
 static void handle_response_done_cb(const char *response_json, void *arg);
+static int start_transfer_after_tts(const char *destination);
+static void execute_tool_call(const char *call_id, const char *name,
+                              const char *arguments, bool allow_defer);
  
  /* WebSocket protocols (local binding for callbacks; NOT sent as WS subprotocol) */
  static const struct lws_protocols protocols[] = {
@@ -126,7 +132,8 @@ static inline void ws_wake_service(void)
     }
 }
 
-static void send_function_call_output(const char *call_id, const char *output)
+static void send_function_call_output(const char *call_id, const char *name,
+                                      const char *output)
 {
     struct ai_model *model = get_ai_model();
     if (!model || !model->build_function_call_output) {
@@ -135,7 +142,7 @@ static void send_function_call_output(const char *call_id, const char *output)
     }
     
     char *json_msg = NULL;
-    int err = model->build_function_call_output(call_id, output, &json_msg);
+    int err = model->build_function_call_output(call_id, name, output, &json_msg);
     if (err) {
         warning("openai_rt: Failed to build function_call_output: %m\n", err);
         return;
@@ -149,6 +156,183 @@ static void send_function_call_output(const char *call_id, const char *output)
         mem_deref(json_msg);
     }
 }
+
+static void wait_for_tts_drain(void)
+{
+	while (g_oairt.call_active && audio_tts_playback_pending())
+		sys_msleep(TRANSFER_DRAIN_POLL_MS);
+
+	/* Give baresip a moment to actually play the last chunk */
+	if (g_oairt.call_active)
+		sys_msleep(TRANSFER_POST_DRAIN_MS);
+}
+
+struct deferred_tool_call {
+	char *call_id;
+	char *tool_name;
+	char *arguments;
+};
+
+static void *deferred_tool_call_thread(void *arg)
+{
+	struct deferred_tool_call *w = arg;
+
+	wait_for_tts_drain();
+
+	if (g_oairt.call_active)
+		execute_tool_call(w->call_id, w->tool_name, w->arguments, false);
+
+	mem_deref(w->call_id);
+	mem_deref(w->tool_name);
+	mem_deref(w->arguments);
+	mem_deref(w);
+	return NULL;
+}
+
+static int defer_tool_call_until_tts_drained(const char *call_id,
+                                            const char *name,
+                                            const char *arguments)
+{
+	struct deferred_tool_call *w;
+	pthread_t tid;
+	int err;
+
+	w = mem_zalloc(sizeof(*w), NULL);
+	if (!w)
+		return ENOMEM;
+
+	err = str_dup(&w->call_id, call_id);
+	if (err)
+		goto out;
+
+	err = str_dup(&w->tool_name, name);
+	if (err)
+		goto out;
+
+	/* Keep a safe JSON string for deferred parsing */
+	err = str_dup(&w->arguments, arguments ? arguments : "{}");
+	if (err)
+		goto out;
+
+	err = pthread_create(&tid, NULL, deferred_tool_call_thread, w);
+	if (err) {
+		warning("openai_rt: failed to start deferred tool thread\n");
+		goto out;
+	}
+
+	pthread_detach(tid);
+	return 0;
+
+out:
+	mem_deref(w->call_id);
+	mem_deref(w->tool_name);
+	mem_deref(w->arguments);
+	mem_deref(w);
+	return err;
+}
+
+
+static bool parse_transfer_destination(struct json_object *args_obj,
+                                       char *destination, size_t destination_len)
+{
+	struct json_object *dest_obj = NULL;
+
+	if (!args_obj || !destination || destination_len == 0)
+		return false;
+
+	if (!json_object_object_get_ex(args_obj, "destination", &dest_obj))
+		return false;
+
+	if (json_object_is_type(dest_obj, json_type_string)) {
+		const char *s = json_object_get_string(dest_obj);
+		if (!s || !*s)
+			return false;
+		str_ncpy(destination, s, destination_len);
+		return true;
+	}
+
+	if (json_object_is_type(dest_obj, json_type_int)) {
+		re_snprintf(destination, destination_len, "%d",
+		    json_object_get_int(dest_obj));
+		return destination[0] != '\0';
+	}
+
+	return false;
+}
+
+
+static bool parse_transfer_dest_from_prompt(char *dest, size_t dest_len)
+{
+	const char *p;
+	size_t n;
+
+	if (!dest || dest_len == 0)
+		return false;
+
+	p = strstr(g_oairt.prompt, "extension ");
+	if (!p)
+		return false;
+
+	p += strlen("extension ");
+	for (n = 0; p[n] >= '0' && p[n] <= '9' && n + 1 < dest_len; n++)
+		dest[n] = p[n];
+	dest[n] = '\0';
+
+	return n > 0;
+}
+
+
+struct gemini_xfer_after_tts {
+	char *destination;
+};
+
+static void *gemini_xfer_after_tts_thread(void *arg)
+{
+	struct gemini_xfer_after_tts *w = arg;
+
+	wait_for_tts_drain();
+
+	if (g_oairt.call_active) {
+		int err = calls_transfer(w->destination);
+		if (err) {
+			warning("openai_rt: Gemini deferred transfer to '%s' failed: %m\n",
+			        w->destination, err);
+		}
+	}
+
+	mem_deref(w->destination);
+	mem_deref(w);
+	return NULL;
+}
+
+static int start_transfer_after_tts(const char *destination)
+{
+	struct gemini_xfer_after_tts *w;
+	pthread_t tid;
+	int err;
+
+	w = mem_zalloc(sizeof(*w), NULL);
+	if (!w)
+		return ENOMEM;
+
+	err = str_dup(&w->destination, destination);
+	if (err) {
+		mem_deref(w);
+		return err;
+	}
+
+	err = pthread_create(&tid, NULL, gemini_xfer_after_tts_thread, w);
+	if (err) {
+		warning("openai_rt: failed to start Gemini transfer-after-TTS thread\n");
+		mem_deref(w->destination);
+		mem_deref(w);
+		return err;
+	}
+
+	pthread_detach(tid);
+	return 0;
+}
+
 
 static void send_response_create(void)
 {
@@ -197,6 +381,9 @@ static void handle_audio_delta(const char *base64_audio, void *arg)
         //DEBUG_INFO("[AUDIO RX] handle_audio_delta called but call not active, dropping audio\n");
         return;
     }
+
+    if (g_oairt.backend_type == AI_BACKEND_GEMINI_LIVE)
+        g_oairt.gemini_turn_had_audio = true;
 
     //size_t b64_len = str_len(base64_audio);
     //info("[AUDIO RX] Received base64 audio data (%zu chars), decoding...\n", b64_len);
@@ -254,77 +441,96 @@ static void handle_speech_started_cb(void *arg)
     audio_clear_injection_buffer();
 }
 
-static void handle_function_call_cb(const char *call_id, const char *name,
-                                    const char *arguments, void *arg)
+static void execute_tool_call(const char *call_id, const char *name,
+                              const char *arguments, bool allow_defer)
 {
-    (void)arg;
+	/* Validate that the tool call is enabled in configuration */
+	if (!ai_model_is_tool_enabled(name, g_oairt.enabled_tools)) {
+		warning("openai_rt: Tool call '%s' is not enabled in configuration. Rejecting.\n", name);
+		/* Send error response back to OpenAI */
+		char error_msg[512];
+		re_snprintf(error_msg, sizeof(error_msg),
+		            "Error: Tool call '%s' is not enabled. Only these tools are available: %s",
+		            name, g_oairt.enabled_tools);
+		send_function_call_output(call_id, name, error_msg);
+		return;
+	}
 
-    /* Validate that the tool call is enabled in configuration */
-    if (!ai_model_is_tool_enabled(name, g_oairt.enabled_tools)) {
-        warning("openai_rt: Tool call '%s' is not enabled in configuration. Rejecting.\n", name);
-        /* Send error response back to OpenAI */
-        char error_msg[512];
-        re_snprintf(error_msg, sizeof(error_msg), 
-                    "Error: Tool call '%s' is not enabled. Only these tools are available: %s",
-                    name, g_oairt.enabled_tools);
-        send_function_call_output(call_id, error_msg);
-        return;
-    }
+	/* Defer tool execution until the model stops talking */
+	if (allow_defer && audio_tts_playback_pending()) {
+		int err = defer_tool_call_until_tts_drained(call_id, name, arguments);
+		if (err) {
+			warning("openai_rt: Failed to defer tool '%s': %m\n", name, err);
+			send_function_call_output(call_id, name,
+			                          "Error: Failed to schedule tool execution");
+			if (g_oairt.backend_type == AI_BACKEND_OPENAI_REALTIME)
+				send_response_create();
+		}
+		return;
+	}
 
-    /* Process enabled tool calls */
-    if (strcmp(name, AI_TOOL_HANGUP_CALL.name) == 0) {
-        DEBUG_INFO("openai_rt: Executing hangup_call function\n");
-        calls_hangup();
-        send_function_call_output(call_id, "Call hung up");
-        /* No response.create needed after hangup */
-    } 	else if (strcmp(name, AI_TOOL_SEND_DTMF.name) == 0) {
+	/* Process enabled tool calls */
+	if (strcmp(name, AI_TOOL_HANGUP_CALL.name) == 0) {
+		DEBUG_INFO("openai_rt: Executing hangup_call function\n");
+		calls_hangup();
+		send_function_call_output(call_id, name, "Call hung up");
+		/* No response.create needed after hangup */
+	}
+	else if (strcmp(name, AI_TOOL_SEND_DTMF.name) == 0) {
 		DEBUG_INFO("openai_rt: Executing send_dtmf function\n");
 
 		/* Parse arguments JSON */
 		struct json_object *args_obj = json_tokener_parse(arguments);
 		if (!args_obj) {
 			warning("openai_rt: Failed to parse send_dtmf arguments\n");
-			send_function_call_output(call_id, "Error: Failed to parse function arguments");
+			send_function_call_output(call_id, name,
+			                          "Error: Failed to parse function arguments");
 			return;
 		}
 
 		struct json_object *digits_obj = NULL;
 		if (json_object_object_get_ex(args_obj, "digits", &digits_obj) &&
-			json_object_is_type(digits_obj, json_type_string)) {
+		    json_object_is_type(digits_obj, json_type_string)) {
 			const char *digits = json_object_get_string(digits_obj);
 			if (digits && *digits) {
 				int err = calls_send_dtmf(digits);
 				if (!err) {
 					char output[256];
 					re_snprintf(output, sizeof(output), "DTMF tones sent: %s", digits);
-					send_function_call_output(call_id, output);
-				} else {
+					send_function_call_output(call_id, name, output);
+				}
+				else {
 					char error_msg[256];
-					re_snprintf(error_msg, sizeof(error_msg), 
-							   "Error: Failed to send DTMF string '%s'", digits);
-					send_function_call_output(call_id, error_msg);
+					re_snprintf(error_msg, sizeof(error_msg),
+					            "Error: Failed to send DTMF string '%s'", digits);
+					send_function_call_output(call_id, name, error_msg);
 					warning("openai_rt: Failed to send DTMF string '%s': %m\n", digits, err);
 				}
-			} else {
-				send_function_call_output(call_id, "Error: Missing or empty 'digits' parameter");
 			}
-		} else {
-			send_function_call_output(call_id, "Error: Missing or invalid 'digits' parameter");
+			else {
+				send_function_call_output(call_id, name,
+				                          "Error: Missing or empty 'digits' parameter");
+			}
+		}
+		else {
+			send_function_call_output(call_id, name,
+			                          "Error: Missing or invalid 'digits' parameter");
 		}
 		json_object_put(args_obj);
 
 		/* Trigger response for OpenAI to acknowledge DTMF */
-		if (g_oairt.backend_type == AI_BACKEND_OPENAI_REALTIME) {
+		if (g_oairt.backend_type == AI_BACKEND_OPENAI_REALTIME)
 			send_response_create();
-		}
-	} else if (strcmp(name, AI_TOOL_API_CALL.name) == 0) {
+	}
+	else if (strcmp(name, AI_TOOL_API_CALL.name) == 0) {
 		DEBUG_INFO("openai_rt: Executing api_call function\n");
 
 		/* Parse arguments JSON */
 		struct json_object *args_obj = json_tokener_parse(arguments);
 		if (!args_obj) {
 			warning("openai_rt: Failed to parse api_call arguments\n");
-			send_function_call_output(call_id, "Error: Failed to parse function arguments");
+			send_function_call_output(call_id, name,
+			                          "Error: Failed to parse function arguments");
 			return;
 		}
 
@@ -355,40 +561,112 @@ static void handle_function_call_cb(const char *call_id, const char *name,
 		if (method && uri) {
 			char *api_output = NULL;
 			int err = calls_api_call(method, uri, content_type, auth_type,
-				auth_username, auth_password, body, &api_output);
-			
+			                         auth_username, auth_password, body, &api_output);
+
 			if (err == 0) {
-				send_function_call_output(call_id, api_output ? api_output : "Success");
-			} else {
+				send_function_call_output(call_id, name,
+				                          api_output ? api_output : "Success");
+			}
+			else {
 				char error_msg[256];
-				re_snprintf(error_msg, sizeof(error_msg), "Error: API call failed with code %d", err);
-				send_function_call_output(call_id, error_msg);
+				re_snprintf(error_msg, sizeof(error_msg),
+				            "Error: API call failed with code %d", err);
+				send_function_call_output(call_id, name, error_msg);
 			}
 			mem_deref(api_output);
-		} else {
-			send_function_call_output(call_id, "Error: Missing 'method' or 'uri' parameter");
+		}
+		else {
+			send_function_call_output(call_id, name,
+			                          "Error: Missing 'method' or 'uri' parameter");
 		}
 		json_object_put(args_obj);
 
 		/* Trigger response for OpenAI to process API result */
-		if (g_oairt.backend_type == AI_BACKEND_OPENAI_REALTIME) {
+		if (g_oairt.backend_type == AI_BACKEND_OPENAI_REALTIME)
 			send_response_create();
+	}
+	else if (strcmp(name, AI_TOOL_TRANSFER_CALL.name) == 0) {
+		struct json_object *args_obj = json_tokener_parse(arguments);
+		char destination[256];
+
+		if (!args_obj) {
+			warning("openai_rt: Failed to parse transfer_call arguments\n");
+			send_function_call_output(call_id, name,
+			                          "Error: Failed to parse function arguments");
+			return;
 		}
-	} else {
-        /* This shouldn't happen if validation above worked, but handle it anyway */
-        warning("openai_rt: Unknown function call: %s (but was enabled in config?)\n", name);
-        char error_msg[256];
-        re_snprintf(error_msg, sizeof(error_msg), 
-                   "Error: Unknown or unsupported tool call: %s", name);
-        send_function_call_output(call_id, error_msg);
-    }
+
+		if (parse_transfer_destination(args_obj, destination, sizeof(destination))) {
+			int err;
+
+			if (g_oairt.backend_type == AI_BACKEND_GEMINI_LIVE)
+				g_oairt.gemini_xfer_scheduled = true;
+
+			err = calls_transfer(destination);
+			if (!err) {
+				char msg[256];
+				re_snprintf(msg, sizeof(msg), "Call transfer initiated to %s",
+				            destination);
+				send_function_call_output(call_id, name, msg);
+			}
+			else {
+				char error_msg[256];
+				re_snprintf(error_msg, sizeof(error_msg),
+				            "Error: Failed to transfer call to '%s'", destination);
+				send_function_call_output(call_id, name, error_msg);
+				warning("openai_rt: Failed to transfer to '%s': %m\n",
+				        destination, err);
+			}
+
+			if (g_oairt.backend_type == AI_BACKEND_OPENAI_REALTIME)
+				send_response_create();
+		}
+		else {
+			send_function_call_output(call_id, name,
+			                          "Error: Missing or invalid 'destination' parameter");
+		}
+		json_object_put(args_obj);
+	}
+	else {
+		/* This shouldn't happen if validation above worked, but handle it anyway */
+		warning("openai_rt: Unknown function call: %s (but was enabled in config?)\n", name);
+		char error_msg[256];
+		re_snprintf(error_msg, sizeof(error_msg),
+		            "Error: Unknown or unsupported tool call: %s", name);
+		send_function_call_output(call_id, name, error_msg);
+	}
+}
+
+static void handle_function_call_cb(const char *call_id, const char *name,
+                                    const char *arguments, void *arg)
+{
+	(void)arg;
+
+	execute_tool_call(call_id, name, arguments, true);
 }
 
 static void handle_response_done_cb(const char *response_json, void *arg)
 {
-    (void)arg;
+	char dest[128];
 
-    DEBUG_INFO("openai_rt: response.done received\n");
+	(void)arg;
+
+	DEBUG_INFO("openai_rt: response.done received\n");
+
+	/* Gemini native audio often skips tool calls; transfer after speech */
+	if (g_oairt.backend_type == AI_BACKEND_GEMINI_LIVE &&
+	    g_oairt.call_active && !g_oairt.gemini_xfer_scheduled &&
+	    g_oairt.gemini_turn_had_audio &&
+	    ai_model_is_tool_enabled(AI_TOOL_TRANSFER_CALL.name,
+	                              g_oairt.enabled_tools) &&
+	    parse_transfer_dest_from_prompt(dest, sizeof(dest))) {
+		g_oairt.gemini_xfer_scheduled = true;
+		g_oairt.gemini_turn_had_audio = false;
+		info("openai_rt: Gemini turn complete; scheduling transfer to %s "
+		    "after TTS drain\n", dest);
+		start_transfer_after_tts(dest);
+	}
+
     if (response_json) {
         int err = calls_queue_openai_response(response_json);
         if (err) {

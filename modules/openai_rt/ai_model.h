@@ -39,6 +39,7 @@ struct ai_tool_call {
 extern const struct ai_tool_call AI_TOOL_HANGUP_CALL;
 extern const struct ai_tool_call AI_TOOL_SEND_DTMF;
 extern const struct ai_tool_call AI_TOOL_API_CALL;
+extern const struct ai_tool_call AI_TOOL_TRANSFER_CALL;
 
 /* Array of all available tool calls */
 extern const struct ai_tool_call *AI_AVAILABLE_TOOLS[];
@@ -131,12 +132,13 @@ struct ai_model {
 	/**
 	 * Build function call output message
 	 * @param call_id  Function call ID
+	 * @param name     Function name (required for Gemini toolResponse)
 	 * @param output  Function call output text
 	 * @param json_msg  Output: JSON message string (allocated, must be freed)
 	 * @return 0 on success, error code otherwise
 	 */
-	int (*build_function_call_output)(const char *call_id, const char *output,
-	                                  char **json_msg);
+	int (*build_function_call_output)(const char *call_id, const char *name,
+	                                  const char *output, char **json_msg);
 	
 	/**
 	 * Parse incoming message from AI model

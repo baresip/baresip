@@ -1022,6 +1022,24 @@ bool audio_source_ready_for_injection(void)
     return (g_audio.src_st && g_audio.src_st->ready);
 }
 
+/* True while TTS audio is still queued for playback to the caller */
+bool audio_tts_playback_pending(void)
+{
+    bool pending;
+
+    mtx_lock(&g_audio.injection_buffer_mutex);
+    pending = g_audio.injection_available > 0;
+    mtx_unlock(&g_audio.injection_buffer_mutex);
+
+    if (!pending) {
+        mtx_lock(&g_audio.read_queue_mutex);
+        pending = !list_isempty(&g_audio.read_queue);
+        mtx_unlock(&g_audio.read_queue_mutex);
+    }
+
+    return pending;
+}
+
 /* Public function to receive audio from baresip */
 void openai_rt_receive_audio(const int16_t *sampv, size_t sampc)
 {

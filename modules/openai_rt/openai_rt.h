@@ -63,6 +63,8 @@ struct openai_rt {
     bool call_active;
     struct call *current_call;
     bool session_cfg_applied;   /* set after we see type=session.updated */
+    bool gemini_xfer_scheduled; /* Gemini: transfer already scheduled */
+    bool gemini_turn_had_audio; /* Gemini: model audio in current turn */
     
     /* WebSocket state */
     enum ws_state ws_state;
@@ -134,6 +136,7 @@ void audio_flush_accumulated(void);
 void audio_flush_uplink_batch(void);
 void audio_clear_injection_buffer(void);
 bool audio_source_ready_for_injection(void);
+bool audio_tts_playback_pending(void);
 bool audio_threads_running(void);
 bool audio_ready_for_call(void);
 
@@ -233,6 +236,10 @@ struct audio_state {
 #define INJECTION_BUFFER_MAX_SIZE 2000000       /* Maximum size in samples (250 seconds @ 8kHz) */
 #define INJECTION_BUFFER_GROWTH_FACTOR 2        /* Multiply by this when growing */
 
+/* Defer blind transfer until TTS injection buffer has drained */
+#define TRANSFER_DRAIN_POLL_MS 50
+#define TRANSFER_POST_DRAIN_MS 500
+
 /* Global audio state - defined in audio.c */
 extern struct audio_state g_audio;
 
@@ -247,6 +254,7 @@ void audio_free_frame(struct audio_frame *frame);
 void calls_hangup(void);
 void calls_send_digit(char key);
 int calls_send_dtmf(const char *digits);
+int calls_transfer(const char *destination);
 int calls_api_call(const char *method, const char *uri,
                    const char *content_type, const char *auth_type,
                    const char *auth_username, const char *auth_password,
