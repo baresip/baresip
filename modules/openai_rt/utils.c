@@ -180,7 +180,12 @@ int read_config(void)
 
     conf_get_str(conf_cur(), "openai_rt_prompt", g_oairt.prompt, sizeof(g_oairt.prompt));
     conf_get_str(conf_cur(), "openai_rt_api_key", g_oairt.api_key, sizeof(g_oairt.api_key));
-    conf_get_str(conf_cur(), "openai_rt_tool_calls", g_oairt.enabled_tools, sizeof(g_oairt.enabled_tools));
+    /* Tool-call config semantics:
+     * - missing or empty => no tools (send tools: [])
+     * - non-empty        => enable exactly the listed tools
+     */
+    (void)conf_get_str(conf_cur(), "openai_rt_tool_calls",
+                       g_oairt.enabled_tools, sizeof(g_oairt.enabled_tools));
     conf_get_str(conf_cur(), "openai_rt_backend", g_oairt.backend, sizeof(g_oairt.backend));
     g_oairt.wait_for_greeting = true;
     conf_get_bool(conf_cur(), "openai_rt_wait_for_greeting", &g_oairt.wait_for_greeting);
@@ -210,9 +215,7 @@ int read_config(void)
     if (!str_isset(g_oairt.prompt))
         str_ncpy(g_oairt.prompt, "You are a helpful voice assistant for phone calls.", sizeof(g_oairt.prompt));
 
-    /* Set default enabled tools if not configured - enable all by default */
-    if (!str_isset(g_oairt.enabled_tools))
-        str_ncpy(g_oairt.enabled_tools, "hangup_call,send_dtmf", sizeof(g_oairt.enabled_tools));
+    /* Default tools: none (leave empty) */
 
     /* Set default backend if not configured - default to OpenAI */
     if (!str_isset(g_oairt.backend))
