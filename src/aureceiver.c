@@ -274,22 +274,23 @@ void aurecv_reset(struct audio_recv *ar)
 	mtx_unlock(ar->mtx);
 }
 
-/* Handle incoming stream data from the network */
-void aurecv_receive(struct audio_recv *ar, const struct rtp_header *hdr,
+
+int  aurecv_receive(struct audio_recv *ar, const struct rtp_header *hdr,
 		    struct rtpext *extv, size_t extc,
 		    struct mbuf *mb, unsigned lostc)
 {
 	bool discard = false;
 	int wrap;
+	int err = 0;
 	(void) lostc;
 
 	if (!mb)
-		return;
+		return EINVAL;
 
 	mtx_lock(ar->mtx);
 	if (hdr->pt != ar->pt) {
 		mtx_unlock(ar->mtx);
-		return;
+		return EAGAIN;
 	}
 
 
@@ -341,10 +342,11 @@ void aurecv_receive(struct audio_recv *ar, const struct rtp_header *hdr,
 /*        if (lostc)*/
 /*                (void)aurecv_stream_decode(ar, hdr, mb, lostc, drop);*/
 
-	(void)aurecv_stream_decode(ar, hdr, mb, 0);
+	err = aurecv_stream_decode(ar, hdr, mb, 0);
 
 out:
 	mtx_unlock(ar->mtx);
+	return err;
 }
 
 
