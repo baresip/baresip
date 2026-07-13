@@ -509,6 +509,7 @@ typedef bool (call_sip_info_h)(
 	const struct sip_msg *msg,
 	void *arg
 );
+
 void call_set_sip_info_handler(
 	struct call *call,
 	call_sip_info_h *handler,

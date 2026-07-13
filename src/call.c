@@ -975,6 +975,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	return err;
 }
 
+
 void call_set_sip_info_handler(struct call *call,
 			       call_sip_info_h *handler, void *arg)
 {
@@ -984,6 +985,7 @@ void call_set_sip_info_handler(struct call *call,
 	call->sip_infoh = handler;
 	call->sip_info_arg = arg;
 }
+
 
 void call_set_custom_hdrs(struct call *call, const struct list *hdrs)
 {
@@ -2020,48 +2022,37 @@ static uint32_t randwait(uint32_t minwait, uint32_t maxwait)
 	return minwait + rand_u16() % (maxwait - minwait);
 }
 
+
 static void call_emit_sip_info(struct call *call, const struct sip_msg *msg)
 {
 	struct pl body;
 	char content_type[256] = "";
 
-	if (!call || !msg || !call->sip_infoh) {
+	if (!call || !msg || !call->sip_infoh)
 		return;
-	}
 
 	if (pl_isset(&msg->ctyp.type) && pl_isset(&msg->ctyp.subtype)) {
-		if (pl_isset(&msg->ctyp.params)) {
-			re_snprintf(
-				content_type,
-				sizeof(content_type),
-				"%r/%r;%r",
-				&msg->ctyp.type,
-				&msg->ctyp.subtype,
-				&msg->ctyp.params
-			);
-		}
-		else {
-			re_snprintf(
-				content_type,
-				sizeof(content_type),
-				"%r/%r",
-				&msg->ctyp.type,
-				&msg->ctyp.subtype
-			);
-		}
+		re_snprintf(
+			content_type,
+			sizeof(content_type),
+			"%r/%r%s%r",
+			&msg->ctyp.type,
+			&msg->ctyp.subtype,
+			pl_isset(&msg->ctyp.params) ? ";" : "",
+			&msg->ctyp.params
+		);
 	}
 
 	pl_set_mbuf(&body, msg->mb);
 
-	call->sip_infoh(
-		call,
-		content_type[0] ? content_type : NULL,
-		(const uint8_t *)body.p,
-		body.l,
-		msg,
-		call->sip_info_arg
-	);
+	call->sip_infoh(call,
+			content_type[0] ? content_type : NULL,
+			(const uint8_t *)body.p,
+			body.l,
+			msg,
+			call->sip_info_arg);
 }
+
 
 static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 {
@@ -2553,7 +2544,7 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 	call->estvdir = stream_ldir(video_strm(call_video(call)));
 	if (!call->acc->mnat)
 		call_event_handler(call, CALL_EVENT_INCOMING, "%s",
-						call->peer_uri);
+                                   call->peer_uri);
 
 	return 0;
 }
@@ -2630,13 +2621,13 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 	if (media) {
 		mem_ref(call);
 		call_event_handler(call, CALL_EVENT_PROGRESS, "%s",
-						call->peer_uri);
+                                   call->peer_uri);
 		mem_deref(call);
 	}
 	else {
 		call_stream_stop(call);
 		call_event_handler(call, CALL_EVENT_RINGING, "%s",
-						call->peer_uri);
+                                   call->peer_uri);
 	}
 }
 
