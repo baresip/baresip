@@ -261,11 +261,10 @@ static int lostcalc(struct rtp_receiver *rx, uint16_t seq)
 
 
 static int handle_rtp(struct rtp_receiver *rx, const struct rtp_header *hdr,
-		      struct mbuf *mb, unsigned lostc, bool drop)
+		      struct mbuf *mb, unsigned lostc)
 {
 	struct rtpext extv[8];
 	size_t extc = 0;
-	bool ignore = drop;
 
 	/* RFC 5285 -- A General Mechanism for RTP Header Extensions */
 	if (hdr->ext && hdr->x.len && mb) {
@@ -314,9 +313,7 @@ handler:
 
 	bool new_source = rtprecv_consume_ssrc_change(rx, NULL);
 
-	rx->rtph(hdr, extv, extc, mb, lostc, new_source, &ignore, rx->arg);
-	if (ignore)
-		return EAGAIN;
+	rx->rtph(hdr, extv, extc, mb, lostc, new_source, rx->arg);
 
 	return 0;
 }
@@ -370,16 +367,17 @@ static void decode_frames(struct rtp_receiver *rx)
 
 	do {
 		err = jbuf_get(rx->jbuf, &hdr, &mb);
-		if (err && err != EAGAIN)
+		if (err == EAGAIN)
+			++n;
+		else if (err)
 			break;
 
 		lostc = lostcalc(rx, hdr.seq);
 
-		err = handle_rtp(rx, &hdr, mb, lostc > 0 ? lostc : 0,
-				 err == EAGAIN);
+		err = handle_rtp(rx, &hdr, mb, lostc > 0 ? lostc : 0);
 		mem_deref(mb);
 
-		if (err && err != EAGAIN)
+		if (err)
 			break;
 	} while (n--);
 
@@ -492,7 +490,7 @@ void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 		}
 	}
 	else {
-		(void)handle_rtp(rx, hdr, mb, 0, false);
+		(void)handle_rtp(rx, hdr, mb, 0);
 	}
 }
 
