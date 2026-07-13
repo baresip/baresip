@@ -260,7 +260,7 @@ static int lostcalc(struct rtp_receiver *rx, uint16_t seq)
 }
 
 
-static int handle_rtp(struct rtp_receiver *rx, const struct rtp_header *hdr,
+static void handle_rtp(struct rtp_receiver *rx, const struct rtp_header *hdr,
 		      struct mbuf *mb, unsigned lostc)
 {
 	struct rtpext extv[8];
@@ -286,7 +286,7 @@ static int handle_rtp(struct rtp_receiver *rx, const struct rtp_header *hdr,
 			warning("rtp_receiver: corrupt rtp packet,"
 				" not enough space for rtpext of %zu bytes\n",
 				ext_len);
-			return 0;
+			return;
 		}
 
 		mb->pos = mb->pos - ext_len;
@@ -298,7 +298,7 @@ static int handle_rtp(struct rtp_receiver *rx, const struct rtp_header *hdr,
 			if (err) {
 				warning("rtp_receiver: rtpext_decode failed "
 					"(%m)\n", err);
-				return 0;
+				return;
 			}
 		}
 
@@ -315,7 +315,7 @@ handler:
 
 	rx->rtph(hdr, extv, extc, mb, lostc, new_source, rx->arg);
 
-	return 0;
+	return;
 }
 
 
@@ -363,7 +363,7 @@ static void decode_frames(struct rtp_receiver *rx)
 	if (!rx || !rx->jbuf)
 		return;
 
-	uint32_t n = jbuf_packets(rx->jbuf);
+	uint32_t n = 1;
 
 	do {
 		err = jbuf_get(rx->jbuf, &hdr, &mb);
@@ -374,12 +374,9 @@ static void decode_frames(struct rtp_receiver *rx)
 
 		lostc = lostcalc(rx, hdr.seq);
 
-		err = handle_rtp(rx, &hdr, mb, lostc > 0 ? lostc : 0);
+		handle_rtp(rx, &hdr, mb, lostc > 0 ? lostc : 0);
 		mem_deref(mb);
-
-		if (err)
-			break;
-	} while (n--);
+	} while (--n);
 
 	delay = jbuf_next_play(rx->jbuf);
 	if (delay < 0)
