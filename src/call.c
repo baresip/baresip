@@ -2023,13 +2023,13 @@ static uint32_t randwait(uint32_t minwait, uint32_t maxwait)
 }
 
 
-static void call_emit_sip_info(struct call *call, const struct sip_msg *msg)
+static bool call_emit_sip_info(struct call *call, const struct sip_msg *msg)
 {
 	struct pl body;
 	char content_type[256] = "";
 
 	if (!call || !msg || !call->sip_infoh)
-		return;
+		return false;
 
 	if (pl_isset(&msg->ctyp.type) && pl_isset(&msg->ctyp.subtype)) {
 		re_snprintf(
@@ -2045,12 +2045,14 @@ static void call_emit_sip_info(struct call *call, const struct sip_msg *msg)
 
 	pl_set_mbuf(&body, msg->mb);
 
-	call->sip_infoh(call,
-			content_type[0] ? content_type : NULL,
-			(const uint8_t *)body.p,
-			body.l,
-			msg,
-			call->sip_info_arg);
+	return call->sip_infoh(
+		call,
+		content_type[0] ? content_type : NULL,
+		(const uint8_t *)body.p,
+		body.l,
+		msg,
+		call->sip_info_arg
+	);
 }
 
 
@@ -2124,7 +2126,6 @@ static void sipsess_info_handler(struct sip *sip, const struct sip_msg *msg,
 				 void *arg)
 {
 	struct call *call = arg;
-	call_emit_sip_info(call, msg);
 
 	if (msg_ctype_cmp(&msg->ctyp, "application", "dtmf-relay")) {
 
@@ -2157,7 +2158,7 @@ static void sipsess_info_handler(struct sip *sip, const struct sip_msg *msg,
 			}
 		}
 	}
-	else if (!mbuf_get_left(msg->mb)) {
+	else if (!mbuf_get_left(msg->mb) || call_emit_sip_info(call, msg)) {
 		(void)sip_reply(sip, msg, 200, "OK");
 	}
 	else {
