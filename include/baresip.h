@@ -501,7 +501,7 @@ int config_write_template(const char *file, const struct config *cfg);
 struct config *conf_config(void);
 
 /** Sip Info Configuration*/
-typedef bool (call_sip_info_h)(
+typedef void (call_sip_info_h)(
 	struct call *call,
 	const char *content_type,
 	const uint8_t *body,
