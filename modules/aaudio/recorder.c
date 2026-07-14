@@ -5,10 +5,13 @@
  * Copyright (C) 2024 Sebastian Reimers
  */
 
+#include <string.h>
+#include <stdlib.h>
+#include <stdint.h>
+
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#include <string.h>
 
 #include "aaudio.h"
 
@@ -23,6 +26,7 @@ struct ausrc_st {
 	size_t  sampsz;
 	size_t  sampc;
 	uint64_t samps;
+	int32_t device_id;
 };
 
 
@@ -130,7 +134,10 @@ static int open_recorder_stream(struct ausrc_st *st) {
 
 	AAudioStreamBuilder *builder;
 	aaudio_result_t result;
+	int32_t device_id = st->device_id;
+	bool fallback = false;
 
+ retry:
 	result = AAudio_createStreamBuilder(&builder);
 	if (result != AAUDIO_OK) {
 		warning("aaudio: recorder: failed to create stream builder: "
@@ -151,15 +158,30 @@ static int open_recorder_stream(struct ausrc_st *st) {
 		AAUDIO_PERFORMANCE_MODE_LOW_LATENCY);
 	AAudioStreamBuilder_setInputPreset(builder,
 		AAUDIO_INPUT_PRESET_VOICE_COMMUNICATION);
+	if (device_id >= 0)
+		AAudioStreamBuilder_setDeviceId(builder, device_id);
 	AAudioStreamBuilder_setDataCallback(builder, &dataCallback, st);
 	AAudioStreamBuilder_setErrorCallback(builder, &errorCallback, st);
 
 	result = AAudioStreamBuilder_openStream(builder, &st->recorderStream);
 	if (result != AAUDIO_OK) {
+		AAudioStreamBuilder_delete(builder);
+
+		if (device_id >= 0 && !fallback) {
+			warning("aaudio: recorder: device %d unavailable, "
+				"falling back to default\n", device_id);
+			device_id = -1;
+			fallback = true;
+			goto retry;
+		}
+
 		warning("aaudio: recorder: failed to open stream: error %s\n",
 			AAudio_convertResultToText(result));
 		return result;
 	}
+
+	if (fallback)
+		info("aaudio: recorder: fell back to default device\n");
 
 	info("aaudio: recorder: opened stream with direction %d, "
 	     "sharing mode %d, sample rate %d, format %d, sessionId %d, "
@@ -218,6 +240,30 @@ int aaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		return ENOMEM;
 
 	st->src_prm = *prm;
+
+	/*
+	 * Parse device id from the <device> field of audio_source config
+	 * (e.g. "audio_source aaudio,7").  "default" or empty means -1
+	 * (let AAudio pick the default device).
+	 */
+	if (str_isset(dev) && str_casecmp(dev, "default") != 0) {
+		char *endptr;
+		long val = strtol(dev, &endptr, 10);
+		if (endptr == dev || *endptr != '\0' || val < 0 ||
+		    val > INT32_MAX) {
+			warning("aaudio: recorder: invalid device id "
+				"'%s', using default\n", dev);
+			st->device_id = -1;
+		}
+		else {
+			st->device_id = (int32_t)val;
+		}
+	}
+	else {
+		st->device_id = -1;
+	}
+
+	info("aaudio: recorder: using device id %d\n", st->device_id);
 
 	st->sampsz = aufmt_sample_size(prm->fmt);
 	st->sampc  = prm->ptime * prm->ch * prm->srate / 1000;
