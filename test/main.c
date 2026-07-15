@@ -74,6 +74,7 @@ static const struct test tests[] = {
 	TEST(test_jbuf_adaptive),
 	TEST(test_jbuf_video),
 	TEST(test_jbuf_gnack),
+	TEST(test_l16_ptime),
 	TEST(test_message),
 	TEST(test_network),
 	TEST(test_peerconn),
