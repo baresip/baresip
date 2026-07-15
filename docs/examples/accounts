@@ -31,7 +31,8 @@
 #    ;outbound2=sip:secondary.example.com
 #    ;outbound="sip:primary.example.com;transport=tcp"
 #    ;prio={0,1,2,3,...}
-#    ;ptime={10,20,30,40,...}
+#    ;ptime={10,20,30,40,...}  # codecs with a fixed packet time
+#                              # (e.g. aac, aptx, high-rate L16) override this
 #    ;pubint=0 (publishing off)
 #    ;regint=3600
 #    ;regq=0.5
