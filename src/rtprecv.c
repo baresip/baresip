@@ -478,6 +478,9 @@ void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 		err = pass_pt_work(rx, hdr->pt, mb);
 		if (err)
 			return;
+
+		if (hdr->pt == rx->pt_tel)
+			return;
 	}
 
 	if (rx->jbuf) {
