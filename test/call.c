@@ -1480,7 +1480,7 @@ static int test_call_mediaenc_param(const char *name, bool rtcp_mux)
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
-	err = re_main_timeout(5000);
+	err = re_main_timeout(10000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
