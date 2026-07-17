@@ -396,6 +396,21 @@ static int add_call_stats(struct odict *od_parent, const struct call *call)
 	if (err)
 		goto out;
 
+	if (call_cst(call))
+		err |= odict_entry_add(od, "cst", ODICT_INT, call_cst(call));
+
+	if (call_early_media_ms(call))
+		err |= odict_entry_add(od, "early_media_ms", ODICT_INT,
+				       call_early_media_ms(call));
+
+	/* Signed: may be negative when first RTP precedes 200 OK */
+	if (call_has_post_answer_media(call))
+		err |= odict_entry_add(od, "post_answer_media_ms", ODICT_INT,
+				       call_post_answer_media_ms(call));
+
+	if (err)
+		goto out;
+
 	/* add object to the parent */
 	err = odict_entry_add(od_parent, "call_stats", ODICT_OBJECT, od);
 	if (err)

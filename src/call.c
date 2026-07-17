@@ -96,7 +96,21 @@ struct call {
 
 	/**< Timestamp of first invite sent to calc stats */
 	uint64_t ts_invite_sent;
+	uint64_t ts_invite;           /**< INVITE sent (outgoing), for media stats */
+	uint64_t ts_early;            /**< First 183 Session Progress (outgoing)   */
+	uint64_t ts_established;      /**< 200 OK received (outgoing)              */
+	uint64_t ts_first_rtp;        /**< First incoming RTP (outgoing call)      */
 	uint64_t stat_pdd;
+	uint64_t stat_cst;            /**< INVITE to first incoming RTP [ms]       */
+	uint64_t stat_early_media;    /**< 183 to first incoming RTP [ms]          */
+	/**
+	 * Signed: first_rtp - established [ms]. Outgoing calls only.
+	 * Positive = RTP after 200, negative = RTP before 200 (early media /
+	 * premature send), zero = same jiffy.
+	 */
+	int64_t  stat_post_answer_media;
+	bool     stat_post_answer_set; /**< True once post_answer_media is known    */
+	bool     stat_media_emitted;   /**< CALL_STAT with cst/early_media sent    */
 
 	char codec_state_fp[384]; /**< last emitted CALL_CODEC fingerprint   */
 	struct tmr tmr_codec;     /**< debounce rapid codec notifications    */
@@ -141,6 +155,79 @@ static const char *state_name(enum call_state st)
 static void set_state(struct call *call, enum call_state st)
 {
 	call->state = st;
+}
+
+
+static void call_stamp_invite(struct call *call)
+{
+	if (!call || !call->outgoing || call->ts_invite)
+		return;
+
+	call->ts_invite = tmr_jiffies();
+}
+
+
+/**
+ * Compute post_answer_media_ms once both 200 and first RTP timestamps exist.
+ * Outgoing calls only. May be negative when RTP arrived before the answer
+ * (early media or premature media from the peer).
+ */
+static bool call_try_set_post_answer_media(struct call *call)
+{
+	if (!call || !call->outgoing || call->stat_post_answer_set)
+		return false;
+	if (!call->ts_established || !call->ts_first_rtp)
+		return false;
+
+	call->stat_post_answer_media =
+		(int64_t)call->ts_first_rtp - (int64_t)call->ts_established;
+	call->stat_post_answer_set = true;
+	return true;
+}
+
+
+static void call_emit_media_stats(struct call *call)
+{
+	const uint64_t now = tmr_jiffies();
+	bool emit = false;
+
+	if (!call || !call->outgoing)
+		return;
+
+	if (!call->ts_first_rtp)
+		call->ts_first_rtp = now;
+
+	if (!call->stat_media_emitted) {
+		call->stat_media_emitted = true;
+		emit = true;
+
+		if (call->ts_invite)
+			call->stat_cst = now - call->ts_invite;
+
+		if (call->ts_early)
+			call->stat_early_media = now - call->ts_early;
+	}
+
+	if (call_try_set_post_answer_media(call))
+		emit = true;
+
+	if (emit)
+		bevent_call_emit(UA_EVENT_CALL_STAT, call, "");
+}
+
+
+/**
+ * Called when the outgoing call becomes established (200). If RTP already
+ * arrived (early media / premature send), fill in a negative
+ * post_answer_media_ms and emit CALL_STAT.
+ */
+static void call_on_established_media_stats(struct call *call)
+{
+	if (!call || !call->outgoing)
+		return;
+
+	if (call_try_set_post_answer_media(call))
+		bevent_call_emit(UA_EVENT_CALL_STAT, call, "");
 }
 
 
@@ -782,6 +869,8 @@ static void stream_rtpestab_handler(struct stream *strm, void *arg)
 {
 	struct call *call = arg;
 	MAGIC_CHECK(call);
+
+	call_emit_media_stats(call);
 
 	bevent_call_emit(UA_EVENT_CALL_RTPESTAB, call,
 			 "%s", sdp_media_name(stream_sdpmedia(strm)));
@@ -2443,6 +2532,12 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 
 	set_state(call, CALL_STATE_ESTABLISHED);
 
+	if (call->outgoing && !call->ts_established)
+		call->ts_established = now;
+
+	/* RTP may already be flowing (183 early media or premature peer RTP) */
+	call_on_established_media_stats(call);
+
 	if (call->got_offer)
 		(void)update_streams(call);
 
@@ -3018,6 +3113,8 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 		if (call_state(call) != CALL_STATE_EARLY && call_state(call) != CALL_STATE_RINGING) {
 			send_pdd = true;
 		}
+		if (call->outgoing && !call->ts_early)
+			call->ts_early = now;
 		set_state(call, CALL_STATE_EARLY);
 		break;
 	}
@@ -3146,6 +3243,7 @@ static int send_invite(struct call *call)
 	/* save call setup timer */
 	call->time_conn = time(NULL);
 	call->ts_invite_sent = tmr_jiffies();
+	call_stamp_invite(call);
 
 	bevent_call_emit(UA_EVENT_CALL_LOCAL_SDP, call, "offer");
 
@@ -3637,6 +3735,30 @@ uint32_t call_linenum(const struct call *call)
 uint64_t      call_pdd(struct call *call)
 {
 	return call ? call->stat_pdd : 0;
+}
+
+
+uint64_t call_cst(struct call *call)
+{
+	return call ? call->stat_cst : 0;
+}
+
+
+uint64_t call_early_media_ms(struct call *call)
+{
+	return call ? call->stat_early_media : 0;
+}
+
+
+int64_t call_post_answer_media_ms(struct call *call)
+{
+	return call ? call->stat_post_answer_media : 0;
+}
+
+
+bool call_has_post_answer_media(const struct call *call)
+{
+	return call && call->stat_post_answer_set;
 }
 
 
