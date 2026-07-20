@@ -344,7 +344,7 @@ static void rtprecv_resync(struct rtp_receiver *rx,
 	rx->pseq = (uint16_t)(hdr->seq - 1);
 	rx->pseq_set = true;
 	rx->pt = -1;
-	rx->pt_tel = 0;
+	rx->pt_tel = -1;
 	rx->ssrc_changed = true;
 	mtx_unlock(rx->mtx);
 }
@@ -397,7 +397,7 @@ static bool rtprecv_filter_pt(struct rtp_receiver *rx,
 	bool handle;
 
 	handle = hdr->pt != rx->pt;
-	if (rx->pt_tel)
+	if (rx->pt_tel != -1)
 		handle |= hdr->pt == rx->pt_tel;
 
 	if (!handle)
@@ -772,6 +772,7 @@ int rtprecv_alloc(struct rtp_receiver **rxp,
 	rx->arg    = arg;
 	rx->pseq   = -1;
 	rx->pt     = -1;
+	rx->pt_tel = -1;
 
 	err  = str_dup(&rx->name, name);
 	err |= mutex_alloc(&rx->mtx);
