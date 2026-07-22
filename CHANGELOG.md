@@ -5,6 +5,21 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v4.10.0 - 2026-07-22
+
+### What's Changed
+* directfb: remove deprecated module by @alfredh in https://github.com/baresip/baresip/pull/3731
+* menu: fix limit early media by @cspiel1 in https://github.com/baresip/baresip/pull/3754
+* modules: use secure snprintf() instead of insecure sprintf() by @alfredh in https://github.com/baresip/baresip/pull/3746
+* modules: print not found reason for deprecated modules by @sreimers in https://github.com/baresip/baresip/pull/3756
+* test: fix a ruff warning in ccheck by @alfredh in https://github.com/baresip/baresip/pull/3759
+* aaudio: support device selection via config by @chucongqing in https://github.com/baresip/baresip/pull/3767
+* test: call - increase timeout for mediaenc by @cspiel1 in https://github.com/baresip/baresip/pull/3774
+* rtprecv: avoid processing of telev events by @cspiel1 in https://github.com/baresip/baresip/pull/3773
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v4.9.0...v4.10.0
+
+
 ## v4.9.0 - 2026-06-17
 
 ### What's Changed
@@ -21,8 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * uag: check registration state of fallback UA by @cspiel1 in https://github.com/baresip/baresip/pull/3752
 * call: make call_supported() input argument const by @alfredh in https://github.com/baresip/baresip/pull/3748
 
-
 **Full Changelog**: https://github.com/baresip/baresip/compare/v4.8.0...v4.9.0
+
 
 ## v4.8.0 - 2026-05-13
 
