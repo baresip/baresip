@@ -893,6 +893,9 @@ static int tx_thread(void *arg)
 		}
 		else {
 			++tx->stats.aubuf_underrun;
+			mtx_lock(tx->mtx);
+			tx->ts_ext += (tx->ptime * tx->ac->crate / 1000);
+			mtx_unlock(tx->mtx);
 
 			debug("audio: thread: tx aubuf underrun"
 			      " (total %llu)\n", tx->stats.aubuf_underrun);
