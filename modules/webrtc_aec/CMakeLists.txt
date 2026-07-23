@@ -17,10 +17,10 @@ else()
     add_library(${PROJECT_NAME} MODULE ${SRCS})
 endif()
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${WEBRTC_AEC_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE
+    ${WEBRTC_AEC_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${WEBRTC_AEC_LIBRARIES})
 target_compile_options(${PROJECT_NAME} PRIVATE
-  -isystem $(WEBRTC_AEC_INCLUDE_DIRS)
   -fPIC
   -Wno-shadow
   -Wno-pedantic
