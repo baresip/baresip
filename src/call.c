@@ -1273,6 +1273,17 @@ int call_progress_dir(struct call *call, enum sdp_dir adir, enum sdp_dir vdir)
 	if (!call)
 		return EINVAL;
 
+	enum sdp_dir ardir = sdp_media_rdir(stream_sdpmedia(audio_strm(
+				call_audio(call))));
+	enum sdp_dir vrdir = sdp_media_rdir(stream_sdpmedia(video_strm(
+				call_video(call))));
+	if ((adir & ardir) == SDP_INACTIVE &&
+	    (vdir & vrdir) == SDP_INACTIVE) {
+		debug("call: progress: both audio and video would become "
+		      "inactive\n");
+		return EINVAL;
+	}
+
 	tmr_cancel(&call->tmr_inv);
 
 	if (adir != call->estadir || vdir != call->estvdir)
