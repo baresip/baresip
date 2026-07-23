@@ -158,10 +158,6 @@ static int aurecv_alloc_aubuf(struct audio_recv *ar, const struct auframe *af)
 	aubuf_set_id(ar->aubuf, id);
 	mem_deref(id);
 
-	aubuf_set_mode(ar->aubuf, cfg->adaptive ?
-		       AUBUF_ADAPTIVE : AUBUF_FIXED);
-	aubuf_set_silence(ar->aubuf, cfg->silence);
-
 out:
 	mtx_unlock(ar->aubuf_mtx);
 
