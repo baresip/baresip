@@ -626,7 +626,6 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 				struct rtpext *extv, size_t extc,
 				struct mbuf *mb, unsigned lostc,
 				bool new_source,
-				bool *ignore,
 				void *arg)
 {
 	struct audio *a = arg;
@@ -639,7 +638,7 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	if (new_source)
 		aurecv_reset(a->aur);
 
-	aurecv_receive(a->aur, hdr, extv, extc, mb, lostc, ignore);
+	aurecv_receive(a->aur, hdr, extv, extc, mb, lostc);
 }
 
 

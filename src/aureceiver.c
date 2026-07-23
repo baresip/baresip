@@ -213,7 +213,7 @@ static int aurecv_push_aubuf(struct audio_recv *ar, const struct auframe *af)
 
 static int aurecv_stream_decode(struct audio_recv *ar,
 				const struct rtp_header *hdr,
-				struct mbuf *mb, unsigned lostc, bool drop)
+				struct mbuf *mb, unsigned lostc)
 {
 	struct auframe af;
 	size_t sampc = ar->sampvsz / aufmt_sample_size(ar->fmt);
@@ -256,11 +256,6 @@ static int aurecv_stream_decode(struct audio_recv *ar,
 	auframe_init(&af, ar->fmt, ar->sampv, sampc, ac->srate, ac->ch);
 	af.timestamp = ((uint64_t) hdr->ts) * AUDIO_TIMEBASE / ac->crate;
 
-	if (drop) {
-		aubuf_drop_auframe(ar->aubuf, &af);
-		goto out;
-	}
-
 	err = aurecv_process_decfilt(ar, &af);
 	if (err)
 		goto out;
@@ -286,10 +281,9 @@ void aurecv_reset(struct audio_recv *ar)
 /* Handle incoming stream data from the network */
 void aurecv_receive(struct audio_recv *ar, const struct rtp_header *hdr,
 		    struct rtpext *extv, size_t extc,
-		    struct mbuf *mb, unsigned lostc, bool *ignore)
+		    struct mbuf *mb, unsigned lostc)
 {
 	bool discard = false;
-	bool drop = *ignore;
 	int wrap;
 	(void) lostc;
 
@@ -299,11 +293,9 @@ void aurecv_receive(struct audio_recv *ar, const struct rtp_header *hdr,
 	mtx_lock(ar->mtx);
 	if (hdr->pt != ar->pt) {
 		mtx_unlock(ar->mtx);
-		*ignore = true;
 		return;
 	}
 
-	*ignore = false;
 
 	/* RFC 5285 -- A General Mechanism for RTP Header Extensions */
 	const struct rtpext *ext = rtpext_find(extv, extc, ar->extmap_aulevel);
@@ -353,7 +345,7 @@ void aurecv_receive(struct audio_recv *ar, const struct rtp_header *hdr,
 /*        if (lostc)*/
 /*                (void)aurecv_stream_decode(ar, hdr, mb, lostc, drop);*/
 
-	(void)aurecv_stream_decode(ar, hdr, mb, 0, drop);
+	(void)aurecv_stream_decode(ar, hdr, mb, 0);
 
 out:
 	mtx_unlock(ar->mtx);
