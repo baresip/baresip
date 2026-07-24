@@ -622,7 +622,7 @@ static int stream_pt_handler(uint8_t pt, struct mbuf *mb, void *arg)
 /**
  * Stream receive handler for audio is called from RX thread if enabled
  */
-static void stream_recv_handler(const struct rtp_header *hdr,
+static int stream_recv_handler(const struct rtp_header *hdr,
 				struct rtpext *extv, size_t extc,
 				struct mbuf *mb, unsigned lostc,
 				bool new_source,
@@ -633,12 +633,12 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	MAGIC_CHECK(a);
 
 	if (!a->aur)
-		return;
+		return EINVAL;
 
 	if (new_source)
 		aurecv_reset(a->aur);
 
-	aurecv_receive(a->aur, hdr, extv, extc, mb, lostc);
+	return aurecv_receive(a->aur, hdr, extv, extc, mb, lostc);
 }
 
 

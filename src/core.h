@@ -128,7 +128,7 @@ void aurecv_flush(struct audio_recv *ar);
 void aurecv_set_extmap(struct audio_recv *ar, uint8_t aulevel);
 int  aurecv_set_module(struct audio_recv *ar, const char *module);
 int  aurecv_set_device(struct audio_recv *ar, const char *device);
-void aurecv_receive(struct audio_recv *ar, const struct rtp_header *hdr,
+int  aurecv_receive(struct audio_recv *ar, const struct rtp_header *hdr,
 		    struct rtpext *extv, size_t extc,
 		    struct mbuf *mb, unsigned lostc);
 void aurecv_reset(struct audio_recv *ar);
@@ -302,7 +302,7 @@ struct rtp_header;
 
 enum {STREAM_PRESZ = 4+12}; /* same as RTP_HEADER_SIZE */
 
-typedef void (stream_rtp_h)(const struct rtp_header *hdr,
+typedef int (stream_rtp_h)(const struct rtp_header *hdr,
 			    struct rtpext *extv, size_t extc,
 			    struct mbuf *mb, unsigned lostc, bool new_source,
 			    void *arg);
