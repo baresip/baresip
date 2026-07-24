@@ -32,6 +32,7 @@ static const struct test tests[] = {
 	TEST(test_call_custom_headers),
 	TEST(test_call_dtmf),
 	TEST(test_call_format_float),
+	TEST(test_call_l16_ptime),
 	TEST(test_call_max),
 	TEST(test_call_mediaenc),
 	TEST(test_call_medianat),

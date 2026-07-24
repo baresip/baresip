@@ -205,6 +205,7 @@ int test_call_aulevel(void);
 int test_call_custom_headers(void);
 int test_call_dtmf(void);
 int test_call_format_float(void);
+int test_call_l16_ptime(void);
 int test_call_max(void);
 int test_call_mediaenc(void);
 int test_call_medianat(void);

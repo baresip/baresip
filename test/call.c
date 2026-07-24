@@ -1185,6 +1185,98 @@ int test_call_aulevel(void)
 }
 
 
+/*
+ * Make a call with the l16 module (loaded by the caller) and verify the
+ * packetization on the wire in both directions, using the RX RTP metrics
+ * (payload bytes per packet).
+ *
+ * aptime is the account ptime for both agents (0 = no ptime parameter),
+ * wire_ptime the packet time expected on the wire.
+ */
+static int test_call_l16_ptime_base(uint32_t srate, uint8_t ch,
+				    uint32_t aptime, uint32_t wire_ptime)
+{
+	struct fixture fix = {0}, *f = &fix;
+	struct agent *agents[] = {&f->a, &f->b};
+	struct cancel_rule *cr;
+	const uint32_t psize = 2 * (srate * ch * wire_ptime / 1000);
+	char prm[160];
+	size_t i;
+	int err;
+
+	if (aptime)
+		re_snprintf(prm, sizeof(prm),
+			    ";ptime=%u;audio_codecs=L16/%u/%u",
+			    aptime, srate, ch);
+	else
+		re_snprintf(prm, sizeof(prm),
+			    ";audio_codecs=L16/%u/%u", srate, ch);
+
+	fixture_init_prm(f, prm);
+
+	cancel_rule_new(BEVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
+	cancel_rule_and(BEVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+	f->estab_action = ACTION_NOTHING;
+
+	/* Make a call from A to B */
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	/* every RTP packet received by either agent must carry exactly
+	   one wire_ptime frame of L16 payload */
+	for (i=0; i<RE_ARRAY_SIZE(agents); i++) {
+		struct stream *strm;
+		uint32_t n;
+
+		strm = audio_strm(call_audio(ua_call(agents[i]->ua)));
+
+		n = stream_metric_get_rx_n_packets(strm);
+		ASSERT_TRUE(n > 0);
+		ASSERT_EQ(n * psize, stream_metric_get_rx_n_bytes(strm));
+	}
+
+ out:
+	fixture_close(f);
+
+	return err;
+}
+
+
+int test_call_l16_ptime(void)
+{
+	int err;
+
+	err = module_load(".", "l16");
+	TEST_ERR(err);
+	err = module_load(".", "ausine");
+	TEST_ERR(err);
+
+	/* no codec ptime, no account ptime: 20ms default */
+	err = test_call_l16_ptime_base(16000, 1, 0, 20);
+	TEST_ERR(err);
+
+	/* no codec ptime: the account ptime must reach the wire */
+	err = test_call_l16_ptime_base(16000, 1, 10, 10);
+	TEST_ERR(err);
+
+	/* codec-fixed ptime (MTU guard): overrides the account ptime */
+	err = test_call_l16_ptime_base(48000, 1, 20, 10);
+	TEST_ERR(err);
+
+ out:
+	module_unload("ausine");
+	module_unload("l16");
+	return err;
+}
+
+
 static int test_100rel_audio_base(void)
 {
 	struct fixture fix, *f = &fix;
