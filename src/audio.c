@@ -86,6 +86,7 @@ struct autx {
 	RE_ATOMIC bool aubuf_started; /**< Aubuf was started flag          */
 	struct list filtl;            /**< Audio filters in encoding order */
 	struct mbuf *mb;              /**< Buffer for outgoing RTP packets */
+	struct mbuf *mb_telev;        /**< Buffer for Telephony Events     */
 	char *module;                 /**< Audio source module name        */
 	char *device;                 /**< Audio source device name        */
 	void *sampv;                  /**< Sample buffer                   */
@@ -203,6 +204,7 @@ static void audio_destructor(void *arg)
 	mem_deref(a->tx.enc);
 	mem_deref(a->tx.aubuf);
 	mem_deref(a->tx.mb);
+	mem_deref(a->tx.mb_telev);
 	mem_deref(a->tx.sampv);
 	mem_deref(a->tx.module);
 	mem_deref(a->tx.device);
@@ -457,13 +459,9 @@ static void poll_aubuf_tx(struct audio *a)
 static void check_telev(struct audio *a, struct autx *tx)
 {
 	const struct sdp_format *fmt;
-	struct mbuf *mb;
+	struct mbuf *mb = tx->mb_telev;
 	bool marker = false;
 	int err;
-
-	mb = mbuf_alloc(STREAM_PRESZ + 64);
-	if (!mb)
-		return;
 
 	mb->pos = mb->end = STREAM_PRESZ;
 
@@ -471,14 +469,14 @@ static void check_telev(struct audio *a, struct autx *tx)
 	err = telev_poll(a->telev, &marker, mb);
 	mtx_unlock(tx->mtx);
 	if (err)
-		goto out;
+		return;
 
 	if (marker)
 		tx->ts_tel = (uint32_t)tx->ts_ext;
 
 	fmt = sdp_media_rformat(stream_sdpmedia(audio_strm(a)), telev_rtpfmt);
 	if (!fmt)
-		goto out;
+		return;
 
 	mb->pos = STREAM_PRESZ;
 	mtx_lock(a->tx.mtx);
@@ -487,9 +485,6 @@ static void check_telev(struct audio *a, struct autx *tx)
 	if (err) {
 		warning("audio: telev: stream_send %m\n", err);
 	}
-
- out:
-	mem_deref(mb);
 }
 
 
@@ -766,10 +761,11 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 
 
 	tx->mb = mbuf_alloc(STREAM_PRESZ + 4096);
+	tx->mb_telev = mbuf_alloc(STREAM_PRESZ + 64);
 	tx->sampv = mem_zalloc(AUDIO_SAMPSZ * aufmt_sample_size(tx->enc_fmt),
 			       NULL);
 
-	if (!tx->mb || !tx->sampv) {
+	if (!tx->mb || !tx->mb_telev || !tx->sampv) {
 		err = ENOMEM;
 		goto out;
 	}
