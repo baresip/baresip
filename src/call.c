@@ -93,6 +93,7 @@ struct call {
 static int send_invite(struct call *call);
 static int send_dtmf_info(struct call *call, char key);
 
+
 static const char *state_name(enum call_state st)
 {
 	switch (st) {
@@ -2158,7 +2159,7 @@ static void sipsess_info_handler(struct sip *sip, const struct sip_msg *msg,
 			}
 		}
 	}
-	else if (!mbuf_get_left(msg->mb) || call_emit_sip_info(call, msg)) {
+	else if (call_emit_sip_info(call, msg) || !mbuf_get_left(msg->mb)) {
 		(void)sip_reply(sip, msg, 200, "OK");
 	}
 	else {

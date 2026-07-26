@@ -217,7 +217,14 @@ typedef void (call_event_h)(struct call *call, enum call_event ev,
 typedef void (call_dtmf_h)(struct call *call, char key, void *arg);
 typedef bool (call_match_h)(const struct call *call, void *arg);
 typedef void (call_list_h)(struct call *call, void *arg);
-
+typedef bool (call_sip_info_h)(
+	struct call *call,
+	const char *content_type,
+	const uint8_t *body,
+	size_t body_len,
+	const struct sip_msg *msg,
+	void *arg
+);
 
 int  call_connect(struct call *call, const struct pl *paddr);
 int  call_answer(struct call *call, uint16_t scode, enum vidmode vmode);
@@ -248,6 +255,9 @@ int  call_notify_sipfrag(struct call *call, uint16_t scode,
 			 const char *reason, ...);
 void call_set_handlers(struct call *call, call_event_h *eh,
 		       call_dtmf_h *dtmfh, void *arg);
+void call_set_sip_info_handler(struct call *call,
+				call_sip_info_h *handler,
+				void *arg);
 struct account *call_account(const struct call *call);
 uint16_t      call_scode(const struct call *call);
 enum call_state call_state(const struct call *call);
@@ -499,22 +509,6 @@ int config_parse_conf(struct config *cfg, const struct conf *conf);
 int config_print(struct re_printf *pf, const struct config *cfg);
 int config_write_template(const char *file, const struct config *cfg);
 struct config *conf_config(void);
-
-/** Sip Info Configuration*/
-typedef bool (call_sip_info_h)(
-	struct call *call,
-	const char *content_type,
-	const uint8_t *body,
-	size_t body_len,
-	const struct sip_msg *msg,
-	void *arg
-);
-
-void call_set_sip_info_handler(
-	struct call *call,
-	call_sip_info_h *handler,
-	void *arg
-);
 
 
 /*
