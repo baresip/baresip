@@ -142,14 +142,6 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 			}
 			break;
 
-		case BEHAVIOUR_PROGRESS:
-			err = call_progress(call);
-			if (err) {
-				warning("call_progress failed (%m)\n", err);
-				goto out;
-			}
-			break;
-
 		default:
 			break;
 		}

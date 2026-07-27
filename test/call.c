@@ -173,12 +173,10 @@ static int test_call_progress_cancel(void)
 	struct call *call;
 	int err = 0;
 
-	fixture_init(f);
-
-	f->behaviour = BEHAVIOUR_PROGRESS;
-
+       fixture_init_prm(f, ";answermode=early");
 	cancel_rule_new(BEVENT_CALL_PROGRESS, f->a.ua, 0, 0, 0);
 	cr->n_progress = 1;
+       f->behaviour = BEHAVIOUR_NOTHING;
 
 	/* Make a call from A to B */
 	err = ua_connect(f->a.ua, &call, NULL, f->buri, VIDMODE_OFF);
@@ -223,12 +221,10 @@ static int test_call_answer_cancel(void)
 	struct call *call;
 	int err = 0;
 
-	fixture_init(f);
-
-	f->behaviour = BEHAVIOUR_PROGRESS;
-
+       fixture_init_prm(f, ";answermode=early");
 	cancel_rule_new(BEVENT_CALL_PROGRESS, f->a.ua, 0, 0, 0);
 	cr->n_progress = 1;
+       f->behaviour = BEHAVIOUR_NOTHING;
 
 	/* Make a call from A to B */
 	err = ua_connect(f->a.ua, &call, NULL, f->buri, VIDMODE_OFF);
