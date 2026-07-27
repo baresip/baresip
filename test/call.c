@@ -145,7 +145,8 @@ static int test_call_immediate_cancel(void)
 	/* run main-loop with timeout, wait for events */
 	err = re_main_timeout(5000);
 	TEST_ERR(err);
-	TEST_ERR(fix.err);
+	err = fix.err;
+	TEST_ERR(err);
 
 	ASSERT_EQ(0, fix.a.n_incoming);
 	ASSERT_EQ(0, fix.a.n_established);
@@ -172,12 +173,10 @@ static int test_call_progress_cancel(void)
 	struct call *call;
 	int err = 0;
 
-	fixture_init(f);
-
-	f->behaviour = BEHAVIOUR_PROGRESS;
-
+	fixture_init_prm(f, ";answermode=early");
 	cancel_rule_new(BEVENT_CALL_PROGRESS, f->a.ua, 0, 0, 0);
 	cr->n_progress = 1;
+	f->behaviour = BEHAVIOUR_NOTHING;
 
 	/* Make a call from A to B */
 	err = ua_connect(f->a.ua, &call, NULL, f->buri, VIDMODE_OFF);
@@ -186,13 +185,15 @@ static int test_call_progress_cancel(void)
 	/* run main-loop with timeout, wait for events */
 	err = re_main_timeout(5000);
 	TEST_ERR(err);
-	TEST_ERR(fix.err);
+	err = fix.err;
+	TEST_ERR(err);
 
 	ua_hangup(f->a.ua, call, 0, NULL);
 
 	err = re_main_timeout(5000);
 	TEST_ERR(err);
-	TEST_ERR(fix.err);
+	err = fix.err;
+	TEST_ERR(err);
 
 	ASSERT_EQ(0, fix.a.n_incoming);
 	ASSERT_EQ(1, fix.a.n_progress);
@@ -220,12 +221,10 @@ static int test_call_answer_cancel(void)
 	struct call *call;
 	int err = 0;
 
-	fixture_init(f);
-
-	f->behaviour = BEHAVIOUR_PROGRESS;
-
+	fixture_init_prm(f, ";answermode=early");
 	cancel_rule_new(BEVENT_CALL_PROGRESS, f->a.ua, 0, 0, 0);
 	cr->n_progress = 1;
+	f->behaviour = BEHAVIOUR_NOTHING;
 
 	/* Make a call from A to B */
 	err = ua_connect(f->a.ua, &call, NULL, f->buri, VIDMODE_OFF);
@@ -234,7 +233,8 @@ static int test_call_answer_cancel(void)
 	/* run main-loop with timeout, wait for events */
 	err = re_main_timeout(5000);
 	TEST_ERR(err);
-	TEST_ERR(fix.err);
+	err = fix.err;
+	TEST_ERR(err);
 
 	err = ua_answer(f->b.ua, NULL, VIDMODE_ON);
 	TEST_ERR(err);
@@ -243,7 +243,8 @@ static int test_call_answer_cancel(void)
 
 	err = re_main_timeout(5000);
 	TEST_ERR(err);
-	TEST_ERR(fix.err);
+	err = fix.err;
+	TEST_ERR(err);
 
 	ASSERT_EQ(0, fix.a.n_incoming);
 	ASSERT_EQ(1, fix.a.n_progress);

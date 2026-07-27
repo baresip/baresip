@@ -17,7 +17,6 @@ enum behaviour {
 	BEHAVIOUR_REJECT,
 	BEHAVIOUR_REJECTF,
 	BEHAVIOUR_GET_HDRS,
-	BEHAVIOUR_PROGRESS,
 };
 
 enum action {
