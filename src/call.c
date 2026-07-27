@@ -85,6 +85,8 @@ struct call {
 	bool use_video;
 	bool use_rtp;
 	struct pl *user_data;      /**< User data related to the call       */
+	call_sip_info_h *sip_infoh;/**< SIP INFO handler for this call      */
+	void *sip_info_arg;        /**< SIP INFO handler argument           */
 };
 
 
@@ -972,6 +974,17 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	}
 
 	return err;
+}
+
+
+void call_set_sip_info_handler(struct call *call,
+			       call_sip_info_h *handler, void *arg)
+{
+	if (!call)
+		return;
+
+	call->sip_infoh = handler;
+	call->sip_info_arg = arg;
 }
 
 
@@ -2022,6 +2035,39 @@ static uint32_t randwait(uint32_t minwait, uint32_t maxwait)
 }
 
 
+static bool call_emit_sip_info(struct call *call, const struct sip_msg *msg)
+{
+	struct pl body;
+	char content_type[256] = "";
+
+	if (!call || !msg || !call->sip_infoh)
+		return false;
+
+	if (pl_isset(&msg->ctyp.type) && pl_isset(&msg->ctyp.subtype)) {
+		re_snprintf(
+			content_type,
+			sizeof(content_type),
+			"%r/%r%s%r",
+			&msg->ctyp.type,
+			&msg->ctyp.subtype,
+			pl_isset(&msg->ctyp.params) ? ";" : "",
+			&msg->ctyp.params
+		);
+	}
+
+	pl_set_mbuf(&body, msg->mb);
+
+	return call->sip_infoh(
+		call,
+		content_type[0] ? content_type : NULL,
+		(const uint8_t *)body.p,
+		body.l,
+		msg,
+		call->sip_info_arg
+	);
+}
+
+
 static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 {
 	struct call *call = arg;
@@ -2124,7 +2170,7 @@ static void sipsess_info_handler(struct sip *sip, const struct sip_msg *msg,
 			}
 		}
 	}
-	else if (!mbuf_get_left(msg->mb)) {
+	else if (call_emit_sip_info(call, msg) || !mbuf_get_left(msg->mb)) {
 		(void)sip_reply(sip, msg, 200, "OK");
 	}
 	else {
