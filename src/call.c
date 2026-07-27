@@ -238,7 +238,7 @@ static void mnat_handler(int err, uint16_t scode, const char *reason,
 
 	case CALL_STATE_INCOMING:
 		call_event_handler(call, CALL_EVENT_INCOMING, "%s",
-				   call->peer_uri);
+                                   call->peer_uri);
 		break;
 
 	default:
@@ -1976,7 +1976,7 @@ static int sipsess_answer_handler(const struct sip_msg *msg, void *arg)
 	    msg->scode >= 200 && msg->scode < 300 &&
 	    call_state(call) != CALL_STATE_ESTABLISHED)
 		call_event_handler(call, CALL_EVENT_ANSWERED, "%s",
-				   call->peer_uri);
+                                   call->peer_uri);
 
 	if (msg_ctype_cmp(&msg->ctyp, "multipart", "mixed"))
 		(void)sdp_decode_multipart(&msg->ctyp.params, msg->mb);
