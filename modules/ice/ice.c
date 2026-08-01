@@ -60,10 +60,25 @@ struct mnat_media {
 	struct mnat_sess *sess;
 	struct sdp_media *sdpm;
 	struct icem *icem;
+	char lufrag[8];
+	char lpwd[32];
+	uint64_t tiebrk;
 	uint16_t lpref;
 	bool gathered;
 	bool complete;
 	bool terminated;
+	bool active;
+	bool prepared;
+	bool activated;
+	bool prepared_active;
+	bool rollback_active;
+	bool attempt_running;
+	bool gather_waiting;
+	int gather_err;
+	mnat_media_attempt_h *attempth;
+	void *attempt_arg;
+	mnat_media_gather_h *gatherh;
+	void *gather_arg;
 	int nstun;                   /**< Number of pending STUN candidates  */
 	mnat_connected_h *connh;
 	void *arg;
@@ -72,6 +87,8 @@ struct mnat_media {
 
 static void gather_handler(int err, uint16_t scode, const char *reason,
 			   void *arg);
+static void media_attempt_cancel(struct mnat_media *m);
+static void media_gather_cancel(struct mnat_media *m);
 
 
 static void call_gather_handler(int err, struct mnat_media *m, uint16_t scode,
@@ -329,6 +346,14 @@ static void media_destructor(void *arg)
 	unsigned i;
 
 	m->terminated = true;
+	m->attempt_running = false;
+	m->attempth = NULL;
+	m->attempt_arg = NULL;
+	m->gather_waiting = false;
+	m->gatherh = NULL;
+	m->gather_arg = NULL;
+	if (m->icem)
+		icem_conncheck_stop(m->icem, ECANCELED);
 
 	list_unlink(&m->le);
 	mem_deref(m->sdpm);
@@ -481,6 +506,8 @@ static void tmr_async_handler(void *arg)
 	for (le = sess->medial.head; le;) {
 		struct mnat_media *m = le->data;
 		le = le->next;
+		if (m->terminated)
+			continue;
 
 		net_laddr_apply(baresip_network(), if_handler, m);
 		call_gather_handler(0, m, 0, "");
@@ -581,6 +608,9 @@ static bool verify_peer_ice(struct mnat_sess *ms)
 		struct sa raddr[2];
 		unsigned i;
 
+		if (!m->active || m->prepared)
+			continue;
+
 		if (!sdp_media_has_media(m->sdpm)) {
 			info("ice: stream '%s' is disabled -- ignore\n",
 			     sdp_media_name(m->sdpm));
@@ -656,6 +686,8 @@ static bool all_gathered(const struct mnat_sess *sess)
 
 		struct mnat_media *m = le->data;
 
+		if (!m->active || m->prepared)
+			continue;
 		if (!m->gathered)
 			return false;
 	}
@@ -671,6 +703,8 @@ static bool all_completed(const struct mnat_sess *sess)
 	/* Check all conncheck flags */
 	LIST_FOREACH(&sess->medial, le) {
 		struct mnat_media *mx = le->data;
+		if (!mx->active || mx->prepared)
+			continue;
 		if (!mx->complete)
 			return false;
 	}
@@ -683,9 +717,16 @@ static void gather_handler(int err, uint16_t scode, const char *reason,
 			   void *arg)
 {
 	struct mnat_media *m = arg;
-	mnat_estab_h *estabh = m->sess->estabh;
+	mnat_estab_h *estabh;
+	mnat_media_gather_h *gatherh = NULL;
+	void *gather_arg = NULL;
+
+	if (m->terminated)
+		return;
+	estabh = m->sess->estabh;
 
 	if (err || scode) {
+		m->gather_err = err ? err : EPROTO;
 		warning("ice: gather error: %m (%u %s)\n",
 			err, scode, reason);
 	}
@@ -701,15 +742,33 @@ static void gather_handler(int err, uint16_t scode, const char *reason,
 		(void)set_media_attributes(m);
 
 		m->gathered = true;
-
-		if (!all_gathered(m->sess))
-			return;
+		m->gather_err = 0;
 	}
 
-	if (err || scode)
+	if (m->gather_waiting) {
+		gatherh = m->gatherh;
+		gather_arg = m->gather_arg;
+		m->gather_waiting = false;
+		m->gatherh = NULL;
+		m->gather_arg = NULL;
+		if (gatherh)
+			gatherh(m->gather_err, gather_arg);
+		return;
+	}
+
+	/* A provisional or prepared candidate belongs to a replacement
+	 * generation.  Its gathering must not publish the active session's
+	 * establishment callback or consume that callback on failure. */
+	if (!m->active || m->prepared)
+		return;
+
+	if (!m->gather_err && !all_gathered(m->sess))
+		return;
+
+	if ((err || scode) && !m->prepared)
 		m->sess->estabh = NULL;
 
-	if (estabh)
+	if (estabh && !m->prepared)
 		estabh(err, scode, reason, m->sess->arg);
 }
 
@@ -721,6 +780,37 @@ static void conncheck_handler(int err, bool update, void *arg)
 	bool sess_complete = false;
 
 	if (m->terminated)
+		return;
+
+	if (m->attempt_running) {
+		mnat_media_attempt_h *attempth = m->attempth;
+		void *attempt_arg = m->attempt_arg;
+		struct sa raddr1 = {0};
+		struct sa raddr2 = {0};
+		const struct ice_cand *cand;
+
+		m->attempt_running = false;
+		m->attempth = NULL;
+		m->attempt_arg = NULL;
+		m->complete = !err;
+
+		if (!err) {
+			cand = icem_selected_rcand(m->icem, 1);
+			if (cand)
+				sa_cpy(&raddr1, icem_lcand_addr(cand));
+			cand = icem_selected_rcand(m->icem, 2);
+			if (cand)
+				sa_cpy(&raddr2, icem_lcand_addr(cand));
+		}
+
+		if (attempth)
+			attempth(err, sa_isset(&raddr1, SA_ALL) ? &raddr1 : NULL,
+				 sa_isset(&raddr2, SA_ALL) ? &raddr2 : NULL,
+				 attempt_arg);
+		return;
+	}
+
+	if (!m->active || m->prepared)
 		return;
 
 	info("ice: %s: connectivity check is complete (update=%d)\n",
@@ -773,6 +863,7 @@ static void conncheck_handler(int err, bool update, void *arg)
 static int ice_start(struct mnat_sess *sess)
 {
 	struct le *le;
+	bool first_active = true;
 	int err = 0;
 
 	/* Update SDP media */
@@ -781,10 +872,18 @@ static int ice_start(struct mnat_sess *sess)
 		LIST_FOREACH(&sess->medial, le) {
 			struct mnat_media *m = le->data;
 
+			if (!m->active || m->prepared)
+				continue;
+
 			ice_printf(NULL, "ICE Start: %H",
 				   icem_debug, m->icem);
 
 			icem_update(m->icem);
+			if (!m->complete && icem_rcand_ready(m->icem)) {
+				err = icem_conncheck_start(m->icem);
+				if (err)
+					return err;
+			}
 
 			refresh_laddr(m,
 				      icem_selected_laddr(m->icem, 1),
@@ -800,6 +899,9 @@ static int ice_start(struct mnat_sess *sess)
 	LIST_FOREACH(&sess->medial, le) {
 		struct mnat_media *m = le->data;
 
+		if (!m->active || m->prepared)
+			continue;
+
 		if (sdp_media_has_media(m->sdpm)) {
 			m->complete = false;
 
@@ -813,8 +915,9 @@ static int ice_start(struct mnat_sess *sess)
 
 			/* set the pair states
 			   -- first media stream only */
-			if (sess->medial.head == le) {
+			if (first_active) {
 				ice_candpair_set_states(m->icem);
+				first_active = false;
 			}
 		}
 		else {
@@ -851,6 +954,7 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 	m->compv[0].sock = mem_ref(sock1);
 	m->compv[1].sock = mem_ref(sock2);
 	m->lpref = LPREF_INIT;
+	m->active = true;
 
 	if (sess->offerer)
 		role = ICE_ROLE_CONTROLLING;
@@ -886,6 +990,25 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 
 	if (sa_isset(&sess->srv, SA_ALL))
 		err |= media_start(sess, m);
+	else if (sess->started) {
+		net_laddr_apply(baresip_network(), if_handler, m);
+
+		/*
+		 * A media line added after ICE has started does not pass through
+		 * gather_handler().  Complete the synchronous host-candidate
+		 * gathering here so that its SDP default address and port identify
+		 * one of the advertised candidates.
+		 */
+		icem_cand_redund_elim(m->icem);
+		err |= icem_comps_set_default_cand(m->icem);
+		if (!err) {
+			refresh_laddr(m,
+				      icem_cand_default(m->icem, 1),
+				      icem_cand_default(m->icem, 2));
+			err |= set_media_attributes(m);
+		}
+		m->gathered = !err;
+	}
 
  out:
 	if (err)
@@ -893,6 +1016,88 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 	else {
 		*mp = m;
 	}
+
+	return err;
+}
+
+
+static int media_restart_alloc(struct mnat_media **candidatep,
+			       struct mnat_media *active,
+			       struct udp_sock *sock, struct sdp_media *sdpm,
+			       mnat_connected_h *connh, void *arg)
+{
+	struct mnat_media *m;
+	enum ice_role role;
+	int err;
+
+	if (!candidatep || !active || !active->sess || !sock || !sdpm)
+		return EINVAL;
+	if (active->terminated || !active->active)
+		return EINVAL;
+
+	m = mem_zalloc(sizeof(*m), media_destructor);
+	if (!m)
+		return ENOMEM;
+
+	m->sess = active->sess;
+	m->sdpm = mem_ref(sdpm);
+	m->compv[0].sock = mem_ref(sock);
+	m->lpref = LPREF_INIT;
+	m->connh = connh;
+	m->arg = arg;
+	rand_str(m->lufrag, sizeof(m->lufrag));
+	rand_str(m->lpwd, sizeof(m->lpwd));
+	m->tiebrk = rand_u64();
+
+	role = m->sess->offerer ? ICE_ROLE_CONTROLLING : ICE_ROLE_CONTROLLED;
+	err = icem_alloc(&m->icem, role, IPPROTO_UDP, ICE_LAYER,
+			 m->tiebrk, m->lufrag, m->lpwd,
+			 conncheck_handler, m);
+	if (err)
+		goto out;
+	icem_shared_socket_candidate(m->icem, true);
+	icem_shared_socket_route(m->icem, true);
+
+	icem_conf(m->icem)->debug = LEVEL_DEBUG == log_level_get();
+	icem_conf(m->icem)->rc = 4;
+	icem_conf(m->icem)->policy = ice.policy;
+	icem_set_conf(m->icem, icem_conf(m->icem));
+	icem_set_name(m->icem, sdp_media_name(sdpm));
+
+	m->compv[0].m = m;
+	m->compv[0].id = 1;
+	err = icem_comp_add(m->icem, 1, m->compv[0].sock);
+	if (err)
+		goto out;
+
+	/* RFC 8445 restart credentials override the session-level credentials
+	 * only for this replacement media generation. */
+	err = sdp_media_set_lattr(sdpm, true, ice_attr_ufrag, "%s",
+				  m->lufrag);
+	err |= sdp_media_set_lattr(sdpm, true, ice_attr_pwd, "%s", m->lpwd);
+	if (err)
+		goto out;
+
+	list_append(&m->sess->medial, &m->le, m);
+
+	if (sa_isset(&m->sess->srv, SA_ALL))
+		err = media_start(m->sess, m);
+	else if (m->sess->started) {
+		net_laddr_apply(baresip_network(), if_handler, m);
+		icem_cand_redund_elim(m->icem);
+		err = icem_comps_set_default_cand(m->icem);
+		if (!err) {
+			refresh_laddr(m, icem_cand_default(m->icem, 1), NULL);
+			err = set_media_attributes(m);
+		}
+		m->gathered = !err;
+	}
+
+out:
+	if (err)
+		mem_deref(m);
+	else
+		*candidatep = m;
 
 	return err;
 }
@@ -906,6 +1111,8 @@ static bool sdp_attr_handler(const char *name, const char *value, void *arg)
 	for (le = sess->medial.head; le; le = le->next) {
 		struct mnat_media *m = le->data;
 
+		if (m->prepared)
+			continue;
 		(void)ice_sdp_decode(m->icem, name, value);
 	}
 
@@ -930,6 +1137,9 @@ static int enable_turn_channels(struct mnat_sess *sess)
 		struct mnat_media *m = le->data;
 		struct sa raddr[2];
 		unsigned i;
+
+		if (!m->active || m->prepared)
+			continue;
 
 		err |= set_media_attributes(m);
 
@@ -962,6 +1172,8 @@ static int update(struct mnat_sess *sess)
 	for (le = sess->medial.head; le; le = le->next) {
 		struct mnat_media *m = le->data;
 
+		if (m->prepared)
+			continue;
 		sdp_media_rattr_apply(m->sdpm, NULL, media_attr_handler, m);
 	}
 
@@ -976,14 +1188,185 @@ static int update(struct mnat_sess *sess)
 	else {
 		info("ice: ICE not supported by peer\n");
 
-		LIST_FOREACH(&sess->medial, le) {
-			struct mnat_media *m = le->data;
+			LIST_FOREACH(&sess->medial, le) {
+				struct mnat_media *m = le->data;
 
-			err |= set_media_attributes(m);
+				if (!m->active || m->prepared)
+					continue;
+
+				err |= set_media_attributes(m);
 		}
 	}
 
 	return err;
+}
+
+
+static int media_prepare(struct mnat_media *m, bool active)
+{
+	if (!m)
+		return EINVAL;
+	if (m->terminated)
+		return ECANCELED;
+	if (m->prepared || m->activated)
+		return EALREADY;
+
+	m->prepared_active = active;
+	m->prepared = true;
+	icem_shared_socket_route(m->icem, true);
+	return 0;
+}
+
+
+static void media_activate(struct mnat_media *m)
+{
+	if (!m || !m->prepared || m->activated)
+		return;
+
+	m->rollback_active = m->active;
+	m->active = m->prepared_active;
+	icem_shared_socket_candidate(m->icem, !m->active);
+	icem_shared_socket_retired(m->icem, !m->active);
+	if (!m->active && m->rollback_active)
+		icem_conncheck_stop(m->icem, ECANCELED);
+	m->prepared = false;
+	m->activated = true;
+}
+
+
+static void media_rollback(struct mnat_media *m)
+{
+	if (!m || !m->activated)
+		return;
+
+	m->active = m->rollback_active;
+	icem_shared_socket_candidate(m->icem, !m->active);
+	icem_shared_socket_retired(m->icem, !m->active);
+	icem_shared_socket_route(m->icem, true);
+	m->activated = false;
+}
+
+
+static void media_finalize(struct mnat_media *m)
+{
+	if (m) {
+		icem_shared_socket_route(m->icem, true);
+		m->activated = false;
+	}
+}
+
+
+static void media_abort(struct mnat_media *m)
+{
+	if (m && m->prepared && !m->activated) {
+		/* An inactive object is a replacement generation, not the live
+		 * media.  Make every outstanding network callback stale before
+		 * dropping its subscriptions so it cannot mutate restored SDP. */
+		if (!m->active) {
+			unsigned i;
+
+			m->terminated = true;
+			for (i = 0; i < 2; ++i) {
+				m->compv[i].ct_gath =
+					mem_deref(m->compv[i].ct_gath);
+				if (m->sess->turn)
+					(void)icem_set_turn_client(
+						m->icem, i + 1, NULL);
+			}
+			m->nstun = 0;
+		}
+		media_gather_cancel(m);
+		media_attempt_cancel(m);
+		icem_shared_socket_route(m->icem, !m->active);
+		icem_shared_socket_retired(m->icem, false);
+		m->prepared = false;
+	}
+}
+
+
+static int media_attempt_start(struct mnat_media *m,
+			       mnat_media_attempt_h *attempth, void *arg)
+{
+	int err;
+
+	if (!m || !attempth)
+		return EINVAL;
+	if (m->terminated)
+		return ECANCELED;
+	if (m->attempt_running)
+		return EALREADY;
+	if (!m->prepared || !m->prepared_active)
+		return EINVAL;
+	if (m->gather_err)
+		return m->gather_err;
+	if (!m->gathered || !icem_rcand_ready(m->icem))
+		return EAGAIN;
+
+	m->attempth = attempth;
+	m->attempt_arg = arg;
+	m->attempt_running = true;
+	err = icem_conncheck_start(m->icem);
+	if (err) {
+		m->attempt_running = false;
+		m->attempth = NULL;
+		m->attempt_arg = NULL;
+	}
+
+	return err;
+}
+
+
+static void media_attempt_cancel(struct mnat_media *m)
+{
+	if (!m || !m->attempt_running)
+		return;
+
+	/* Clear publication state before stopping libre ICE.  stop may invoke
+	 * conncheck_handler synchronously. */
+	m->attempt_running = false;
+	m->attempth = NULL;
+	m->attempt_arg = NULL;
+	icem_conncheck_stop(m->icem, ECANCELED);
+}
+
+
+static bool media_gathered(const struct mnat_media *m)
+{
+	return m && m->gathered;
+}
+
+
+static int media_gather_wait(struct mnat_media *m,
+			     mnat_media_gather_h *gatherh, void *arg)
+{
+	if (!m || !gatherh)
+		return EINVAL;
+	if (m->terminated)
+		return ECANCELED;
+	if (!m->prepared || !m->prepared_active)
+		return EINVAL;
+	if (m->gather_err)
+		return m->gather_err;
+	if (m->gathered)
+		return 0;
+	if (m->gather_waiting)
+		return EALREADY;
+
+	m->gatherh = gatherh;
+	m->gather_arg = arg;
+	m->gather_waiting = true;
+	return EAGAIN;
+}
+
+
+static void media_gather_cancel(struct mnat_media *m)
+{
+	if (!m || !m->gather_waiting)
+		return;
+
+	m->gather_waiting = false;
+	m->gatherh = NULL;
+	m->gather_arg = NULL;
 }
 
 
@@ -1003,7 +1386,8 @@ static void attr_handler(struct mnat_media *mm,
 	}
 
 	/* start ice if we have local candidates */
-	if (!list_isempty(icem_lcandl(mm->icem))) {
+	if (mm->active && !mm->prepared &&
+	    !list_isempty(icem_lcandl(mm->icem))) {
 
 		icem_conncheck_start(mm->icem);
 	}
@@ -1016,8 +1400,19 @@ static struct mnat mnat_ice = {
 	.wait_connected = true,
 	.sessh   = session_alloc,
 	.mediah  = media_alloc,
+	.mediarestartalloch = media_restart_alloc,
 	.updateh = update,
 	.attrh   = attr_handler,
+	.mediaprepareh = media_prepare,
+	.mediaactivateh = media_activate,
+	.mediarollbackh = media_rollback,
+	.mediafinalizeh = media_finalize,
+	.mediaaborth = media_abort,
+	.mediaattemptstarth = media_attempt_start,
+	.mediaattemptcancelh = media_attempt_cancel,
+	.mediagatheredh = media_gathered,
+	.mediagatherwaith = media_gather_wait,
+	.mediagathercancelh = media_gather_cancel,
 };
 
 

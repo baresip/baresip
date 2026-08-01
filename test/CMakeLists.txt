@@ -12,6 +12,7 @@ add_executable(${PROJECT_NAME}
   account.c
   ausrc.c
   bevent.c
+  bundle_publication.c
   call.c
   call_cancelrule.c
   call_fixture.c
@@ -22,8 +23,11 @@ add_executable(${PROJECT_NAME}
   jbuf.c
   jbuf_gnack.c
   message.c
+  media_transport.c
+  mnat.c
   net.c
   peerconn.c
+  peerconn_transport.c
   play.c
   stunuri.c
   ua.c
@@ -52,3 +56,9 @@ add_executable(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME} baresip ${REM_LIBRARIES} ${RE_LIBRARIES})
+
+# Transport selftests load this module dynamically.  Keep a targeted selftest
+# rebuild from exercising a stale module after transport API changes.
+if(TARGET dtls_srtp)
+  add_dependencies(${PROJECT_NAME} dtls_srtp)
+endif()

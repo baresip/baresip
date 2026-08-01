@@ -631,6 +631,17 @@ void rtprecv_enable(struct rtp_receiver *rx, bool enable)
 }
 
 
+void rtprecv_stop(struct rtp_receiver *rx)
+{
+	if (!rx)
+		return;
+
+	rtprecv_enable(rx, false);
+	tmr_cancel(&rx->tmr_decode);
+	jbuf_flush(rx->jbuf);
+}
+
+
 int rtprecv_get_ssrc(struct rtp_receiver *rx, uint32_t *ssrc)
 {
 	int err;
@@ -648,6 +659,32 @@ int rtprecv_get_ssrc(struct rtp_receiver *rx, uint32_t *ssrc)
 	mtx_unlock(rx->mtx);
 
 	return err;
+}
+
+
+void rtprecv_jsep_state_get(struct rtp_receiver *rx, uint32_t *ssrc,
+			    bool *ssrc_set, bool *enabled)
+{
+	if (!rx || !ssrc || !ssrc_set || !enabled)
+		return;
+	mtx_lock(rx->mtx);
+	*ssrc = rx->ssrc;
+	*ssrc_set = rx->ssrc_set;
+	*enabled = rx->enabled;
+	mtx_unlock(rx->mtx);
+}
+
+
+void rtprecv_jsep_state_restore(struct rtp_receiver *rx, uint32_t ssrc,
+				bool ssrc_set, bool enabled)
+{
+	if (!rx)
+		return;
+	mtx_lock(rx->mtx);
+	rx->ssrc = ssrc;
+	rx->ssrc_set = ssrc_set;
+	rx->enabled = enabled;
+	mtx_unlock(rx->mtx);
 }
 
 

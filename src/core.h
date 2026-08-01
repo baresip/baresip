@@ -27,6 +27,11 @@ enum {
 
 /* forward declarations */
 struct stream_param;
+struct data_context;
+struct transport_binding;
+struct media_transport;
+struct media_transport_prm;
+struct pc_transport_session;
 
 
 /*
@@ -212,6 +217,101 @@ void     metric_inc_err(struct metric *metric);
 
 struct metric *metric_alloc(void);
 
+#ifdef USE_DATACHANNEL
+typedef void (data_context_error_h)(int err, void *arg);
+typedef uint32_t (data_context_dispatch_refs_h)(void *arg);
+
+struct dcmap {
+	char *label;
+	char *protocol;
+	int32_t max_retransmits;
+	int32_t max_packet_lifetime;
+	uint16_t id;
+	uint16_t priority;
+	bool ordered;
+};
+
+int dcmap_decode(struct dcmap *map, const char *value);
+int dcmap_print(struct re_printf *pf, void *arg);
+void dcmap_reset(struct dcmap *map);
+int dcsa_decode(uint16_t *id, struct pl *attribute, const char *value);
+
+int data_context_alloc(struct data_context **ctxp,
+		       struct sdp_session *sdp,
+		       const struct mnat *mnat, struct mnat_sess *mnats,
+		       const struct menc *menc, struct menc_sess *mencs,
+		       struct stream *bundle_base, struct list *streaml,
+		       int af, bool offerer,
+		       data_context_error_h *errorh, void *arg);
+int data_context_set_handler(struct data_context *ctx,
+		     peerconnection_datachannel_h *channelh, void *arg);
+void data_context_set_dispatch_refs(struct data_context *ctx,
+				    data_context_dispatch_refs_h *refsh,
+				    void *arg);
+int data_context_channel_create(struct data_context *ctx, const char *label,
+				const struct data_channel_config *cfg,
+				struct data_channel **dcp);
+int data_context_channel_validate(const char *label,
+				  const struct data_channel_config *cfg,
+				  struct data_channel **dcp);
+int data_context_set_rejected(struct data_context *ctx, bool rejected);
+int data_context_remote_update(struct data_context *ctx, bool remote_offer);
+int data_context_description_begin(struct data_context *ctx);
+int data_context_description_prepare(struct data_context *ctx,
+				     bool provisional);
+void data_context_description_publish(struct data_context *ctx,
+				      bool provisional);
+void data_context_description_finalize(struct data_context *ctx,
+				       bool provisional);
+void data_context_description_retire(struct data_context *ctx);
+int data_context_description_commit(struct data_context *ctx,
+				    bool provisional);
+void data_context_description_abort(struct data_context *ctx);
+void data_context_rollback(struct data_context *ctx);
+int data_context_local_description(struct data_context *ctx, bool offer);
+void data_context_notify_channels(struct data_context *ctx, bool stable);
+int data_context_start(struct data_context *ctx);
+bool data_context_transport_restart_supported(const struct data_context *ctx);
+int data_context_prepare_transport_restart(struct data_context *ctx);
+int data_context_sync_prepared_transport_remote(struct data_context *ctx);
+void data_context_abort_transport_restart(struct data_context *ctx);
+bool data_context_sctp_started(const struct data_context *ctx);
+bool data_context_mnat_attr(struct data_context *ctx, const char *mid,
+			    const char *name, const char *value);
+int data_context_bundle_encode(struct data_context *ctx,
+			       const struct list *streaml);
+int data_context_add_stream(struct data_context *ctx, struct stream *stream);
+const char *data_context_mid(const struct data_context *ctx);
+struct sdp_media *data_context_sdpmedia(const struct data_context *ctx);
+bool data_context_transport_accepted(const struct data_context *ctx);
+uint16_t data_context_local_sctp_port(const struct data_context *ctx);
+uint16_t data_context_remote_sctp_port(const struct data_context *ctx);
+const void *data_context_socket_identity(const struct data_context *ctx);
+struct menc_transport *data_context_menc_transport_ref(
+	const struct data_context *ctx);
+struct mnat_media *data_context_mnat_media_ref(
+	const struct data_context *ctx);
+struct bundle_transport *data_context_bundle_transport_ref(
+	const struct data_context *ctx);
+void data_context_media_adopt_prm(struct data_context *ctx,
+				  struct media_transport_prm *prm);
+void data_context_set_transport_ready_handler(
+	struct data_context *ctx, void (*readyh)(void *arg), void *arg);
+int data_context_media_binding_alloc(struct transport_binding **bindingp,
+				     struct data_context *ctx,
+				     struct media_transport_prm *prm);
+int data_context_media_binding_take_pending(
+	struct transport_binding **bindingp, struct data_context *ctx,
+	struct media_transport_prm *prm, struct udp_sock **sockp,
+	struct mnat_media **mnat_mediap, struct menc_transport **transportp);
+int data_context_media_binding_attach(struct transport_binding *binding,
+				      struct media_transport *transport);
+int data_context_media_binding_prepare(struct transport_binding *binding,
+				       enum menc_dtls_role role);
+void data_context_media_binding_finalize(struct transport_binding *binding);
+void data_context_media_binding_abort(struct transport_binding *binding);
+#endif
+
 /*
  * Module
  */
@@ -270,13 +370,298 @@ enum bundle_state {
 };
 
 struct bundle;
+struct bundle_group;
+struct bundle_set;
+struct bundle_transport;
+struct bundle_publication;
+struct media_transport;
 
-int  bundle_alloc(struct bundle **bunp);
-void bundle_handle_extmap(struct bundle *bun, struct sdp_media *sdp);
+enum media_transport_transition {
+	MEDIA_TRANSPORT_NONE = 0,
+	MEDIA_TRANSPORT_RETAIN,
+	MEDIA_TRANSPORT_ADD,
+	MEDIA_TRANSPORT_MOVE_OUT,
+	MEDIA_TRANSPORT_REMOVE
+};
+struct pc_transport_generation;
+struct pc_transport_group;
+struct pc_transport_member;
+
+struct pc_transport_data {
+	const char *mid;
+	struct sdp_media *sdpm;
+	const void *socket_identity;
+	bool accepted;
+	uint16_t local_sctp_port;
+	uint16_t remote_sctp_port;
+};
+
+int pc_transport_generation_alloc(
+	struct pc_transport_generation **generationp,
+	const struct sdp_session *sdp, const struct list *streaml,
+	const struct pc_transport_data *data);
+size_t pc_transport_generation_count(
+	const struct pc_transport_generation *generation);
+const struct pc_transport_group *pc_transport_generation_group(
+	const struct pc_transport_generation *generation, size_t index);
+const struct pc_transport_group *pc_transport_generation_find_mid(
+	const struct pc_transport_generation *generation, const char *mid);
+const struct pc_transport_group *pc_transport_generation_find_reusable(
+	const struct pc_transport_generation *generation,
+	const struct pc_transport_group *wanted);
+const char *pc_transport_group_tag(const struct pc_transport_group *group);
+const struct bundle_group *pc_transport_group_bundle(
+	const struct pc_transport_group *group);
+const char *pc_transport_group_reuse_key(
+	const struct pc_transport_group *group);
+const char *pc_transport_group_ice_reuse_key(
+	const struct pc_transport_group *group);
+const char *pc_transport_group_sctp_reuse_key(
+	const struct pc_transport_group *group);
+const void *pc_transport_group_socket_identity(
+	const struct pc_transport_group *group);
+struct sdp_media *pc_transport_group_sdpmedia(
+	const struct pc_transport_group *group);
+struct stream *pc_transport_group_owner_stream(
+	const struct pc_transport_group *group);
+const struct sa *pc_transport_group_remote(
+	const struct pc_transport_group *group);
+bool pc_transport_group_owner_is_data(
+	const struct pc_transport_group *group);
+bool pc_transport_group_carries_sctp(
+	const struct pc_transport_group *group);
+enum menc_dtls_role pc_transport_group_role(
+	const struct pc_transport_group *group);
+uint16_t pc_transport_group_local_sctp_port(
+	const struct pc_transport_group *group);
+uint16_t pc_transport_group_remote_sctp_port(
+	const struct pc_transport_group *group);
+size_t pc_transport_group_member_count(
+	const struct pc_transport_group *group);
+const struct pc_transport_member *pc_transport_group_member(
+	const struct pc_transport_group *group, size_t index);
+const char *pc_transport_member_mid(const struct pc_transport_member *member);
+struct stream *pc_transport_member_stream(
+	const struct pc_transport_member *member);
+bool pc_transport_member_is_data(const struct pc_transport_member *member);
+bool pc_transport_group_reuses(const struct pc_transport_group *left,
+			       const struct pc_transport_group *right);
+bool pc_transport_group_reuses_ice(const struct pc_transport_group *left,
+				   const struct pc_transport_group *right);
+bool pc_transport_group_reuses_sctp(const struct pc_transport_group *left,
+				    const struct pc_transport_group *right);
+
+int bundle_set_decode(struct bundle_set **setp, const struct sdp_session *sdp);
+int bundle_set_validate(const struct bundle_set *set,
+			const struct list *streaml, const char *data_mid);
+int bundle_set_encode(struct sdp_session *sdp, const struct bundle_set *set);
+int bundle_sdp_decode_stage(struct sdp_session *sdp, struct list *streaml);
+size_t bundle_set_count(const struct bundle_set *set);
+const struct bundle_group *bundle_set_group(const struct bundle_set *set,
+					     size_t index);
+const struct bundle_group *bundle_set_find_mid(const struct bundle_set *set,
+						const char *mid);
+const char *bundle_group_tag(const struct bundle_group *group);
+const char *bundle_group_mid(const struct bundle_group *group, size_t index);
+size_t bundle_group_count(const struct bundle_group *group);
+bool bundle_group_contains(const struct bundle_group *group, const char *mid);
+int bundle_group_clone(struct bundle_group **groupp,
+		       const struct bundle_group *group);
+int bundle_group_singleton(struct bundle_group **groupp, const char *mid);
+int bundle_transport_alloc(struct bundle_transport **transportp,
+			   const struct bundle_group *group,
+			   struct list *streaml, const char *data_mid);
+int bundle_publication_alloc(struct bundle_publication **publicationp);
+int bundle_transport_bind_publication(
+	struct bundle_transport *transport,
+	struct bundle_publication *publication);
+void bundle_publication_lock(struct bundle_publication *publication);
+void bundle_publication_unlock(struct bundle_publication *publication);
+int bundle_transport_stage(struct bundle_transport *transport,
+			   const struct bundle_group *group,
+			   struct udp_sock *sock, uint64_t generation);
+int bundle_transport_prepare(struct bundle_transport *transport,
+			     const struct bundle_group *group,
+			     struct udp_sock *sock,
+			     uint64_t *route_generationp);
+int bundle_transport_stage_legacy(struct bundle_transport *transport,
+				  uint64_t route_generation);
+int bundle_transport_prepare_legacy(struct bundle_transport *transport,
+				    uint64_t *route_generationp);
+int bundle_transport_set_remote(struct bundle_transport *transport,
+				uint64_t generation,
+				const struct sa *remote);
+bool bundle_transport_ready(const struct bundle_transport *transport,
+			    uint64_t route_generation);
+int bundle_transport_activate(struct bundle_transport *transport,
+			      uint64_t route_generation);
+int bundle_transport_rollback(struct bundle_transport *transport,
+			      uint64_t route_generation);
+int bundle_transport_finalize(struct bundle_transport *transport,
+			      uint64_t route_generation);
+int bundle_transport_commit(struct bundle_transport *transport,
+			    uint64_t generation);
+int bundle_transport_abort(struct bundle_transport *transport,
+			   uint64_t generation);
+uint64_t bundle_transport_active_generation(
+	const struct bundle_transport *transport);
+const struct bundle_group *bundle_transport_active_group_ref(
+	const struct bundle_transport *transport);
+bool bundle_transport_attached(const struct bundle_transport *transport,
+			       const struct bundle *bun);
+enum bundle_state bundle_transport_endpoint_state(
+	const struct bundle_transport *transport, const struct bundle *bun);
+
+/* A session-owned, exact transport-group runtime.  Candidate construction and
+ * prepare may allocate and invoke transport-module callbacks.  Activate and
+ * rollback are allocation- and application-callback-free. */
+struct media_transport_prm {
+	const struct bundle_group *group;
+	struct sdp_media *transport_sdpm;
+	struct list *streaml;
+	const char *data_mid;
+	const char *semantic_key;
+	const struct mnat *mnat;
+	struct mnat_sess *mnats;
+	const struct menc *menc;
+	struct menc_sess *mencs;
+	int af;
+	bool offerer;
+	/* The imported MNAT generation was prepared by a pre-offer gather. */
+	bool mnat_prepared;
+	mnat_connected_h *connectedh;
+	menc_transport_recv_h *recvh;
+	menc_transport_estab_h *estabh;
+	menc_transport_close_h *closeh;
+	void (*mnat_publishh)(struct mnat_media *mnat_media, void *arg);
+	void (*changeh)(void *arg);
+	void *(*arg_ref)(void *arg);
+	void (*arg_deref)(void *arg);
+	void *arg;
+};
+
+int media_transport_alloc(struct media_transport **mtp,
+			  const struct media_transport_prm *prm);
+int media_transport_adopt(struct media_transport **mtp,
+			  const struct media_transport_prm *prm,
+			  struct udp_sock *sock, struct mnat_media *mnats,
+			  struct menc_transport *menc_transport,
+			  struct bundle_transport *route);
+int media_transport_adopt_pending(struct media_transport **mtp,
+			  const struct media_transport_prm *prm,
+			  struct udp_sock *sock, struct mnat_media *mnats,
+			  struct menc_transport *menc_transport,
+			  struct bundle_transport *route,
+			  uint64_t route_generation);
+int media_transport_import_pending(
+	struct media_transport **mtp, const struct media_transport_prm *prm,
+	struct udp_sock *sock, struct mnat_media *mnat_media,
+	struct menc_transport *menc_transport);
+int media_transport_reconfigure_alloc(
+	struct media_transport **candidatep, struct media_transport *active,
+	const struct bundle_group *group, struct list *streaml,
+	const struct list *destination_streaml, const char *data_mid,
+	const char *semantic_key,
+	const struct media_transport_prm *consumer);
+int media_transport_restart_alloc(
+	struct media_transport **candidatep, struct media_transport *active,
+	const struct bundle_group *group, struct list *streaml,
+	const struct list *destination_streaml, const char *data_mid,
+	const char *semantic_key,
+	const struct media_transport_prm *consumer);
+enum media_transport_transition media_transport_member_transition(
+	const struct media_transport *mt, const struct stream *stream);
+int media_transport_prepare(struct media_transport *mt);
+/* Refresh a prepared, unpublished candidate's topology-derived identity after
+ * prepare has updated its local ICE/DTLS SDP attributes. */
+int media_transport_rekey(struct media_transport *mt, const char *semantic_key);
+bool media_transport_gathered(const struct media_transport *mt);
+int media_transport_gather_start(struct media_transport *mt);
+int media_transport_restart_apply_sdp(struct media_transport *mt);
+/* Apply a remote transport attribute to this exact live MNAT generation. */
+bool media_transport_mnat_attr(struct media_transport *mt, const char *name,
+			       const char *value);
+bool media_transport_remote_set(const struct media_transport *mt);
+/* Starts connectivity immediately or arms a generation-local gather waiter;
+ * completion and terminal failure are reported through changeh. */
+int media_transport_attempt_start(struct media_transport *mt);
+int media_transport_set_remote(struct media_transport *mt,
+			       const struct sa *remote);
+bool media_transport_ready(const struct media_transport *mt);
+bool media_transport_published(const struct media_transport *mt);
+int media_transport_error(const struct media_transport *mt);
+int media_transport_send(struct media_transport *mt, struct mbuf *mb);
+int media_transport_consumer_ready(struct media_transport *mt);
+bool media_transport_has_consumer(const struct media_transport *mt);
+void media_transport_detach_consumer(struct media_transport *mt);
+void media_transport_stop_members(struct media_transport *mt);
+int media_transport_activate(struct media_transport *mt);
+void media_transport_rollback(struct media_transport *mt);
+void media_transport_finalize(struct media_transport *mt);
+void media_transport_notify_members(struct media_transport *mt);
+void media_transport_abort(struct media_transport *mt);
+void media_transport_retire_callbacks(struct media_transport *mt);
+/* Break the callback token's final strong runtime pin after all owning
+ * generations and callbacks have been quiesced. */
+void media_transport_release(struct media_transport *mt);
+const char *media_transport_key(const struct media_transport *mt);
+const struct bundle_group *media_transport_group(const struct media_transport *mt);
+struct udp_sock *media_transport_socket_ref(const struct media_transport *mt);
+struct mnat_media *media_transport_mnat_media_ref(
+	const struct media_transport *mt);
+enum menc_dtls_role media_transport_role(const struct media_transport *mt);
+int media_transport_bind_publication(struct media_transport *mt,
+				     struct bundle_publication *publication);
+void media_transport_set_observer(struct media_transport *mt,
+				  void (*changeh)(void *arg), void *arg);
+
+struct pc_transport_data_binding {
+	void *object;
+	int (*prepareh)(void *object, enum menc_dtls_role role);
+	int (*activateh)(void *object);
+	void (*rollbackh)(void *object);
+	void (*finalizeh)(void *object);
+	void (*aborth)(void *object);
+};
+
+/* Called under the publication gate.  It must be allocation-, failure-, and
+ * application-callback-free and must only swap the session's topology view. */
+typedef void (pc_transport_session_publish_h)(
+	const struct pc_transport_generation *generation, void *arg);
+typedef void (pc_transport_session_error_h)(int err, void *arg);
+typedef void (pc_transport_session_retire_h)(
+	const struct pc_transport_generation *generation, void *arg);
+
+int pc_transport_session_alloc(struct pc_transport_session **sessionp,
+	pc_transport_session_publish_h *publishh,
+	pc_transport_session_error_h *errorh, void *arg);
+void pc_transport_session_set_retire_handler(
+	struct pc_transport_session *session,
+	pc_transport_session_retire_h *retireh);
+int pc_transport_session_stage(struct pc_transport_session *session,
+	const struct pc_transport_generation *generation);
+int pc_transport_session_add(struct pc_transport_session *session,
+	const struct pc_transport_group *group, struct media_transport *transport,
+	const struct pc_transport_data_binding *data);
+/* Returns every failure observed before the initial readiness scan completes;
+ * errorh is not called for those synchronous failures.  After a successful
+ * return, a terminal failure of the still-pending generation is reported
+ * exactly once through errorh. */
+int pc_transport_session_start(struct pc_transport_session *session);
+int pc_transport_session_bootstrap(struct pc_transport_session *session);
+void pc_transport_session_changed(struct pc_transport_session *session);
+void pc_transport_session_abort(struct pc_transport_session *session);
+void pc_transport_session_stop(struct pc_transport_session *session);
+const struct pc_transport_generation *pc_transport_session_active_ref(
+	const struct pc_transport_session *session);
+int  bundle_alloc(struct bundle **bunp, const struct stream *stream);
+int  bundle_handle_extmap(struct bundle *bun, struct sdp_media *sdp);
 int  bundle_start_socket(struct bundle *bun, struct udp_sock *us,
 			 struct list *streaml);
+void bundle_stop(struct bundle *bun);
 enum bundle_state bundle_state(const struct bundle *bun);
 uint8_t bundle_extmap_mid(const struct bundle *bun);
+void bundle_restore_extmap(struct bundle *bun, uint8_t extmap_mid);
 int bundle_set_extmap(struct bundle *bun, struct sdp_media *sdp,
 		      uint8_t extmap_mid);
 void bundle_set_state(struct bundle *bun, enum bundle_state st);
@@ -298,6 +683,7 @@ enum media_type {
 struct sender;
 struct rtp_receiver;
 struct stream;
+struct stream_jsep_state;
 struct rtp_header;
 
 enum {STREAM_PRESZ = 4+12}; /* same as RTP_HEADER_SIZE */
@@ -343,18 +729,47 @@ int  stream_resend(struct stream *s, uint16_t seq, bool ext, bool marker,
 
 /* Receive */
 void stream_flush(struct stream *s);
+void stream_stop(struct stream *s);
 int  stream_ssrc_rx(const struct stream *strm, uint32_t *ssrc);
+int  stream_jsep_state_save(struct stream_jsep_state **statep,
+			    struct stream *strm);
+void stream_jsep_state_restore(struct stream_jsep_state *state);
 
 
 struct bundle *stream_bundle(const struct stream *strm);
-void stream_parse_mid(struct stream *strm);
+bool stream_has_menc_transport(const struct stream *strm);
+struct mnat_media *stream_mnat_media_ref(const struct stream *strm);
+void stream_publish_mnat_media(struct stream *strm,
+			       struct mnat_media *mnat_media);
+int stream_prepare_menc_transport_mux(struct stream *strm,
+				      struct menc_transport *transport,
+				      bool rtcp_mux);
+int stream_set_mid(struct stream *strm, const char *mid);
+int stream_promote_menc_transport(
+	struct stream *strm, struct menc_transport **mtp,
+	menc_transport_recv_h *recvh, menc_transport_estab_h *estabh,
+	menc_transport_close_h *closeh, void *arg);
+int stream_parse_mid(struct stream *strm);
 void stream_enable_bundle(struct stream *strm, enum bundle_state st);
+void stream_stage_bundle(struct stream *strm, enum bundle_state st);
+int stream_prepare_bundle(struct stream *strm);
+void stream_commit_bundle(struct stream *strm);
+void stream_finalize_bundle(struct stream *strm);
+void stream_rollback_bundle(struct stream *strm);
+void stream_abort_bundle(struct stream *strm);
+int stream_native_mnat_prepare(struct stream *strm, bool standalone);
+void stream_native_mnat_activate(struct stream *strm);
+void stream_native_mnat_rollback(struct stream *strm);
+void stream_native_mnat_finalize(struct stream *strm);
+void stream_native_mnat_abort(struct stream *strm);
+bool stream_native_mnat_suspended(const struct stream *strm);
 void stream_enable_natpinhole(struct stream *strm, bool enable);
 void stream_open_natpinhole(struct stream *strm);
 void stream_stop_natpinhole(struct stream *strm);
 void stream_process_rtcp(struct stream *strm, struct rtcp_msg *msg);
 void stream_mnat_connected(struct stream *strm, const struct sa *raddr1,
 			   const struct sa *raddr2);
+int stream_update_jsep(struct stream *strm);
 
 
 /*
@@ -475,6 +890,8 @@ struct media_track {
 
 	mediatrack_close_h *closeh;
 	void *arg;
+	stream_mnatconn_h *mnatconnh;
+	void *mnat_arg;
 };
 
 
@@ -483,6 +900,8 @@ struct media_track *media_track_add(struct list *lst,
 				    mediatrack_close_h *closeh, void *arg);
 void mediatrack_stop(struct media_track *media);
 void mediatrack_set_handlers(struct media_track *media);
+void mediatrack_set_mnatconn_handler(struct media_track *media,
+				     stream_mnatconn_h *handler, void *arg);
 void mediatrack_summary(const struct media_track *media);
 int  mediatrack_debug(struct re_printf *pf, const struct media_track *media);
 struct media_track *mediatrack_lookup_media(const struct list *medial,
@@ -513,7 +932,12 @@ uint64_t rtprecv_ts_last(struct rtp_receiver *rx);
 void rtprecv_set_ts_last(struct rtp_receiver *rx, uint64_t ts_last);
 void rtprecv_flush(struct rtp_receiver *rx);
 void rtprecv_enable(struct rtp_receiver *rx, bool enable);
+void rtprecv_stop(struct rtp_receiver *rx);
 int  rtprecv_get_ssrc(struct rtp_receiver *rx, uint32_t *ssrc);
+void rtprecv_jsep_state_get(struct rtp_receiver *rx, uint32_t *ssrc,
+			    bool *ssrc_set, bool *enabled);
+void rtprecv_jsep_state_restore(struct rtp_receiver *rx, uint32_t ssrc,
+				bool ssrc_set, bool enabled);
 void rtprecv_enable_mux(struct rtp_receiver *rx, bool enable);
 int  rtprecv_debug(struct re_printf *pf, const struct rtp_receiver *rx);
 int  rtprecv_start_thread(struct rtp_receiver *rx);

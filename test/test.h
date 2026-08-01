@@ -167,8 +167,25 @@ int mock_auplay_register(struct auplay **auplayp, struct list *auplayl,
  * Mock Media NAT-traversal
  */
 
+struct mnat_media;
+
 void mock_mnat_register(struct list *mnatl);
 void mock_mnat_unregister(void);
+void mock_mnat_fail_media_prepare(int err);
+void mock_mnat_media_attempt_result(int err);
+void mock_mnat_media_attempt_defer(bool defer);
+void mock_mnat_complete_media_attempts(void);
+unsigned mock_mnat_media_attempt_start_count(void);
+unsigned mock_mnat_media_attempt_cancel_count(void);
+unsigned mock_mnat_media_attempt_callback_count(void);
+uint64_t mock_mnat_media_generation(const struct mnat_media *m);
+bool mock_mnat_media_is_active(const struct mnat_media *m);
+unsigned mock_mnat_candidate_attr_count(void);
+unsigned mock_mnat_candidate_attr_count_generation(uint64_t generation);
+uint64_t mock_mnat_last_candidate_generation(void);
+
+int test_mnat_media_attempt(void);
+int test_mnat_media_restart(void);
 
 
 /*
@@ -248,8 +265,26 @@ int test_jbuf_adaptive(void);
 int test_jbuf_video(void);
 int test_jbuf_gnack(void);
 int test_message(void);
+int test_media_transport_adopt_reconfigure(void);
+int test_media_transport_fresh_gather(void);
+int test_pc_transport_role_resolution(void);
+int test_menc_rebind_destructor_callback(void);
 int test_network(void);
+int test_bundle_atomic_publication(void);
+int test_bundle_stream_teardown(void);
+int test_bundle_self_callback_teardown(void);
+int test_bundle_wire_callback_teardown(void);
 int test_peerconn(void);
+int test_peerconn_data_runtime(void);
+int test_peerconn_answer_retry(void);
+int test_peerconn_restart_shadow(void);
+int test_peerconn_rtp_restart(void);
+int test_peerconn_remote_split(void);
+int test_peerconn_late_data(void);
+int test_menc_transport_identity(void);
+int test_bundle_route_transaction(void);
+int test_bundle_disjoint_routes(void);
+int test_bundle_legacy_forwarding(void);
 int test_play(void);
 int test_stunuri(void);
 int test_ua_alloc(void);

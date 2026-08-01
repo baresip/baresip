@@ -275,7 +275,10 @@ static void mnatconn_handler(struct stream *strm, void *arg)
 	err = stream_start_mediaenc(strm);
 	if (err) {
 		media->closeh(err, media->arg);
+		return;
 	}
+	if (media->mnatconnh)
+		media->mnatconnh(strm, media->mnat_arg);
 }
 
 
@@ -317,6 +320,17 @@ void mediatrack_set_handlers(struct media_track *media)
 
 	stream_set_session_handlers(strm, mnatconn_handler, rtpestab_handler,
 				    rtcp_handler, stream_error_handler, media);
+}
+
+
+void mediatrack_set_mnatconn_handler(struct media_track *media,
+				     stream_mnatconn_h *handler, void *arg)
+{
+	if (!media)
+		return;
+
+	media->mnatconnh = handler;
+	media->mnat_arg = arg;
 }
 
 

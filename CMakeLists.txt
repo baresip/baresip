@@ -15,7 +15,7 @@ cmake_minimum_required(VERSION 3.18...4.0)
 
 project(baresip VERSION 4.10.0)
 
-set(PROJECT_SOVERSION 28) # bump if ABI breaks
+set(PROJECT_SOVERSION 29) # bump if ABI breaks
 
 # Pre-release identifier, comment out on a release
 # Increment for breaking changes (dev2, dev3...)
@@ -36,7 +36,12 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 
 include(GNUInstallDirs)
 include(CheckIncludeFile)
-find_package(RE REQUIRED)
+option(USE_DATACHANNEL "Enable WebRTC data channels" OFF)
+if(USE_DATACHANNEL)
+  find_package(RE REQUIRED COMPONENTS DATACHANNEL)
+else()
+  find_package(RE REQUIRED)
+endif()
 
 ##############################################################################
 #
@@ -143,6 +148,10 @@ endif()
 if(STATIC)
   add_definitions(-DSTATIC)
 endif()
+if(USE_DATACHANNEL)
+  add_compile_definitions(USE_DATACHANNEL)
+  include_directories(${RE_DATACHANNEL_INCLUDE_DIRS})
+endif()
 
 ##############################################################################
 #
@@ -174,6 +183,7 @@ set(SRCS
   src/log.c
   src/mediadev.c
   src/mediatrack.c
+  src/media_transport.c
   src/menc.c
   src/message.c
   src/metric.c
@@ -182,6 +192,8 @@ set(SRCS
   src/net.c
   src/peerconn.c
   src/play.c
+  src/pc_transport.c
+  src/pc_transport_session.c
   src/reg.c
   src/rtprecv.c
   src/rtpstat.c
@@ -200,6 +212,18 @@ set(SRCS
   src/vidsrc.c
   src/vidutil.c
 )
+
+if(USE_DATACHANNEL)
+  list(APPEND SRCS
+    src/datachannel.c
+    src/datachannel_description.c
+    src/dcmap.c
+  )
+else()
+  list(APPEND SRCS
+    src/datachannel_stub.c
+  )
+endif()
 
 set(HEADERS
   include/baresip.h
@@ -263,6 +287,9 @@ endif()
 #
 
 set(LINKLIBS ${RE_LIBRARIES} ${RE_LIBS})
+if(USE_DATACHANNEL)
+  list(APPEND LINKLIBS ${RE_DATACHANNEL_LIBRARIES})
+endif()
 
 if(WIN32)
   list(APPEND LINKLIBS winmm gdi32 crypt32 strmiids ole32 oleaut32)

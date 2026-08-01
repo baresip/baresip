@@ -463,6 +463,7 @@ static int session_alloc(struct menc_sess **sessp,
 
 
 static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
+		 struct menc_transport *transport,
 		 struct rtp_sock *rtp,
 		 struct udp_sock *rtpsock, struct udp_sock *rtcpsock,
 	         const struct sa *raddr_rtp,
@@ -474,6 +475,7 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 	int layer = 10; /* above zero */
 	int err = 0;
 	bool mux = (rtpsock == rtcpsock);
+	(void)transport;
 	(void)sess;
 	(void)rtp;
 	(void)raddr_rtp;

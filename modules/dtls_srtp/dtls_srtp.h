@@ -10,14 +10,17 @@ enum {
 	LAYER_DTLS = 20, /* must be above zero */
 };
 
+struct dtls_identity;
+
 struct comp {
-	const struct dtls_srtp *ds; /* parent */
+	struct dtls_srtp *ds; /* parent */
 	struct dtls_sock *dtls_sock;
 	struct tls_conn *tls_conn;
 	struct srtp_stream *tx;
 	struct srtp_stream *rx;
 	struct udp_helper *uh_srtp;
 	struct udp_sock *app_sock;
+	struct dtls_identity *identity;
 	bool negotiated;
 	bool is_rtp;
 };

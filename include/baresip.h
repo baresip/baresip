@@ -790,6 +790,14 @@ void _warning(bool safe, const char *fmt, ...);
 struct menc;
 struct menc_sess;
 struct menc_media;
+struct menc_transport;
+
+/** Defines the local DTLS role of a media transport */
+enum menc_dtls_role {
+	MENC_DTLS_ROLE_UNKNOWN,
+	MENC_DTLS_ROLE_CLIENT,
+	MENC_DTLS_ROLE_SERVER,
+};
 
 /** Defines a media encryption event */
 enum menc_event {
@@ -808,7 +816,78 @@ typedef int  (menc_sess_h)(struct menc_sess **sessp, struct sdp_session *sdp,
 			   bool offerer, menc_event_h *eventh,
 			   menc_error_h *errorh, void *arg);
 
+typedef void (menc_transport_recv_h)(struct mbuf *mb, void *arg);
+typedef void (menc_transport_estab_h)(int err,
+				      enum menc_dtls_role local_role,
+				      void *arg);
+typedef void (menc_transport_close_h)(int err, void *arg);
+
+/** Callback ownership installed on a media-encryption transport.  When both
+ * arg_ref and arg_deref are supplied, the transport retains one reference
+ * while the binding is installed.  A previous binding returned by rebind
+ * carries a separate retained reference which its recipient must release. */
+struct menc_transport_binding {
+	menc_transport_recv_h *recvh;
+	menc_transport_estab_h *estabh;
+	menc_transport_close_h *closeh;
+	void *arg;
+	void *(*arg_ref)(void *arg);
+	void (*arg_deref)(void *arg);
+};
+
+/** Immutable connection state returned while callback ownership is moved. */
+struct menc_transport_state {
+	struct sa remote;
+	enum menc_dtls_role local_role;
+	bool remote_set;
+	bool started;
+	bool established;
+};
+
+typedef int (menc_transport_alloc_h)(
+	struct menc_transport **mtp, struct menc_sess *sess,
+	struct udp_sock *sock, const struct sa *raddr,
+	struct sdp_media *sdpm, bool offerer,
+	menc_transport_recv_h *recvh, menc_transport_estab_h *estabh,
+	menc_transport_close_h *closeh, void *arg);
+
+typedef int (menc_transport_promote_h)(
+	struct menc_transport **mtp, struct menc_media *media,
+	menc_transport_recv_h *recvh, menc_transport_estab_h *estabh,
+	menc_transport_close_h *closeh, void *arg);
+
+typedef int (menc_transport_start_h)(struct menc_transport *mt,
+				     const struct sa *raddr);
+typedef int (menc_transport_commit_identity_h)(struct menc_transport *mt);
+typedef int (menc_transport_send_h)(struct menc_transport *mt,
+				    struct mbuf *mb);
+/* Query the established peer when peer is NULL, or retarget it otherwise.
+ * Retargeting is allocation-free and must be serialized by the session's
+ * transport-publication gate with packet sends and other peer changes. */
+typedef int (menc_transport_peer_set_h)(struct menc_transport *mt,
+					const struct sa *peer,
+					struct sa *old_peer);
+typedef void (menc_transport_detach_h)(struct menc_transport *mt);
+typedef int (menc_transport_rebind_h)(
+	struct menc_transport *mt,
+	const struct menc_transport_binding *binding, void *expected_arg,
+	struct menc_transport_binding *previous,
+	struct menc_transport_state *state);
+/* Replacement-member transaction: prepare may fail; activate and rollback
+ * are allocation- and callback-free; finalize may emit secure events. */
+typedef int  (menc_transport_members_prepare_h)(struct menc_transport *mt);
+typedef void (menc_transport_members_activate_h)(struct menc_transport *mt);
+typedef void (menc_transport_members_rollback_h)(struct menc_transport *mt);
+typedef void (menc_transport_members_finalize_h)(struct menc_transport *mt);
+typedef void (menc_transport_members_notify_h)(struct menc_transport *mt);
+typedef void (menc_transport_members_abort_h)(struct menc_transport *mt);
+typedef int  (menc_transport_member_remove_h)(struct menc_transport *mt,
+					      struct menc_media *media);
+typedef int  (menc_transport_member_add_h)(struct menc_transport *mt,
+					   struct menc_media *media, bool mux);
+
 typedef int  (menc_media_h)(struct menc_media **mp, struct menc_sess *sess,
+			   struct menc_transport *transport,
 			   struct rtp_sock *rtp,
 			   struct udp_sock *rtpsock, struct udp_sock *rtcpsock,
 			   const struct sa *raddr_rtp,
@@ -824,6 +903,22 @@ struct menc {
 	const char *sdp_proto;
 	bool wait_secure;
 	menc_sess_h *sessh;
+	menc_transport_alloc_h *transporth;
+	menc_transport_promote_h *transportpromoteh;
+	menc_transport_commit_identity_h *transportcommitidentityh;
+	menc_transport_start_h *transportstarth;
+	menc_transport_send_h *transportsendh;
+	menc_transport_peer_set_h *transportpeerseth;
+	menc_transport_detach_h *transportdetachh;
+	menc_transport_rebind_h *transportrebindh;
+	menc_transport_members_prepare_h *transportmembersprepareh;
+	menc_transport_members_activate_h *transportmembersactivateh;
+	menc_transport_members_rollback_h *transportmembersrollbackh;
+	menc_transport_members_finalize_h *transportmembersfinalizeh;
+	menc_transport_members_notify_h *transportmembersnotifyh;
+	menc_transport_members_abort_h *transportmembersaborth;
+	menc_transport_member_remove_h *transportmemberremoveh;
+	menc_transport_member_add_h *transportmemberaddh;
 	menc_media_h *mediah;
 	menc_txrekey_h *txrekeyh;
 };
@@ -832,6 +927,41 @@ void menc_register(struct list *mencl, struct menc *menc);
 void menc_unregister(struct menc *menc);
 const struct menc *menc_find(const struct list *mencl, const char *id);
 const char *menc_event_name(enum menc_event event);
+int menc_transport_send(const struct menc *menc, struct menc_transport *mt,
+			struct mbuf *mb);
+int menc_transport_peer_set(const struct menc *menc,
+			    struct menc_transport *mt,
+			    const struct sa *peer, struct sa *old_peer);
+int menc_transport_start(const struct menc *menc, struct menc_transport *mt,
+			 const struct sa *raddr);
+int menc_transport_commit_identity(const struct menc *menc,
+				   struct menc_transport *mt);
+void menc_transport_detach(const struct menc *menc, struct menc_transport *mt);
+int menc_transport_rebind(const struct menc *menc, struct menc_transport *mt,
+			  const struct menc_transport_binding *binding,
+			  void *expected_arg,
+			  struct menc_transport_binding *previous,
+			  struct menc_transport_state *state);
+int menc_transport_members_prepare(const struct menc *menc,
+				   struct menc_transport *mt);
+void menc_transport_members_activate(const struct menc *menc,
+				     struct menc_transport *mt);
+void menc_transport_members_rollback(const struct menc *menc,
+				     struct menc_transport *mt);
+void menc_transport_members_finalize(const struct menc *menc,
+				     struct menc_transport *mt);
+void menc_transport_members_retire(const struct menc *menc,
+				   struct menc_transport *mt);
+void menc_transport_members_notify(const struct menc *menc,
+				   struct menc_transport *mt);
+void menc_transport_members_abort(const struct menc *menc,
+				  struct menc_transport *mt);
+int menc_transport_member_remove(const struct menc *menc,
+				 struct menc_transport *mt,
+				 struct menc_media *media);
+int menc_transport_member_add(const struct menc *menc,
+			      struct menc_transport *mt,
+			      struct menc_media *media, bool mux);
 
 
 /*
@@ -1562,6 +1692,16 @@ double stream_metric_get_rx_avg_bitrate(const struct stream *strm);
 void stream_set_secure(struct stream *strm, bool secure);
 bool stream_is_secure(const struct stream *strm);
 int  stream_start_mediaenc(struct stream *strm);
+void stream_set_menc_transport(struct stream *strm,
+			       struct menc_transport *transport);
+int stream_prepare_menc_transport(struct stream *strm,
+				  struct menc_transport *transport);
+int stream_prepare_menc_transport_removal(
+	struct stream *strm, struct menc_transport *transaction);
+void stream_publish_menc_transport(struct stream *strm,
+				   struct menc_transport *transport);
+struct menc_transport *stream_menc_transport_ref(
+	const struct stream *strm);
 int  stream_start_rtcp(const struct stream *strm);
 int  stream_enable(struct stream *strm, bool enable);
 int  stream_enable_tx(struct stream *strm, bool enable);
@@ -1680,8 +1820,44 @@ typedef int (mnat_media_h)(struct mnat_media **mp, struct mnat_sess *sess,
 			   struct udp_sock *sock1, struct udp_sock *sock2,
 			   struct sdp_media *sdpm,
 			   mnat_connected_h *connh, void *arg);
+typedef int (mnat_media_restart_alloc_h)(
+	struct mnat_media **candidatep, struct mnat_media *active,
+	struct udp_sock *sock, struct sdp_media *sdpm,
+	mnat_connected_h *connh, void *arg);
 
 typedef int (mnat_update_h)(struct mnat_sess *sess);
+
+/** Candidate connectivity-attempt completion.  Address pointers are borrowed
+ * for the duration of the callback. */
+typedef void (mnat_media_attempt_h)(int err, const struct sa *raddr1,
+				    const struct sa *raddr2, void *arg);
+typedef void (mnat_media_gather_h)(int err, void *arg);
+
+/* A generation-scoped attempt checks a prepared media object without making
+ * it packet-visible.  Completion is one-shot.  cancel returns only after the
+ * callback can no longer run. */
+typedef int  (mnat_media_attempt_start_h)(struct mnat_media *mm,
+					 mnat_media_attempt_h *attempth,
+					 void *arg);
+typedef void (mnat_media_attempt_cancel_h)(struct mnat_media *mm);
+typedef bool (mnat_media_gathered_h)(const struct mnat_media *mm);
+
+/* Subscribe to a prepared generation's pending gather result.  The wait
+ * operation returns 0 when gathering is already complete, EAGAIN after the
+ * one-shot callback has been armed, or a terminal gathering error.  cancel
+ * returns only after the callback can no longer run. */
+typedef int  (mnat_media_gather_wait_h)(struct mnat_media *mm,
+				       mnat_media_gather_h *gatherh,
+				       void *arg);
+typedef void (mnat_media_gather_cancel_h)(struct mnat_media *mm);
+
+/* Media activation transaction.  prepare may fail; activate and rollback
+ * must not allocate or invoke application callbacks. */
+typedef int  (mnat_media_prepare_h)(struct mnat_media *mm, bool active);
+typedef void (mnat_media_activate_h)(struct mnat_media *mm);
+typedef void (mnat_media_rollback_h)(struct mnat_media *mm);
+typedef void (mnat_media_finalize_h)(struct mnat_media *mm);
+typedef void (mnat_media_abort_h)(struct mnat_media *mm);
 
 typedef void (mnat_attr_h)(struct mnat_media *mm,
 			   const char *name, const char *value);
@@ -1693,13 +1869,29 @@ struct mnat {
 	bool wait_connected;
 	mnat_sess_h *sessh;
 	mnat_media_h *mediah;
+	mnat_media_restart_alloc_h *mediarestartalloch;
 	mnat_update_h *updateh;
 	mnat_attr_h *attrh;
+	mnat_media_prepare_h *mediaprepareh;
+	mnat_media_activate_h *mediaactivateh;
+	mnat_media_rollback_h *mediarollbackh;
+	mnat_media_finalize_h *mediafinalizeh;
+	mnat_media_abort_h *mediaaborth;
+	mnat_media_attempt_start_h *mediaattemptstarth;
+	mnat_media_attempt_cancel_h *mediaattemptcancelh;
+	mnat_media_gathered_h *mediagatheredh;
+	mnat_media_gather_wait_h *mediagatherwaith;
+	mnat_media_gather_cancel_h *mediagathercancelh;
 };
 
 void mnat_register(struct list *mnatl, struct mnat *mnat);
 void mnat_unregister(struct mnat *mnat);
 const struct mnat *mnat_find(const struct list *mnatl, const char *id);
+int mnat_media_restart_alloc(const struct mnat *mnat,
+			     struct mnat_media **candidatep,
+			     struct mnat_media *active,
+			     struct udp_sock *sock, struct sdp_media *sdpm,
+			     mnat_connected_h *connh, void *arg);
 
 
 /*
@@ -1905,10 +2097,69 @@ int  peerconnection_create_offer(struct peer_connection *pc,
 int  peerconnection_create_answer(struct peer_connection *pc,
 				 struct mbuf **mb);
 int  peerconnection_start_ice(struct peer_connection *pc);
+/* Request fresh ICE credentials for the next local offer.  The request is
+ * idempotent and does not modify the current description or active transport.
+ * create_offer may return EAGAIN while the replacement generation gathers. */
+int  peerconnection_restart_ice(struct peer_connection *pc);
 void peerconnection_close(struct peer_connection *pc);
 void peerconnection_add_ice_candidate(struct peer_connection *pc,
 				      const char *cand, const char *mid);
 enum signaling_st peerconnection_signaling(const struct peer_connection *pc);
+
+struct data_channel;
+
+enum data_channel_state {
+	DATACHANNEL_CONNECTING,
+	DATACHANNEL_OPEN,
+	DATACHANNEL_CLOSING,
+	DATACHANNEL_CLOSED
+};
+
+enum data_channel_message_type {
+	DATACHANNEL_MESSAGE_TEXT,
+	DATACHANNEL_MESSAGE_BINARY
+};
+
+struct data_channel_config {
+	bool ordered;                /**< Ordered delivery (default true) */
+	int32_t max_retransmits;     /**< Retransmit limit; -1 if unset   */
+	int32_t max_packet_lifetime; /**< Lifetime in ms; -1 if unset     */
+	const char *protocol;        /**< Subprotocol; NULL if unset      */
+	bool negotiated;             /**< Channel negotiated out of band */
+	uint16_t id;                 /**< Required when negotiated        */
+};
+
+typedef void (datachannel_h)(struct data_channel *dc, void *arg);
+typedef datachannel_h peerconnection_datachannel_h;
+typedef void (datachannel_message_h)(
+	struct data_channel *dc, enum data_channel_message_type type,
+	const uint8_t *buf, size_t len, void *arg);
+typedef void (datachannel_state_h)(struct data_channel *dc,
+				   enum data_channel_state state,
+				   int err, void *arg);
+typedef void (datachannel_buffered_low_h)(struct data_channel *dc, void *arg);
+
+int peerconnection_set_datachannel_handler(
+	struct peer_connection *pc, peerconnection_datachannel_h *channelh,
+	void *arg);
+int peerconnection_create_datachannel(struct peer_connection *pc,
+				      const char *label,
+				      const struct data_channel_config *cfg,
+				      struct data_channel **dcp);
+int datachannel_set_handlers(struct data_channel *dc,
+			     datachannel_message_h *messageh,
+			     datachannel_state_h *stateh,
+			     datachannel_buffered_low_h *buffered_lowh,
+			     void *arg);
+int datachannel_send(struct data_channel *dc,
+		     enum data_channel_message_type type,
+		     const uint8_t *buf, size_t len);
+int datachannel_close(struct data_channel *dc);
+const char *datachannel_label(const struct data_channel *dc);
+const char *datachannel_protocol(const struct data_channel *dc);
+int datachannel_id(const struct data_channel *dc);
+enum data_channel_state datachannel_state(const struct data_channel *dc);
+size_t datachannel_buffered_amount(const struct data_channel *dc);
 
 
 /*

@@ -68,3 +68,20 @@ const struct mnat *mnat_find(const struct list *mnatl, const char *id)
 
 	return NULL;
 }
+
+
+/** Allocate a provisional per-media NAT restart generation. */
+int mnat_media_restart_alloc(const struct mnat *mnat,
+			     struct mnat_media **candidatep,
+			     struct mnat_media *active,
+			     struct udp_sock *sock, struct sdp_media *sdpm,
+			     mnat_connected_h *connh, void *arg)
+{
+	if (!mnat || !candidatep || !active || !sock || !sdpm)
+		return EINVAL;
+	if (!mnat->mediarestartalloch)
+		return ENOTSUP;
+
+	return mnat->mediarestartalloch(candidatep, active, sock, sdpm,
+					connh, arg);
+}

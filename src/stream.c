@@ -62,6 +62,7 @@ struct stream {
 	const struct menc *menc; /**< Media encryption module               */
 	struct menc_sess *mencs; /**< Media encryption session state        */
 	struct menc_media *mes;  /**< Media Encryption media state          */
+	struct menc_transport *menc_transport; /**< Shared DTLS transport   */
 	enum media_type type;    /**< Media type, e.g. audio/video          */
 	char *cname;             /**< RTCP Canonical end-point identifier   */
 	char *peer;              /**< Peer URI/name or identifier           */
@@ -71,6 +72,11 @@ struct stream {
 	RE_ATOMIC bool hold;     /**< Stream is on-hold (local)             */
 	bool mnat_connected;     /**< Media NAT is connected                */
 	bool menc_secure;        /**< Media stream is secure                */
+	bool native_mnat_suspended;
+	bool native_mnat_prepared;
+	bool native_mnat_activated;
+	bool native_mnat_prepared_suspended;
+	bool native_mnat_rollback_suspended;
 	struct tmr tmr_natph;    /**< Timer for NAT pinhole                 */
 	uint32_t natphc;         /**< NAT pinhole RTP counter               */
 	bool pinhole;            /**< NAT pinhole flag                      */
@@ -89,6 +95,132 @@ struct stream {
 	struct rtp_receiver *rx;
 	struct rxmain rxm;
 };
+
+
+/* Runtime fields derived from a remote description.  The snapshot owns all
+ * references needed to restore without allocating. */
+struct stream_jsep_state {
+	struct stream *strm;
+	char *mid;
+	struct mnat_media *mns;
+	struct menc_sess *mencs;
+	struct menc_media *mes;
+	struct menc_transport *menc_transport;
+	const struct mnat *mnat;
+	const struct menc *menc;
+	struct sa raddr_rtp;
+	struct sa raddr_rtcp;
+	enum bundle_state bundle_state;
+	uint8_t bundle_extmap_mid;
+	int pt_enc;
+	uint32_t rx_ssrc;
+	bool tx_enabled;
+	bool rx_ssrc_set;
+	bool rx_enabled;
+	bool rtcp_mux;
+	bool mnat_connected;
+	bool menc_secure;
+};
+
+
+static void stream_jsep_state_destructor(void *data)
+{
+	struct stream_jsep_state *state = data;
+
+	mem_deref(state->strm);
+	mem_deref(state->mid);
+	mem_deref(state->mns);
+	mem_deref(state->mencs);
+	mem_deref(state->mes);
+	mem_deref(state->menc_transport);
+}
+
+
+int stream_jsep_state_save(struct stream_jsep_state **statep,
+			   struct stream *strm)
+{
+	struct stream_jsep_state *state;
+	int err;
+
+	if (!statep || !strm)
+		return EINVAL;
+	state = mem_zalloc(sizeof(*state), stream_jsep_state_destructor);
+	if (!state)
+		return ENOMEM;
+	state->strm = mem_ref(strm);
+	if (strm->mid) {
+		err = str_dup(&state->mid, strm->mid);
+		if (err) {
+			mem_deref(state);
+			return err;
+		}
+	}
+	state->mns = mem_ref(strm->mns);
+	state->mencs = mem_ref(strm->mencs);
+	state->mes = mem_ref(strm->mes);
+	state->menc_transport = mem_ref(strm->menc_transport);
+	state->mnat = strm->mnat;
+	state->menc = strm->menc;
+	mtx_lock(strm->tx.lock);
+	state->raddr_rtp = strm->tx.raddr_rtp;
+	state->raddr_rtcp = strm->tx.raddr_rtcp;
+	state->pt_enc = strm->tx.pt_enc;
+	mtx_unlock(strm->tx.lock);
+	state->tx_enabled = re_atomic_acq(&strm->tx.enabled);
+	rtprecv_jsep_state_get(strm->rx, &state->rx_ssrc,
+			       &state->rx_ssrc_set, &state->rx_enabled);
+	state->rtcp_mux = strm->rtcp_mux;
+	state->mnat_connected = strm->mnat_connected;
+	state->menc_secure = strm->menc_secure;
+	state->bundle_state = bundle_state(strm->bundle);
+	state->bundle_extmap_mid = bundle_extmap_mid(strm->bundle);
+	*statep = state;
+	return 0;
+}
+
+
+void stream_jsep_state_restore(struct stream_jsep_state *state)
+{
+	struct stream *strm;
+	char *mid;
+
+	if (!state || !state->strm)
+		return;
+	strm = state->strm;
+	mid = strm->mid;
+	strm->mid = state->mid;
+	state->mid = mid;
+	mem_deref(strm->mns);
+	strm->mns = state->mns;
+	state->mns = NULL;
+	mem_deref(strm->mencs);
+	strm->mencs = state->mencs;
+	state->mencs = NULL;
+	mem_deref(strm->mes);
+	strm->mes = state->mes;
+	state->mes = NULL;
+	mem_deref(strm->menc_transport);
+	strm->menc_transport = state->menc_transport;
+	state->menc_transport = NULL;
+	strm->mnat = state->mnat;
+	strm->menc = state->menc;
+	mtx_lock(strm->tx.lock);
+	strm->tx.raddr_rtp = state->raddr_rtp;
+	strm->tx.raddr_rtcp = state->raddr_rtcp;
+	strm->tx.pt_enc = state->pt_enc;
+	mtx_unlock(strm->tx.lock);
+	re_atomic_rls_set(&strm->tx.enabled, state->tx_enabled);
+	rtprecv_jsep_state_restore(strm->rx, state->rx_ssrc,
+				   state->rx_ssrc_set, state->rx_enabled);
+	strm->rtcp_mux = state->rtcp_mux;
+	rtprecv_enable_mux(strm->rx, state->rtcp_mux);
+	strm->mnat_connected = state->mnat_connected;
+	strm->menc_secure = state->menc_secure;
+	bundle_set_state(strm->bundle, state->bundle_state);
+	/* Restoring the negotiated MID extension is allocation-free. */
+	if (strm->bundle)
+		bundle_restore_extmap(strm->bundle, state->bundle_extmap_mid);
+}
 
 
 static void print_rtp_stats(const struct stream *s)
@@ -142,6 +274,7 @@ static void stream_destructor(void *arg)
 	list_unlink(&s->le);
 	mem_deref(s->sdp);
 	mem_deref(s->mes);
+	mem_deref(s->menc_transport);
 	mem_deref(s->mencs);
 	mem_deref(s->mns);
 	mem_deref(s->bundle);  /* NOTE: deref before rtp */
@@ -178,6 +311,9 @@ static void send_set_raddr(struct stream *strm, const struct sa *raddr)
 
 static bool mnat_ready(const struct stream *strm)
 {
+	if (bundle_state(stream_bundle(strm)) == BUNDLE_MUX)
+		return strm->mnat_connected;
+
 	if (strm->mnat && strm->mnat->wait_connected)
 		return strm->mnat_connected;
 	else
@@ -426,7 +562,9 @@ int stream_start_mediaenc(struct stream *strm)
 		sa_cpy(&raddr_rtcp, &strm->tx.raddr_rtcp);
 		mtx_unlock(strm->tx.lock);
 
-		err = strm->menc->mediah(&strm->mes, strm->mencs, strm->rtp,
+		err = strm->menc->mediah(&strm->mes, strm->mencs,
+				 strm->menc_transport,
+				 strm->rtp,
 				 rtp_sock(strm->rtp),
 				 strm->rtcp_mux ? NULL : rtcp_sock(strm->rtp),
 				 &raddr_rtp,
@@ -439,6 +577,133 @@ int stream_start_mediaenc(struct stream *strm)
 	}
 
 	return 0;
+}
+
+
+int stream_prepare_menc_transport(struct stream *strm,
+				  struct menc_transport *transport)
+{
+	return stream_prepare_menc_transport_mux(
+		strm, transport,
+		strm && (strm->rtcp_mux || !rtcp_sock(strm->rtp)));
+}
+
+
+int stream_prepare_menc_transport_mux(struct stream *strm,
+				      struct menc_transport *transport,
+				      bool rtcp_mux)
+{
+	if (!strm || !transport)
+		return EINVAL;
+	if (!strm->menc || !strm->mes ||
+	    !strm->menc->transportmemberaddh)
+		return ENOTSUP;
+
+	return menc_transport_member_add(strm->menc, transport, strm->mes,
+					 rtcp_mux || !rtcp_sock(strm->rtp));
+}
+
+
+int stream_prepare_menc_transport_removal(
+	struct stream *strm, struct menc_transport *transaction)
+{
+	if (!strm || !transaction)
+		return EINVAL;
+	if (!strm->menc || !strm->mes)
+		return ENOTSUP;
+
+	return menc_transport_member_remove(strm->menc, transaction,
+					    strm->mes);
+}
+
+
+void stream_publish_menc_transport(struct stream *strm,
+				   struct menc_transport *transport)
+{
+	stream_set_menc_transport(strm, transport);
+}
+
+
+void stream_set_menc_transport(struct stream *strm,
+			       struct menc_transport *transport)
+{
+	if (!strm || strm->menc_transport == transport)
+		return;
+
+	mem_deref(strm->menc_transport);
+	strm->menc_transport = mem_ref(transport);
+}
+
+
+struct menc_transport *stream_menc_transport_ref(
+	const struct stream *strm)
+{
+	return strm ? mem_ref(strm->menc_transport) : NULL;
+}
+
+
+bool stream_has_menc_transport(const struct stream *strm)
+{
+	return strm && strm->menc_transport;
+}
+
+
+struct mnat_media *stream_mnat_media_ref(const struct stream *strm)
+{
+	return strm ? mem_ref(strm->mns) : NULL;
+}
+
+
+void stream_publish_mnat_media(struct stream *strm,
+			       struct mnat_media *mnat_media)
+{
+	struct mnat_media *previous;
+
+	if (!strm || strm->mns == mnat_media)
+		return;
+	previous = strm->mns;
+	strm->mns = mem_ref(mnat_media);
+	mem_deref(previous);
+}
+
+
+int stream_set_mid(struct stream *strm, const char *mid)
+{
+	char *value;
+	int err;
+
+	if (!strm || !str_isset(mid))
+		return EINVAL;
+	if (!str_cmp(strm->mid, mid))
+		return 0;
+
+	err = str_dup(&value, mid);
+	if (err)
+		return err;
+	err = sdp_media_set_lattr(strm->sdp, true, "mid", "%s", mid);
+	if (err) {
+		mem_deref(value);
+		return err;
+	}
+
+	mem_deref(strm->mid);
+	strm->mid = value;
+	return 0;
+}
+
+
+int stream_promote_menc_transport(
+	struct stream *strm, struct menc_transport **mtp,
+	menc_transport_recv_h *recvh, menc_transport_estab_h *estabh,
+	menc_transport_close_h *closeh, void *arg)
+{
+	if (!strm || !mtp)
+		return EINVAL;
+	if (!strm->menc || !strm->menc->transportpromoteh || !strm->mes)
+		return ENOTSUP;
+
+	return strm->menc->transportpromoteh(mtp, strm->mes, recvh, estabh,
+					     closeh, arg);
 }
 
 
@@ -676,7 +941,7 @@ int stream_bundle_init(struct stream *strm, bool offerer)
 	if (!strm)
 		return EINVAL;
 
-	err = bundle_alloc(&strm->bundle);
+	err = bundle_alloc(&strm->bundle, strm);
 	if (err)
 		return err;
 
@@ -815,6 +1080,95 @@ static void disable_menc(struct stream *strm)
 }
 
 
+int stream_native_mnat_prepare(struct stream *strm, bool standalone)
+{
+	bool suspend;
+	int err = 0;
+
+	if (!strm)
+		return EINVAL;
+	if (strm->native_mnat_prepared)
+		return strm->native_mnat_prepared_suspended == !standalone
+			       ? 0 : EBUSY;
+	if (strm->native_mnat_activated)
+		return EALREADY;
+
+	suspend = !standalone;
+	if (strm->mnat && strm->mns) {
+		if (strm->mnat->mediaprepareh &&
+		    strm->mnat->mediaactivateh &&
+		    strm->mnat->mediarollbackh &&
+		    strm->mnat->mediafinalizeh &&
+		    strm->mnat->mediaaborth) {
+			err = strm->mnat->mediaprepareh(strm->mns, !suspend);
+			if (err)
+				return err;
+		}
+		else if (suspend != strm->native_mnat_suspended) {
+			return ENOTSUP;
+		}
+	}
+
+	strm->native_mnat_prepared_suspended = suspend;
+	strm->native_mnat_prepared = true;
+	return 0;
+}
+
+
+void stream_native_mnat_activate(struct stream *strm)
+{
+	if (!strm || !strm->native_mnat_prepared || strm->native_mnat_activated)
+		return;
+
+	strm->native_mnat_rollback_suspended = strm->native_mnat_suspended;
+	if (strm->mnat && strm->mns && strm->mnat->mediaactivateh)
+		strm->mnat->mediaactivateh(strm->mns);
+	strm->native_mnat_suspended = strm->native_mnat_prepared_suspended;
+	strm->native_mnat_prepared = false;
+	strm->native_mnat_activated = true;
+}
+
+
+void stream_native_mnat_rollback(struct stream *strm)
+{
+	if (!strm || !strm->native_mnat_activated)
+		return;
+
+	if (strm->mnat && strm->mns && strm->mnat->mediarollbackh)
+		strm->mnat->mediarollbackh(strm->mns);
+	strm->native_mnat_suspended = strm->native_mnat_rollback_suspended;
+	strm->native_mnat_activated = false;
+}
+
+
+void stream_native_mnat_finalize(struct stream *strm)
+{
+	if (!strm || !strm->native_mnat_activated)
+		return;
+
+	if (strm->mnat && strm->mns && strm->mnat->mediafinalizeh)
+		strm->mnat->mediafinalizeh(strm->mns);
+	strm->native_mnat_activated = false;
+}
+
+
+void stream_native_mnat_abort(struct stream *strm)
+{
+	if (!strm || !strm->native_mnat_prepared || strm->native_mnat_activated)
+		return;
+
+	if (strm->mnat && strm->mns && strm->mnat->mediaaborth)
+		strm->mnat->mediaaborth(strm->mns);
+	strm->native_mnat_prepared = false;
+}
+
+
+bool stream_native_mnat_suspended(const struct stream *strm)
+{
+	return strm && strm->native_mnat_suspended;
+}
+
+
 static void update_remotes(struct list *streaml, const struct sa *raddr)
 {
 	struct le *le;
@@ -830,13 +1184,15 @@ static void update_remotes(struct list *streaml, const struct sa *raddr)
 }
 
 
-static void stream_remote_set(struct stream *s)
+static int stream_remote_set(struct stream *s)
 {
-	const char *rmid, *rssrc;
+	const char *rssrc;
 	const struct network *net = baresip_network();
+	bool rtcp_mux;
+	int err;
 
 	if (!s)
-		return;
+		return EINVAL;
 
 	/* RFC 5576 */
 	rssrc = sdp_media_rattr(s->sdp, "ssrc");
@@ -848,25 +1204,19 @@ static void stream_remote_set(struct stream *s)
 	}
 
 	/* RFC 5761 */
-	if (s->cfg.rtcp_mux && sdp_media_rattr(s->sdp, "rtcp-mux")) {
+	rtcp_mux = s->cfg.rtcp_mux && sdp_media_rattr(s->sdp, "rtcp-mux");
+	if (rtcp_mux) {
 
 		if (!s->rtcp_mux)
 			info("%s: RTP/RTCP multiplexing enabled\n",
 			     sdp_media_name(s->sdp));
-		s->rtcp_mux = true;
-
-		sdp_media_set_lattr(s->sdp, true, "rtcp-mux", NULL);
+		err = sdp_media_set_lattr(s->sdp, true, "rtcp-mux", NULL);
+		if (err)
+			return err;
 	}
-
-	/* RFC 5888 */
-	rmid = sdp_media_rattr(s->sdp, "mid");
-	if (rmid) {
-		s->mid = mem_deref(s->mid);
-
-		str_dup(&s->mid, rmid);
-
-		sdp_media_set_lattr(s->sdp, true, "mid", "%s", rmid);
-	}
+	else
+		sdp_media_del_lattr(s->sdp, "rtcp-mux");
+	s->rtcp_mux = rtcp_mux;
 
 	rtprecv_enable_mux(s->rx, s->rtcp_mux);
 
@@ -895,6 +1245,7 @@ static void stream_remote_set(struct stream *s)
 			sa_is_linklocal(&s->tx.raddr_rtcp))
 		net_set_dst_scopeid(net, &s->tx.raddr_rtcp);
 	mtx_unlock(s->tx.lock);
+	return 0;
 }
 
 
@@ -905,7 +1256,7 @@ static void stream_remote_set(struct stream *s)
  *
  * @return 0 if success, otherwise errorcode
  */
-int stream_update(struct stream *s)
+static int stream_update_internal(struct stream *s, bool start_menc)
 {
 	const struct sdp_format *fmt;
 	int err = 0;
@@ -926,21 +1277,23 @@ int stream_update(struct stream *s)
 
 	if (sdp_media_has_media(s->sdp)) {
 
-		if (bundle_state(s->bundle) == BUNDLE_MUX) {
+		/* A muxed stream keeps its native transport dormant so a later
+		 * BUNDLE split can reactivate it without rebuilding ownership. */
 
-			if (s->mnat)
-				disable_mnat(s);
-		}
-
-		stream_remote_set(s);
+		err = stream_remote_set(s);
+		if (err)
+			return err;
 
 		/* Bundle */
 		if (s->bundle) {
-			bundle_handle_extmap(s->bundle, s->sdp);
+			err = bundle_handle_extmap(s->bundle, s->sdp);
+			if (err)
+				return err;
 		}
 	}
 
-	if (s->mencs && mnat_ready(s)) {
+	if (start_menc && s->mencs && mnat_ready(s) &&
+	    (!s->native_mnat_suspended || s->menc_transport)) {
 
 		err = stream_start_mediaenc(s);
 		if (err) {
@@ -952,6 +1305,21 @@ int stream_update(struct stream *s)
 	stream_enable(s, true);
 
 	return 0;
+}
+
+
+int stream_update(struct stream *s)
+{
+	return stream_update_internal(s, true);
+}
+
+
+int stream_update_jsep(struct stream *s)
+{
+	/* Transport establishment is intentionally outside the description
+	 * transaction.  In particular, mediah may synchronously publish secure
+	 * events and invoke application callbacks, which cannot be rolled back. */
+	return stream_update_internal(s, false);
 }
 
 
@@ -1067,6 +1435,18 @@ void stream_flush(struct stream *s)
 
 	if (s->type == MEDIA_AUDIO)
 		rtp_clear(s->rtp);
+}
+
+
+void stream_stop(struct stream *s)
+{
+	if (!s)
+		return;
+
+	stream_enable(s, false);
+	bundle_stop(s->bundle);
+	rtcp_start(s->rtp, NULL, NULL);
+	rtprecv_stop(s->rx);
 }
 
 
@@ -1716,12 +2096,14 @@ int stream_print(struct re_printf *pf, const struct stream *s)
 }
 
 
-void stream_parse_mid(struct stream *strm)
+int stream_parse_mid(struct stream *strm)
 {
 	const char *rmid;
+	char *mid = NULL;
+	int err;
 
 	if (!strm)
-		return;
+		return EINVAL;
 
 	/* RFC 5888 */
 	rmid = sdp_media_rattr(strm->sdp, "mid");
@@ -1732,35 +2114,110 @@ void stream_parse_mid(struct stream *strm)
 			     strm->mid, rmid);
 		}
 
-		strm->mid = mem_deref(strm->mid);
-
-		str_dup(&strm->mid, rmid);
-
-		sdp_media_set_lattr(strm->sdp, true, "mid", "%s", rmid);
+		err = str_dup(&mid, rmid);
+		if (err)
+			return err;
+		err = sdp_media_set_lattr(strm->sdp, true, "mid", "%s", rmid);
+		if (err) {
+			mem_deref(mid);
+			return err;
+		}
+		mem_deref(strm->mid);
+		strm->mid = mid;
 	}
+	return 0;
 }
 
 
 /* can be called after SDP o/a is complete */
 void stream_enable_bundle(struct stream *strm, enum bundle_state st)
 {
+	enum bundle_state previous;
+	int err;
+
 	if (!strm)
 		return;
 
 	info("stream: '%s' enable bundle (%s)\n",
 	     media_name(strm->type), bundle_state_name(st));
 
+	previous = bundle_state(strm->bundle);
 	bundle_set_state(strm->bundle, st);
 
-	if (st == BUNDLE_MUX) {
-
+	err = stream_native_mnat_prepare(strm, st != BUNDLE_MUX);
+	if (!err) {
+		stream_native_mnat_activate(strm);
+		stream_native_mnat_finalize(strm);
+	}
+	else if (err == ENOTSUP && st == BUNDLE_MUX) {
+		/* Modules without the transaction hooks retain the legacy behavior. */
 		if (strm->mnat)
 			disable_mnat(strm);
-		if (strm->menc)
+		if (strm->menc && !strm->menc_transport)
 			disable_menc(strm);
+	}
+	else if (err != EALREADY) {
+		bundle_set_state(strm->bundle, previous);
+		return;
 	}
 
 	bundle_start_socket(strm->bundle, rtp_sock(strm->rtp), strm->le.list);
+}
+
+
+void stream_stage_bundle(struct stream *strm, enum bundle_state st)
+{
+	if (strm)
+		bundle_set_state(strm->bundle, st);
+}
+
+
+int stream_prepare_bundle(struct stream *strm)
+{
+	enum bundle_state state;
+	int err;
+
+	if (!strm)
+		return EINVAL;
+	state = bundle_state(strm->bundle);
+	err = stream_native_mnat_prepare(strm, state != BUNDLE_MUX);
+	if (err)
+		return err;
+	if (state != BUNDLE_NONE) {
+		err = bundle_start_socket(strm->bundle, rtp_sock(strm->rtp),
+					  strm->le.list);
+		if (err && err != EALREADY) {
+			stream_native_mnat_abort(strm);
+			return err;
+		}
+	}
+	return 0;
+}
+
+
+void stream_commit_bundle(struct stream *strm)
+{
+	if (!strm)
+		return;
+	stream_native_mnat_activate(strm);
+}
+
+
+void stream_finalize_bundle(struct stream *strm)
+{
+	stream_native_mnat_finalize(strm);
+}
+
+
+void stream_rollback_bundle(struct stream *strm)
+{
+	stream_native_mnat_rollback(strm);
+}
+
+
+void stream_abort_bundle(struct stream *strm)
+{
+	stream_native_mnat_abort(strm);
 }
 
 
