@@ -37,6 +37,13 @@ struct call {
 	struct list streaml;      /**< List of mediastreams (struct stream) */
 	struct audio *audio;      /**< Audio stream                         */
 	struct video *video;      /**< Video stream                         */
+#ifdef USE_DATACHANNEL
+	struct data_context *data; /**< SCTP data-channel transport         */
+	struct sdp_media *data_reject; /**< Rejected remote data m-line     */
+	call_datachannel_h *data_channelh; /**< Incoming data channel        */
+	void *data_channel_arg; /**< Incoming data-channel argument        */
+	struct tmr data_notify_tmr; /**< Deferred negotiated-channel event */
+#endif
 	enum call_state state;    /**< Call state                           */
 	int32_t adelay;           /**< Auto answer delay in ms              */
 	char *aluri;              /**< Alert-Info URI                       */
@@ -88,6 +95,28 @@ struct call {
 	call_sip_info_h *sip_infoh;/**< SIP INFO handler for this call      */
 	void *sip_info_arg;        /**< SIP INFO handler argument           */
 };
+
+
+#ifdef USE_DATACHANNEL
+struct call_stream_description_state {
+	struct le le;
+	struct stream_jsep_state *state;
+};
+
+
+struct call_description_state {
+	struct sdp_session_state *sdp;
+	struct list streams;
+	bool had_data;
+	bool had_data_reject;
+	bool data_started;
+	bool data_committed;
+	bool data_prepared;
+	bool provisional;
+	bool got_offer;
+	bool remote_hold;
+};
+#endif
 
 
 static int send_invite(struct call *call);
@@ -264,7 +293,12 @@ static int call_apply_sdp(struct call *call)
 	FOREACH_STREAM {
 		struct stream *strm = le->data;
 
-		stream_update(strm);
+		err = stream_update(strm);
+		if (err) {
+			warning("call: stream '%s' update failed (%m)\n",
+				stream_name(strm), err);
+			return err;
+		}
 
 		if (stream_is_ready(strm)) {
 
@@ -274,6 +308,10 @@ static int call_apply_sdp(struct call *call)
 
 	if (call->acc->mnat && call->acc->mnat->updateh && call->mnats)
 		err = call->acc->mnat->updateh(call->mnats);
+#ifdef USE_DATACHANNEL
+	if (!err && call->data)
+		err = data_context_start(call->data);
+#endif
 
 	return err;
 }
@@ -300,27 +338,32 @@ static int update_streams(struct call *call)
 }
 
 
+#ifdef USE_DATACHANNEL
+static void data_notify_handler(void *arg)
+{
+	struct call *call = arg;
+
+	mem_ref(call);
+	if (call->data)
+		data_context_notify_channels(call->data, true);
+	mem_deref(call);
+}
+#endif
+
+
 int call_update_media(struct call *call)
 {
 	int err;
 
 	err = call_apply_sdp(call);
-	err |= update_streams(call);
+	if (!err)
+		err = update_streams(call);
+#ifdef USE_DATACHANNEL
+	if (!err && call->data)
+		tmr_start(&call->data_notify_tmr, 0, data_notify_handler, call);
+#endif
 
 	return err;
-}
-
-
-static int update_media(struct call *call)
-{
-	debug("call: update media\n");
-
-	int err = bevent_call_emit(BEVENT_CALL_REMOTE_SDP, call,
-				   call->got_offer ? "offer" : "answer");
-	if (err)
-		return err;
-
-	return call_update_media(call);
 }
 
 
@@ -360,6 +403,11 @@ static void call_destructor(void *arg)
 	mem_deref(call->diverter_uri);
 	mem_deref(call->audio);
 	mem_deref(call->video);
+#ifdef USE_DATACHANNEL
+	tmr_cancel(&call->data_notify_tmr);
+	mem_deref(call->data);
+	mem_deref(call->data_reject);
+#endif
 	mem_deref(call->sdp);
 	mem_deref(call->mnats);
 	mem_deref(call->mencs);
@@ -430,6 +478,8 @@ static void menc_event_handler(enum menc_event event,
 			       const char *prm, struct stream *strm, void *arg)
 {
 	struct call *call = arg;
+	struct stream *audio_stream;
+	bool legacy_base = false;
 	int err;
 	(void)strm;
 	MAGIC_CHECK(call);
@@ -442,13 +492,31 @@ static void menc_event_handler(enum menc_event event,
 
 	case MENC_EVENT_SECURE:
 		if (strstr(prm, "audio")) {
-			stream_set_secure(audio_strm(call->audio), true);
+			audio_stream = audio_strm(call->audio);
+			legacy_base =
+				bundle_state(stream_bundle(audio_stream)) ==
+					BUNDLE_BASE &&
+				!stream_has_menc_transport(audio_stream);
+			stream_set_secure(audio_stream, true);
 			if (secure_rtcp)
-				stream_start_rtcp(audio_strm(call->audio));
+				stream_start_rtcp(audio_stream);
 			err = audio_update(call->audio);
 			if (err) {
 				warning("call: secure: could not"
 					" start audio: %m\n", err);
+			}
+			if (call->video && legacy_base) {
+				stream_set_secure(
+					video_strm(call->video), true);
+				stream_start_rtcp(
+					video_strm(call->video));
+				err = video_update(call->video,
+						   call->peer_uri);
+				if (err) {
+					warning("call: secure: could not"
+						" start bundled video: %m\n",
+						err);
+				}
 			}
 		}
 		else if (strstr(prm, "video")) {
@@ -503,6 +571,15 @@ static void stream_mnatconn_handler(struct stream *strm, void *arg)
 			call_event_handler(call, CALL_EVENT_CLOSED,
 					   "mediaenc failed %m", err);
 		}
+#ifdef USE_DATACHANNEL
+		else if (call->data) {
+			err = data_context_start(call->data);
+			if (err)
+				call_event_handler(call, CALL_EVENT_CLOSED,
+						   "data transport failed %m",
+						   err);
+		}
+#endif
 	}
 	else if (stream_is_ready(strm)) {
 
@@ -734,6 +811,468 @@ static void call_decode_sip_autoanswer(struct call *call,
 }
 
 
+#ifdef USE_DATACHANNEL
+static void call_data_error_handler(int err, void *arg)
+{
+	warning("call: data transport failed without closing RTP media (%m)\n",
+		err);
+	(void)arg;
+}
+
+
+static uint32_t call_data_dispatch_refs(void *arg)
+{
+	return mem_nrefs(arg);
+}
+
+
+static bool sdp_has_data_mline(const struct mbuf *mb)
+{
+	static const char prefix[] = "m=application ";
+	const uint8_t *cursor;
+	const uint8_t *limit;
+	size_t left;
+
+	if (!mb)
+		return false;
+	cursor = mb->buf + mb->pos;
+	limit = mb->buf + mb->end;
+	while (cursor < limit) {
+		const uint8_t *start;
+		const uint8_t *end;
+
+		left = (size_t)(limit - cursor);
+		start = memmem(cursor, left, prefix, sizeof(prefix) - 1);
+		if (!start)
+			return false;
+		end = memchr(start, '\n', (size_t)(limit - start));
+		left = end ? (size_t)(end - start)
+			   : (size_t)(limit - start);
+		if (memmem(start, left, "UDP/DTLS/SCTP", 13))
+			return true;
+		if (!end)
+			return false;
+		cursor = end + 1;
+	}
+	return false;
+}
+
+
+static bool sdp_section_has_rtcp_mux(const uint8_t *section, size_t len)
+{
+	static const char attr[] = "a=rtcp-mux";
+	const uint8_t *line = section;
+	const uint8_t *end = section + len;
+
+	while (line < end) {
+		const uint8_t *next = memchr(line, '\n',
+					     (size_t)(end - line));
+		size_t line_len = next ? (size_t)(next - line)
+				      : (size_t)(end - line);
+
+		if (line_len && line[line_len - 1] == '\r')
+			--line_len;
+		if (line_len == sizeof(attr) - 1 &&
+		    !memcmp(line, attr, line_len))
+			return true;
+		if (!next)
+			break;
+		line = next + 1;
+	}
+	return false;
+}
+
+
+static bool sdp_rtp_mlines_muxed(const struct mbuf *mb)
+{
+	const uint8_t *line;
+	const uint8_t *end;
+
+	if (!mb)
+		return false;
+	line = mb->buf + mb->pos;
+	end = mb->buf + mb->end;
+
+	while (line < end) {
+		const uint8_t *next = memchr(line, '\n',
+					     (size_t)(end - line));
+		const uint8_t *section_end = end;
+		const uint8_t *port_start;
+		const uint8_t *port_end;
+		uint32_t port = 0;
+		size_t line_len = next ? (size_t)(next - line)
+				      : (size_t)(end - line);
+
+		if (line_len && line[line_len - 1] == '\r')
+			--line_len;
+		if ((line_len < 8 || memcmp(line, "m=audio ", 8)) &&
+		    (line_len < 8 || memcmp(line, "m=video ", 8)))
+			goto next_line;
+
+		port_start = line + 8;
+		port_end = memchr(port_start, ' ',
+				  line_len - (size_t)(port_start - line));
+		if (!port_end || port_end == port_start)
+			return false;
+		for (const uint8_t *p = port_start; p < port_end; ++p) {
+			uint32_t digit;
+
+			if (*p < '0' || *p > '9')
+				return false;
+			digit = (uint32_t)(*p - '0');
+			if (port > (UINT16_MAX - digit) / 10)
+				return false;
+			port = port * 10 + digit;
+		}
+		if (!port)
+			goto next_line;
+
+		const uint8_t *search = next ? next + 1 : end;
+		const uint8_t *next_media =
+			memmem(search, (size_t)(end - search), "\nm=", 3);
+		if (next_media)
+			section_end = next_media + 1;
+		if (!sdp_section_has_rtcp_mux(
+			    search, (size_t)(section_end - search)))
+			return false;
+
+ next_line:
+		if (!next)
+			break;
+		line = next + 1;
+	}
+	return true;
+}
+
+
+static bool call_data_supported(const struct call *call)
+{
+	return call && call->acc->rtcp_mux && call->acc->mnat &&
+		call->acc->menc && call->acc->menc->transporth &&
+		call->mnats && call->mencs;
+}
+
+
+static bool call_remote_rtcp_mux(const struct call *call)
+{
+	struct le *le;
+
+	if (!call->acc->rtcp_mux)
+		return false;
+	for (le = call->streaml.head; le; le = le->next) {
+		struct stream *stream = le->data;
+		struct sdp_media *media = stream_sdpmedia(stream);
+
+		if (sdp_media_has_media(media) &&
+		    !sdp_media_rattr(media, "rtcp-mux"))
+			return false;
+	}
+	return true;
+}
+
+
+static int call_data_reject_ensure(struct call *call)
+{
+	int err;
+
+	if (call->data || call->data_reject)
+		return 0;
+	err = sdp_media_add(&call->data_reject, call->sdp, "application", 0,
+			    "UDP/DTLS/SCTP");
+	if (!err)
+		err = sdp_format_add(NULL, call->data_reject, false,
+				     "webrtc-datachannel", NULL, 0, 0,
+				     NULL, NULL, NULL, false, NULL);
+	return err;
+}
+
+
+static int call_data_ensure(struct call *call, bool bundle)
+{
+	struct stream *base = NULL;
+	int err;
+
+	if (call->data)
+		return 0;
+	if (!call_data_supported(call))
+		return ENOTSUP;
+	if (list_isempty(&call->streaml))
+		return EAGAIN;
+
+	if (bundle && call->cfg->avt.bundle)
+		base = call->streaml.head->data;
+	err = data_context_alloc(&call->data, call->sdp, call->acc->mnat,
+				 call->mnats, call->acc->menc, call->mencs,
+				 base, &call->streaml, call->af,
+				 !call->got_offer, call_data_error_handler,
+				 call);
+	if (!err)
+		data_context_set_dispatch_refs(
+			call->data, call_data_dispatch_refs, call);
+	if (!err)
+		err = data_context_set_handler(
+			call->data, call->data_channelh,
+			call->data_channel_arg);
+	if (!err && base)
+		err = data_context_bundle_encode(call->data,
+						 &call->streaml);
+	return err;
+}
+
+
+static int call_prepare_remote_data(struct call *call, const struct mbuf *sdp)
+{
+	int err;
+
+	if (!sdp_has_data_mline(sdp))
+		return 0;
+	if (!call->acc->rtcp_mux || !sdp_rtp_mlines_muxed(sdp))
+		return call_data_reject_ensure(call);
+	err = call_data_ensure(call, true);
+	if (err == ENOTSUP) {
+		err = call_data_reject_ensure(call);
+	}
+	return err;
+}
+
+
+static int call_update_remote_data(struct call *call, bool offer)
+{
+	int err;
+
+	if (!call->data) {
+		const char *mid;
+
+		if (!call->data_reject)
+			return 0;
+		mid = sdp_media_rattr(call->data_reject, "mid");
+		if (!str_isset(mid))
+			return EPROTO;
+		sdp_media_set_lport(call->data_reject, 0);
+		return sdp_media_set_lattr(call->data_reject, true,
+					   "mid", "%s", mid);
+	}
+	if (!call_remote_rtcp_mux(call))
+		return data_context_set_rejected(call->data, true);
+
+	err = data_context_set_rejected(call->data, false);
+	if (!err)
+		err = data_context_remote_update(call->data, offer);
+	if (err)
+		warning("call: remote data update failed (%m)\n", err);
+	return err;
+}
+
+
+static void call_stream_description_state_destructor(void *arg)
+{
+	struct call_stream_description_state *state = arg;
+
+	list_unlink(&state->le);
+	mem_deref(state->state);
+}
+
+
+static void call_description_state_destructor(void *arg)
+{
+	struct call_description_state *state = arg;
+
+	list_flush(&state->streams);
+	mem_deref(state->sdp);
+}
+
+
+static void call_description_abort(struct call_description_state *state,
+				   struct call *call);
+
+
+static int call_description_begin(struct call_description_state **statep,
+				  struct call *call, const struct mbuf *sdp)
+{
+	struct call_description_state *state;
+	const struct le *le;
+	int err;
+
+	if (!statep || !call)
+		return EINVAL;
+	state = mem_zalloc(sizeof(*state), call_description_state_destructor);
+	if (!state)
+		return ENOMEM;
+	state->had_data = call->data != NULL;
+	state->had_data_reject = call->data_reject != NULL;
+	state->got_offer = call->got_offer;
+	state->remote_hold = call->remote_hold;
+	err = sdp_session_state_save(&state->sdp, call->sdp);
+	if (err)
+		goto out;
+	for (le = list_head(&call->streaml); le; le = le->next) {
+		struct call_stream_description_state *stream_state;
+
+		stream_state = mem_zalloc(
+			sizeof(*stream_state),
+			call_stream_description_state_destructor);
+		if (!stream_state) {
+			err = ENOMEM;
+			goto out;
+		}
+		err = stream_jsep_state_save(&stream_state->state, le->data);
+		if (err) {
+			mem_deref(stream_state);
+			goto out;
+		}
+		list_append(&state->streams, &stream_state->le, stream_state);
+	}
+	if (sdp) {
+		err = call_prepare_remote_data(call, sdp);
+		if (err)
+			goto out;
+	}
+	if (call->data) {
+		err = data_context_description_begin(call->data);
+		if (err)
+			goto out;
+		state->data_started = true;
+	}
+	*statep = state;
+	return 0;
+
+out:
+	call_description_abort(state, call);
+	mem_deref(state);
+	return err;
+}
+
+
+static void call_description_abort(struct call_description_state *state,
+				   struct call *call)
+{
+	struct le *le;
+
+	if (!state || !call)
+		return;
+	if (state->data_started && call->data) {
+		if (state->data_committed && state->provisional)
+			data_context_rollback(call->data);
+		else if (!state->data_committed)
+			data_context_description_abort(call->data);
+	}
+	for (le = list_head(&state->streams); le; le = le->next) {
+		struct call_stream_description_state *stream_state = le->data;
+
+		stream_jsep_state_restore(stream_state->state);
+	}
+	/* Release stream-held candidate transports before dropping a context
+	 * created by this operation; otherwise the callback ownership cycle can
+	 * survive into the immediate retry. */
+	if (!state->had_data)
+		call->data = mem_deref(call->data);
+	if (!state->had_data_reject)
+		call->data_reject = mem_deref(call->data_reject);
+	call->got_offer = state->got_offer;
+	call->remote_hold = state->remote_hold;
+	sdp_session_state_restore(state->sdp);
+	state->sdp = NULL;
+}
+
+
+static int call_description_prepare(struct call_description_state *state,
+				    struct call *call, bool provisional)
+{
+	int err;
+
+	if (!state || !call)
+		return EINVAL;
+	err = state->data_started
+		? data_context_description_prepare(call->data, provisional) : 0;
+	if (err)
+		return err;
+	state->data_prepared = state->data_started;
+	state->provisional = provisional;
+	return 0;
+}
+
+
+static void call_description_publish(struct call_description_state *state,
+				     struct call *call)
+{
+	if (!state || !call)
+		return;
+	if (state->data_started)
+		data_context_description_publish(call->data, state->provisional);
+	state->data_committed = state->data_started;
+	if (state->data_started)
+		data_context_description_finalize(call->data, state->provisional);
+	if (state->data_started && !state->provisional)
+		tmr_start(&call->data_notify_tmr, 0, data_notify_handler, call);
+}
+
+
+static int call_description_commit(struct call_description_state *state,
+				   struct call *call, bool provisional)
+{
+	int err = call_description_prepare(state, call, provisional);
+
+	if (err)
+		return err;
+	call_description_publish(state, call);
+	return 0;
+}
+
+
+int call_set_datachannel_handler(struct call *call,
+				 call_datachannel_h *channelh, void *arg)
+{
+	if (!call)
+		return EINVAL;
+	call->data_channelh = channelh;
+	call->data_channel_arg = arg;
+	if (!call->data)
+		return 0;
+	return data_context_set_handler(call->data, channelh, arg);
+}
+
+
+int call_create_datachannel(struct call *call, const char *label,
+			    const struct data_channel_config *cfg,
+			    struct data_channel **dcp)
+{
+	bool renegotiate;
+	int err;
+
+	if (!call)
+		return EINVAL;
+	err = data_context_channel_validate(label, cfg, dcp);
+	if (err)
+		return err;
+	if (!call->acc->rtcp_mux)
+		return ENOTSUP;
+	if (list_isempty(&call->streaml)) {
+		err = call_streams_alloc(call);
+		if (err)
+			return err;
+	}
+	if (call->state == CALL_STATE_ESTABLISHED &&
+	    !call_remote_rtcp_mux(call))
+		return ENOTSUP;
+
+	renegotiate = call->state == CALL_STATE_ESTABLISHED &&
+		      (!call->data || (cfg && cfg->negotiated));
+	err = call_data_ensure(call, true);
+	if (err)
+		return err;
+	err = data_context_channel_create(call->data, label, cfg, dcp);
+	if (!err && renegotiate) {
+		err = call_modify(call);
+		if (err) {
+			(void)datachannel_close(*dcp);
+			*dcp = NULL;
+		}
+	}
+	return err;
+}
+#endif
+
+
 int call_streams_alloc(struct call *call)
 {
 	if (!call)
@@ -860,6 +1399,9 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	tmr_init(&call->tmr_inv);
 	tmr_init(&call->tmr_answ);
 	tmr_init(&call->tmr_reinv);
+#ifdef USE_DATACHANNEL
+	tmr_init(&call->data_notify_tmr);
+#endif
 
 	call->cfg    = cfg;
 	call->acc    = mem_ref(acc);
@@ -1097,7 +1639,8 @@ int call_connect(struct call *call, const struct pl *paddr)
 		err = send_invite(call);
 	}
 	else {
-		err = call_streams_alloc(call);
+		err = list_isempty(&call->streaml)
+			      ? call_streams_alloc(call) : 0;
 		if (err)
 			return err;
 
@@ -1118,6 +1661,10 @@ int call_connect(struct call *call, const struct pl *paddr)
 int call_modify(struct call *call)
 {
 	struct mbuf *desc = NULL;
+#ifdef USE_DATACHANNEL
+	struct call_description_state *description = NULL;
+	bool data_offer_published = false;
+#endif
 	int err;
 
 	if (!call)
@@ -1126,22 +1673,64 @@ int call_modify(struct call *call)
 	debug("call: modify\n");
 
 	if (call_refresh_allowed(call)) {
+#ifdef USE_DATACHANNEL
+		if (call->data) {
+			/* A terminal non-2xx re-INVITE response has no sipsess
+			 * description callback.  Once refresh is allowed again, discard
+			 * the previous local-offer candidate before taking the retry
+			 * snapshot.  Successful answers already clear this state. */
+			data_context_rollback(call->data);
+			err = call_description_begin(&description, call, NULL);
+			if (err)
+				return err;
+		}
+#endif
 		err = bevent_call_emit(BEVENT_CALL_LOCAL_SDP, call, "offer");
 		if (err)
-			return err;
+			goto out;
 
 		err = call_sdp_get(call, &desc, true);
 		if (err)
-			return err;
+			goto out;
 
+#ifdef USE_DATACHANNEL
+		if (description) {
+			err = call_description_prepare(description, call, true);
+			if (err)
+				goto out;
+		}
+#endif
 		err = sipsess_modify(call->sess, desc);
 		if (err)
 			goto out;
+#ifdef USE_DATACHANNEL
+		if (description) {
+			call_description_publish(description, call);
+			data_offer_published = true;
+			/* Signaling and provisional publication are irreversible.  A
+			 * subsequent runtime-media error must not roll back the offer that
+			 * the peer has already received. */
+			description = mem_deref(description);
+		}
+#endif
 	}
 
-	err = call_update_media(call);
+#ifdef USE_DATACHANNEL
+	if (data_offer_published) {
+		err = call_apply_sdp(call);
+		if (!err)
+			err = update_streams(call);
+	}
+	else
+#endif
+		err = call_update_media(call);
 
  out:
+#ifdef USE_DATACHANNEL
+	if (err && description)
+		call_description_abort(description, call);
+	mem_deref(description);
+#endif
 	mem_deref(desc);
 
 	return err;
@@ -1280,7 +1869,10 @@ int call_progress(struct call *call)
  */
 int call_progress_dir(struct call *call, enum sdp_dir adir, enum sdp_dir vdir)
 {
-	struct mbuf *desc;
+	struct mbuf *desc = NULL;
+#ifdef USE_DATACHANNEL
+	struct call_description_state *description = NULL;
+#endif
 	int err;
 
 	if (!call)
@@ -1302,9 +1894,33 @@ int call_progress_dir(struct call *call, enum sdp_dir adir, enum sdp_dir vdir)
 	if (adir != call->estadir || vdir != call->estvdir)
 		call_set_mdir(call, adir, vdir);
 
+#ifdef USE_DATACHANNEL
+	if (call->got_offer) {
+		err = call_description_begin(&description, call, NULL);
+		if (err)
+			return err;
+	}
+#endif
 	err = call_sdp_get(call, &desc, false);
 	if (err)
-		return err;
+		goto out;
+	if (call->got_offer) {
+		err = bevent_call_emit(BEVENT_CALL_LOCAL_SDP, call, "answer");
+		if (err)
+			goto out;
+		err = call_apply_sdp(call);
+		if (!err)
+			err = update_streams(call);
+		if (err)
+			goto out;
+	}
+#ifdef USE_DATACHANNEL
+	if (description) {
+		err = call_description_prepare(description, call, true);
+		if (err)
+			goto out;
+	}
+#endif
 
 	err = sipsess_progress(call->sess, 183, "Session Progress",
 			       account_rel100_mode(call->acc),
@@ -1316,15 +1932,17 @@ int call_progress_dir(struct call *call, enum sdp_dir adir, enum sdp_dir vdir)
 	if (err)
 		goto out;
 
-	if (call->got_offer) {
-		bevent_call_emit(BEVENT_CALL_LOCAL_SDP, call, "answer");
-		err = call_update_media(call);
-	}
-
-	if (err)
-		goto out;
+#ifdef USE_DATACHANNEL
+	if (description)
+		call_description_publish(description, call);
+#endif
 
 out:
+#ifdef USE_DATACHANNEL
+	if (err && description)
+		call_description_abort(description, call);
+	mem_deref(description);
+#endif
 	mem_deref(desc);
 
 	return err;
@@ -1356,7 +1974,10 @@ static bool call_need_modify(const struct call *call)
  */
 int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 {
-	struct mbuf *desc;
+	struct mbuf *desc = NULL;
+#ifdef USE_DATACHANNEL
+	struct call_description_state *description = NULL;
+#endif
 	int err;
 
 	if (!call || !call->sess)
@@ -1382,18 +2003,33 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 	info("call: answering call on line %u from %s with %u\n",
 			call->linenum, call->peer_uri, scode);
 
+#ifdef USE_DATACHANNEL
 	if (call->got_offer) {
-		err = call_apply_sdp(call);
+		err = call_description_begin(&description, call, NULL);
 		if (err)
 			return err;
 	}
-
-	bevent_call_emit(BEVENT_CALL_LOCAL_SDP, call,
-			 "%s", !call->got_offer ? "offer" : "answer");
-
-	err = sdp_encode(&desc, call->sdp, !call->got_offer);
+#endif
+	err = bevent_call_emit(BEVENT_CALL_LOCAL_SDP, call,
+			       "%s", !call->got_offer ? "offer" : "answer");
 	if (err)
-		return err;
+		goto out;
+	if (call->got_offer) {
+		err = call_apply_sdp(call);
+		if (err)
+			goto out;
+	}
+	err = call_sdp_get(call, &desc, !call->got_offer);
+	if (err)
+		goto out;
+
+#ifdef USE_DATACHANNEL
+	if (description) {
+		err = call_description_prepare(description, call, false);
+		if (err)
+			goto out;
+	}
+#endif
 
 	if (scode >= 200 && scode < 300) {
 		err = sipsess_answer(call->sess, scode, "Answering", desc,
@@ -1408,7 +2044,10 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 
 	if (err)
 		goto out;
-
+#ifdef USE_DATACHANNEL
+	if (description)
+		call_description_publish(description, call);
+#endif
 	call->answered = true;
 	call->ans_queued = false;
 
@@ -1416,6 +2055,11 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 		(void)video_update(call->video, call->peer_uri);
 
 out:
+#ifdef USE_DATACHANNEL
+	if (err && description)
+		call_description_abort(description, call);
+	mem_deref(description);
+#endif
 	mem_deref(desc);
 	return err;
 }
@@ -1533,10 +2177,30 @@ int call_set_video_dir(struct call *call, enum sdp_dir dir)
 
 int call_sdp_get(const struct call *call, struct mbuf **descp, bool offer)
 {
+	int err;
+
 	if (!call)
 		return EINVAL;
 
-	return sdp_encode(descp, call->sdp, offer);
+#ifdef USE_DATACHANNEL
+	if (call->data) {
+		err = data_context_bundle_encode(call->data, &call->streaml);
+		if (err)
+			return err;
+	}
+	else
+#endif
+	if (call->config_avt.bundle) {
+		err = bundle_sdp_encode(call->sdp, &call->streaml);
+		if (err)
+			return err;
+	}
+	err = sdp_encode(descp, call->sdp, offer);
+#ifdef USE_DATACHANNEL
+	if (!err && call->data)
+		err = data_context_local_description(call->data, offer);
+#endif
+	return err;
 }
 
 
@@ -1918,35 +2582,48 @@ static int sipsess_offer_handler(struct mbuf **descp,
 {
 	const bool got_offer = (0 != mbuf_get_left(msg->mb));
 	struct call *call = arg;
+#ifdef USE_DATACHANNEL
+	struct call_description_state *description = NULL;
+#endif
 	enum sdp_dir ardir, vrdir;
+	enum sdp_dir old_rdir = SDP_INACTIVE;
+	enum bevent_ev hold_ev = BEVENT_CALL_HOLD;
+	bool emit_hold = false;
 	int err;
 
 	MAGIC_CHECK(call);
 
 	if (got_offer) {
-		enum bevent_ev hold_ev;
 		const struct sdp_media *m =
 			stream_sdpmedia(audio_strm(call->audio));
-		const enum sdp_dir old_rdir = sdp_media_rdir(m);
+		old_rdir = sdp_media_rdir(m);
+#ifdef USE_DATACHANNEL
+		err = call_description_begin(&description, call, msg->mb);
+		if (err)
+			goto out;
+#endif
 		call->got_offer = true;
-
 		/* Decode SDP Offer */
 		err = sdp_decode(call->sdp, msg->mb, true);
 		if (err) {
 			warning("call: reinvite: could not decode SDP offer:"
 				" %m\n", err);
-			return err;
+			goto out;
+		}
+#ifdef USE_DATACHANNEL
+		err = call_update_remote_data(call, true);
+		if (err)
+			goto out;
+#endif
+		if (call->config_avt.bundle) {
+			err = bundle_sdp_decode(call->sdp, &call->streaml);
+			if (err) {
+				warning("call: re-INVITE BUNDLE update failed (%m)\n",
+					err);
+				goto out;
+			}
 		}
 
-		if (detect_hold_resume(&hold_ev, call, old_rdir, true))
-			bevent_call_emit(hold_ev, call, "");
-
-		err = update_media(call);
-		if (err) {
-			warning("call: reinvite - update media failed/rejected"
-				" (%m)\n", err);
-			return err;
-		}
 	}
 
 	ardir = sdp_media_rdir(stream_sdpmedia(audio_strm(call_audio(call))));
@@ -1956,13 +2633,51 @@ static int sipsess_offer_handler(struct mbuf **descp,
 	     got_offer ? " (SDP Offer)" : "",
 	     sdp_dir_name(ardir), sdp_dir_name(vrdir));
 
-	/* Encode SDP Answer */
-	err = sdp_encode(descp, call->sdp, !got_offer);
-	if (err)
-		return err;
-
 	err = bevent_call_emit(BEVENT_CALL_LOCAL_SDP, call, "%s",
 			       got_offer ? "answer" : "offer");
+	if (err)
+		goto out;
+	if (got_offer) {
+		err = bevent_call_emit(BEVENT_CALL_REMOTE_SDP, call, "offer");
+		if (err)
+			goto out;
+		err = call_apply_sdp(call);
+		if (!err)
+			err = update_streams(call);
+		if (err) {
+			warning("call: reinvite - update media failed/rejected"
+				" (%m)\n", err);
+			goto out;
+		}
+	}
+	/* Encode only after vetoes and media preparation succeed. */
+	err = call_sdp_get(call, descp, !got_offer);
+	if (err)
+		goto out;
+#ifdef USE_DATACHANNEL
+	if (description)
+		err = call_description_prepare(description, call, false);
+#endif
+	if (err)
+		goto out;
+#ifdef USE_DATACHANNEL
+	if (description)
+		call_description_publish(description, call);
+#endif
+	if (got_offer) {
+		emit_hold = detect_hold_resume(&hold_ev, call, old_rdir, true);
+		if (emit_hold)
+			(void)bevent_call_emit(hold_ev, call, "");
+	}
+
+out:
+#ifdef USE_DATACHANNEL
+	if (err && description)
+		call_description_abort(description, call);
+	mem_deref(description);
+#endif
+	if (err && descp)
+		*descp = mem_deref(*descp);
 	return err;
 }
 
@@ -1970,6 +2685,9 @@ static int sipsess_offer_handler(struct mbuf **descp,
 static int sipsess_answer_handler(const struct sip_msg *msg, void *arg)
 {
 	struct call *call = arg;
+#ifdef USE_DATACHANNEL
+	struct call_description_state *description = NULL;
+#endif
 	int err;
 	enum bevent_ev hold_ev;
 	const struct sdp_media *m = stream_sdpmedia(audio_strm(call->audio));
@@ -1982,35 +2700,66 @@ static int sipsess_answer_handler(const struct sip_msg *msg, void *arg)
 	if (sip_msg_hdr_has_value(msg, SIP_HDR_SUPPORTED, "replaces"))
 		call->supported |= REPLACES;
 
+	if (msg_ctype_cmp(&msg->ctyp, "multipart", "mixed"))
+		(void)sdp_decode_multipart(&msg->ctyp.params, msg->mb);
+
+#ifdef USE_DATACHANNEL
+	err = call_description_begin(&description, call, msg->mb);
+	if (err)
+		goto out;
+#endif
 	call->got_offer = false;
+	err = sdp_decode(call->sdp, msg->mb, false);
+	if (err) {
+		warning("call: could not decode SDP answer: %m\n", err);
+		goto out;
+	}
+#ifdef USE_DATACHANNEL
+	err = call_update_remote_data(call, false);
+	if (err)
+		goto out;
+#endif
+
+	/* note: before update_media */
+	if (call->config_avt.bundle) {
+		err = bundle_sdp_decode(call->sdp, &call->streaml);
+		if (err) {
+			warning("call: answer BUNDLE update failed (%m)\n", err);
+			goto out;
+		}
+	}
+
+	err = bevent_call_emit(BEVENT_CALL_REMOTE_SDP, call, "answer");
+	if (err)
+		goto out;
+	err = call_apply_sdp(call);
+	if (!err)
+		err = update_streams(call);
+	if (err)
+		goto out;
+#ifdef USE_DATACHANNEL
+	err = call_description_prepare(description, call, msg->scode < 200);
+#endif
+	if (err)
+		goto out;
+#ifdef USE_DATACHANNEL
+	call_description_publish(description, call);
+#endif
+	if (detect_hold_resume(&hold_ev, call, old_rdir, false))
+		(void)bevent_call_emit(hold_ev, call, "");
 	if (!pl_strcmp(&msg->cseq.met, "INVITE") &&
 	    msg->scode >= 200 && msg->scode < 300 &&
 	    call_state(call) != CALL_STATE_ESTABLISHED)
 		call_event_handler(call, CALL_EVENT_ANSWERED, "%s",
-                                   call->peer_uri);
+				   call->peer_uri);
 
-	if (msg_ctype_cmp(&msg->ctyp, "multipart", "mixed"))
-		(void)sdp_decode_multipart(&msg->ctyp.params, msg->mb);
-
-	err = sdp_decode(call->sdp, msg->mb, false);
-	if (err) {
-		warning("call: could not decode SDP answer: %m\n", err);
-		return err;
-	}
-
-	if (detect_hold_resume(&hold_ev, call, old_rdir, false))
-		bevent_call_emit(hold_ev, call, "");
-
-	/* note: before update_media */
-	if (call->config_avt.bundle) {
-		bundle_sdp_decode(call->sdp, &call->streaml);
-	}
-
-	err = update_media(call);
-	if (err)
-		return err;
-
-	return 0;
+out:
+#ifdef USE_DATACHANNEL
+	if (err && description)
+		call_description_abort(description, call);
+	mem_deref(description);
+#endif
+	return err;
 }
 
 
@@ -2429,6 +3178,9 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 		const struct sip_msg *msg)
 {
 	const struct sip_hdr *hdr;
+#ifdef USE_DATACHANNEL
+	struct call_description_state *description = NULL;
+#endif
 	int err;
 
 	if (!call || !msg)
@@ -2447,9 +3199,27 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 
 	if (call->got_offer) {
 
-		err = sdp_decode(call->sdp, msg->mb, true);
+#ifdef USE_DATACHANNEL
+		err = call_description_begin(&description, call, msg->mb);
 		if (err)
 			return err;
+#endif
+		err = sdp_decode(call->sdp, msg->mb, true);
+		if (err) {
+#ifdef USE_DATACHANNEL
+			call_description_abort(description, call);
+			mem_deref(description);
+#endif
+			return err;
+		}
+#ifdef USE_DATACHANNEL
+		err = call_update_remote_data(call, true);
+		if (err) {
+			call_description_abort(description, call);
+			mem_deref(description);
+			return err;
+		}
+#endif
 
 		/*
 		 * Each media description in the SDP answer MUST
@@ -2465,6 +3235,10 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 
 			call_event_handler(call, CALL_EVENT_CLOSED,
 					   "Wrong address family");
+#ifdef USE_DATACHANNEL
+			call_description_abort(description, call);
+			mem_deref(description);
+#endif
 			return 0;
 		}
 
@@ -2482,14 +3256,37 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 
 			call_event_handler(call, CALL_EVENT_CLOSED,
 					   "No common audio or video codecs");
+#ifdef USE_DATACHANNEL
+			call_description_abort(description, call);
+			mem_deref(description);
+#endif
 
 			return 0;
 		}
 
-		if (call->config_avt.bundle) {
+			if (call->config_avt.bundle) {
+				err = bundle_sdp_decode(call->sdp,
+						       &call->streaml);
+				if (err) {
+					warning("call: remote BUNDLE update failed"
+						" (%m)\n", err);
+#ifdef USE_DATACHANNEL
+					call_description_abort(description, call);
+					mem_deref(description);
+#endif
+					return err;
+				}
+			}
 
-			bundle_sdp_decode(call->sdp, &call->streaml);
+#ifdef USE_DATACHANNEL
+		err = call_description_commit(description, call, true);
+		if (err) {
+			call_description_abort(description, call);
+			mem_deref(description);
+			return err;
 		}
+		description = mem_deref(description);
+#endif
 
 		bevent_call_emit(BEVENT_CALL_REMOTE_SDP, call, "offer");
 	}
@@ -2586,7 +3383,11 @@ static void delayed_answer_handler(void *arg)
 static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 {
 	struct call *call = arg;
+#ifdef USE_DATACHANNEL
+	struct call_description_state *description = NULL;
+#endif
 	bool media;
+	int err = 0;
 
 	MAGIC_CHECK(call);
 
@@ -2606,17 +3407,19 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 	 * we must also handle changes to/from 180 and 183,
 	 * so we reset the media-stream/ringback each time.
 	 */
-	if (msg_ctype_cmp(&msg->ctyp, "application", "sdp")
-	    && mbuf_get_left(msg->mb)
-	    && !sdp_decode(call->sdp, msg->mb, false)) {
-		media = true;
+	media = msg_ctype_cmp(&msg->ctyp, "application", "sdp") &&
+		mbuf_get_left(msg->mb);
+	if (!media && msg_ctype_cmp(&msg->ctyp, "multipart", "mixed")) {
+		err = sdp_decode_multipart(&msg->ctyp.params, msg->mb);
+		media = !err && mbuf_get_left(msg->mb);
 	}
-	else if (msg_ctype_cmp(&msg->ctyp, "multipart", "mixed") &&
-		 !sdp_decode_multipart(&msg->ctyp.params, msg->mb) &&
-		 !sdp_decode(call->sdp, msg->mb, false)) {
-		media = true;
-	}
-	else
+#ifdef USE_DATACHANNEL
+	if (media)
+		err = call_description_begin(&description, call, msg->mb);
+#endif
+	if (media && !err)
+		err = sdp_decode(call->sdp, msg->mb, false);
+	if (err)
 		media = false;
 
 	switch (msg->scode) {
@@ -2630,6 +3433,37 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 
 		break;
 	}
+
+	if (media) {
+#ifdef USE_DATACHANNEL
+		err = call_update_remote_data(call, false);
+		if (err) {
+			warning("call: progress data update failed"
+				" (%m)\n", err);
+			media = false;
+		}
+#endif
+		if (media && call->config_avt.bundle) {
+			err = bundle_sdp_decode(call->sdp, &call->streaml);
+
+			if (err) {
+				warning("call: progress BUNDLE update failed"
+					" (%m)\n", err);
+				media = false;
+			}
+		}
+	}
+
+#ifdef USE_DATACHANNEL
+	if (media && description) {
+		err = call_description_commit(description, call, true);
+		if (err)
+			media = false;
+	}
+	if (!media && description)
+		call_description_abort(description, call);
+	mem_deref(description);
+#endif
 
 	if (media) {
 		mem_ref(call);

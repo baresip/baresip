@@ -15,6 +15,14 @@
 #define DEBUG_LEVEL 5
 #include <re_dbg.h>
 
+
+static void cancel_handler(void *arg)
+{
+	(void)arg;
+	re_cancel();
+}
+
+
 static void delayed_dtmf_check(void *arg)
 {
 	struct agent *ag = arg;
@@ -98,6 +106,18 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 		warning("test: could not find agent/ua\n");
 		return;
 	}
+	if (f->fail_event_err && ev == f->fail_event &&
+	    (!f->fail_event_prm || !str_cmp(prm, f->fail_event_prm))) {
+		int injected = f->fail_event_err;
+
+		f->fail_event_err = 0;
+		++f->n_failed_events;
+		bevent_set_error(event, injected);
+		/* Let the generated non-2xx response return to the offerer before
+		 * stopping the loop, so a retry observes an idle SIP transaction. */
+		tmr_start(&f->a.tmr, 50, cancel_handler, NULL);
+		return;
+	}
 
 	switch (ev) {
 
@@ -107,6 +127,16 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 
 	case BEVENT_CALL_INCOMING:
 		++ag->n_incoming;
+
+#ifdef USE_DATACHANNEL
+		if (f->data_channelh) {
+			err = call_set_datachannel_handler(
+				call, f->data_channelh,
+				f->data_channel_arg);
+			if (err)
+				goto out;
+		}
+#endif
 
 		switch (f->behaviour) {
 

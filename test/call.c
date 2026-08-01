@@ -2104,6 +2104,674 @@ int test_call_webrtc(void)
 }
 
 
+#ifdef USE_DATACHANNEL
+static const uint8_t call_data_ping[] = {0x00, 0x7f, 0x80, 0xff};
+static const uint8_t call_data_pong[] = "sip-data-ok";
+static const uint8_t call_data_maximum[16384];
+
+struct call_data_fixture {
+	struct data_channel *local;
+	struct data_channel *remote;
+	struct fixture *calls;
+	struct tmr tmr;
+	bool sent;
+	bool received;
+	int err;
+};
+
+struct call_data_expectation {
+	enum data_channel_message_type type;
+	const uint8_t *data;
+	size_t len;
+	bool received;
+	int err;
+};
+
+
+static void call_data_complete_handler(void *arg)
+{
+	struct call_data_fixture *data = arg;
+
+	if (data->received &&
+	    data->calls->a.n_rtpestab &&
+	    data->calls->b.n_rtpestab) {
+		re_cancel();
+		return;
+	}
+
+	tmr_start(&data->tmr, 10, call_data_complete_handler, data);
+}
+
+
+static void call_data_fail(struct call_data_fixture *data, int err)
+{
+	if (!data->err)
+		data->err = err ? err : EPROTO;
+	re_cancel();
+}
+
+
+static void call_data_message_handler(
+	struct data_channel *dc, enum data_channel_message_type type,
+	const uint8_t *buf, size_t len, void *arg)
+{
+	struct call_data_fixture *data = arg;
+	int err;
+
+	if (dc == data->remote) {
+		if (type != DATACHANNEL_MESSAGE_BINARY ||
+		    len != sizeof(call_data_ping) ||
+		    memcmp(buf, call_data_ping, len)) {
+			call_data_fail(data, EBADMSG);
+			return;
+		}
+
+		err = datachannel_send(dc, DATACHANNEL_MESSAGE_TEXT,
+				       call_data_pong,
+				       sizeof(call_data_pong) - 1);
+		if (err)
+			call_data_fail(data, err);
+		return;
+	}
+
+	if (dc != data->local ||
+	    type != DATACHANNEL_MESSAGE_TEXT ||
+	    len != sizeof(call_data_pong) - 1 ||
+	    memcmp(buf, call_data_pong, len)) {
+		call_data_fail(data, EBADMSG);
+		return;
+	}
+
+	data->received = true;
+	tmr_start(&data->tmr, 0, call_data_complete_handler, data);
+}
+
+
+static void call_data_state_handler(struct data_channel *dc,
+				    enum data_channel_state state,
+				    int err, void *arg)
+{
+	struct call_data_fixture *data = arg;
+
+	if (err) {
+		call_data_fail(data, err);
+		return;
+	}
+	if (dc == data->local && state == DATACHANNEL_OPEN && !data->sent) {
+		data->sent = true;
+		err = datachannel_send(dc, DATACHANNEL_MESSAGE_BINARY,
+				       call_data_ping,
+				       sizeof(call_data_ping));
+		if (err)
+			call_data_fail(data, err);
+	}
+}
+
+
+static void call_incoming_data_handler(struct data_channel *dc, void *arg)
+{
+	struct call_data_fixture *data = arg;
+	int err;
+
+	if (str_cmp(datachannel_label(dc), "sip-data") ||
+	    str_cmp(datachannel_protocol(dc), "test")) {
+		call_data_fail(data, EBADMSG);
+		return;
+	}
+
+	data->remote = dc;
+	err = datachannel_set_handlers(dc, call_data_message_handler,
+				       call_data_state_handler, NULL, data);
+	if (err)
+		call_data_fail(data, err);
+}
+
+
+static void call_data_expectation_handler(
+	struct data_channel *dc, enum data_channel_message_type type,
+	const uint8_t *buf, size_t len, void *arg)
+{
+	struct call_data_expectation *expected = arg;
+
+	(void)dc;
+	if (type != expected->type || len != expected->len ||
+	    (len && memcmp(buf, expected->data, len)))
+		expected->err = EBADMSG;
+	else
+		expected->received = true;
+	re_cancel();
+}
+
+
+static int call_data_send_expect(struct data_channel *sender,
+				 struct data_channel *receiver,
+				 struct call_data_expectation *expected)
+{
+	int err;
+
+	expected->received = false;
+	expected->err = 0;
+	err = datachannel_set_handlers(
+		receiver, call_data_expectation_handler, NULL, NULL, expected);
+	if (err)
+		return err;
+	err = datachannel_send(sender, expected->type,
+			       expected->data, expected->len);
+	if (err)
+		return err;
+	err = re_main_timeout(5000);
+	if (err)
+		return err;
+	if (expected->err)
+		return expected->err;
+	return expected->received ? 0 : EPROTO;
+}
+#endif
+
+
+int test_call_datachannel(void)
+{
+#ifdef USE_DATACHANNEL
+	struct data_channel_config config = {
+		.ordered = true,
+		.max_retransmits = -1,
+		.max_packet_lifetime = -1,
+		.protocol = "test",
+	};
+	struct call_data_fixture data = {0};
+	struct fixture fix = {0}, *f = &fix;
+	struct cancel_rule *cr;
+	struct mbuf *sdp = NULL;
+	struct call *call_a;
+	struct call *call_b;
+	int err;
+
+	if (conf_config()->avt.rxmode == RECEIVE_MODE_THREAD)
+		return 0;
+
+	conf_config()->avt.bundle = true;
+	conf_config()->avt.rtcp_mux = true;
+	mock_mnat_register(baresip_mnatl());
+
+	err = module_load(".", "dtls_srtp");
+	TEST_ERR(err);
+	err = module_load(".", "ausine");
+	TEST_ERR(err);
+
+	fixture_init_prm(f,
+		";medianat=XNAT;mediaenc=dtls_srtp;rtcp_mux=yes");
+	data.calls = f;
+	tmr_init(&data.tmr);
+	f->estab_action = ACTION_NOTHING;
+	f->behaviour = BEHAVIOUR_ANSWER;
+	f->data_channelh = call_incoming_data_handler;
+	f->data_channel_arg = &data;
+
+	err = ua_connect(f->a.ua, &call_a, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+	err = call_create_datachannel(
+		call_a, "sip-data", &config, &data.local);
+	TEST_ERR(err);
+	err = datachannel_set_handlers(
+		data.local, call_data_message_handler,
+		call_data_state_handler, NULL, &data);
+	TEST_ERR(err);
+
+	err = call_sdp_get(call_a, &sdp, true);
+	TEST_ERR(err);
+	ASSERT_TRUE(memmem(sdp->buf, sdp->end,
+			   "m=application ", 14) != NULL);
+	ASSERT_TRUE(memmem(sdp->buf, sdp->end,
+			   "a=group:BUNDLE 0 1", 18) != NULL);
+	sdp = mem_deref(sdp);
+
+	err = re_main_timeout(15000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	call_b = ua_call(f->b.ua);
+	ASSERT_TRUE(call_a != NULL);
+	ASSERT_TRUE(call_b != NULL);
+	TEST_ERR(data.err);
+	TEST_ERR(fix.err);
+	ASSERT_TRUE(data.sent);
+	ASSERT_TRUE(data.received);
+	ASSERT_TRUE(data.remote != NULL);
+	ASSERT_EQ(DATACHANNEL_OPEN, datachannel_state(data.local));
+	ASSERT_EQ(DATACHANNEL_OPEN, datachannel_state(data.remote));
+	ASSERT_EQ(CALL_STATE_ESTABLISHED, call_state(call_a));
+	ASSERT_EQ(CALL_STATE_ESTABLISHED, call_state(call_b));
+	ASSERT_TRUE(stream_is_ready(audio_strm(call_audio(call_a))));
+	ASSERT_TRUE(stream_is_ready(audio_strm(call_audio(call_b))));
+	ASSERT_TRUE(stream_is_secure(audio_strm(call_audio(call_a))));
+	ASSERT_TRUE(stream_is_secure(audio_strm(call_audio(call_b))));
+	/* SIP uses the immediate legacy BUNDLE decoder.  Its RTP base helper
+	 * must be published during SDP application; otherwise DTLS/SCTP can
+	 * establish while RTP is never demultiplexed and CALL_RTPESTAB hangs. */
+	ASSERT_TRUE(udp_helper_find(
+		rtp_sock(stream_rtp_sock(audio_strm(call_audio(call_a)))), 40));
+	ASSERT_TRUE(udp_helper_find(
+		rtp_sock(stream_rtp_sock(audio_strm(call_audio(call_b)))), 40));
+	ASSERT_TRUE(fix.a.n_rtpestab > 0);
+	ASSERT_TRUE(fix.b.n_rtpestab > 0);
+
+	cancel_rule_new(BEVENT_CALL_REMOTE_SDP, f->a.ua,
+			f->a.n_incoming, f->a.n_progress,
+			f->a.n_established);
+	cr->n_answer_cnt = f->a.n_answer_cnt + 1;
+	err = call_modify(call_a);
+	TEST_ERR(err);
+	err = re_main_timeout(10000);
+	cancel_rule_pop();
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+	ASSERT_EQ(DATACHANNEL_OPEN, datachannel_state(data.local));
+	ASSERT_EQ(DATACHANNEL_OPEN, datachannel_state(data.remote));
+
+	data.received = false;
+	err = datachannel_send(data.local, DATACHANNEL_MESSAGE_BINARY,
+			       call_data_ping, sizeof(call_data_ping));
+	TEST_ERR(err);
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(data.err);
+	ASSERT_TRUE(data.received);
+
+	{
+		struct call_data_expectation empty = {
+			.type = DATACHANNEL_MESSAGE_TEXT,
+		};
+		struct call_data_expectation maximum = {
+			.type = DATACHANNEL_MESSAGE_BINARY,
+			.data = call_data_maximum,
+			.len = sizeof(call_data_maximum),
+		};
+
+		err = call_data_send_expect(data.local, data.remote, &empty);
+		TEST_ERR(err);
+		err = call_data_send_expect(data.local, data.remote, &maximum);
+		TEST_ERR(err);
+	}
+
+ out:
+	tmr_cancel(&data.tmr);
+	mem_deref(sdp);
+	fixture_close(f);
+	module_unload("ausine");
+	module_unload("dtls_srtp");
+	mock_mnat_unregister();
+	conf_config()->avt.bundle = false;
+	conf_config()->avt.rtcp_mux = false;
+
+	if (fix.err)
+		return fix.err;
+	return err;
+#else
+	struct call *call = (struct call *)(uintptr_t)1;
+	struct data_channel_config config = {0};
+	struct data_channel *created = NULL;
+	int err = 0;
+
+	ASSERT_EQ(EINVAL, call_set_datachannel_handler(NULL, NULL, NULL));
+	ASSERT_EQ(ENOTSUP, call_set_datachannel_handler(call, NULL, NULL));
+	ASSERT_EQ(EINVAL, call_create_datachannel(
+				  NULL, "disabled", &config, &created));
+	ASSERT_EQ(ENOTSUP, call_create_datachannel(
+				   call, "disabled", &config, &created));
+
+ out:
+	return err;
+#endif
+}
+
+
+int test_call_datachannel_late(void)
+{
+#ifdef USE_DATACHANNEL
+	struct data_channel_config config = {
+		.ordered = true,
+		.max_retransmits = -1,
+		.max_packet_lifetime = -1,
+		.protocol = "test",
+	};
+	struct call_data_fixture data = {0};
+	struct fixture fix = {0}, *f = &fix;
+	struct cancel_rule *cr;
+	struct mbuf *baseline_sdp = NULL;
+	struct mbuf *sdp = NULL;
+	struct call *call_a;
+	struct call *call_b;
+	unsigned retry_answers;
+	unsigned receiver_offers;
+	unsigned receiver_holds;
+	unsigned receiver_resumes;
+	int err;
+
+	if (conf_config()->avt.rxmode == RECEIVE_MODE_THREAD)
+		return 0;
+
+	conf_config()->avt.bundle = true;
+	conf_config()->avt.rtcp_mux = true;
+	mock_mnat_register(baresip_mnatl());
+
+	err = module_load(".", "dtls_srtp");
+	TEST_ERR(err);
+	err = module_load(".", "ausine");
+	TEST_ERR(err);
+
+	fixture_init_prm(f,
+		";medianat=XNAT;mediaenc=dtls_srtp;rtcp_mux=yes");
+	data.calls = f;
+	tmr_init(&data.tmr);
+	f->estab_action = ACTION_NOTHING;
+	f->behaviour = BEHAVIOUR_ANSWER;
+	f->data_channelh = call_incoming_data_handler;
+	f->data_channel_arg = &data;
+	cancel_rule_new(BEVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
+	cancel_rule_and(BEVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
+
+	err = ua_connect(f->a.ua, &call_a, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+	err = re_main_timeout(15000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	call_b = ua_call(f->b.ua);
+	ASSERT_TRUE(call_a != NULL);
+	ASSERT_TRUE(call_b != NULL);
+	ASSERT_EQ(CALL_STATE_ESTABLISHED, call_state(call_a));
+	ASSERT_EQ(CALL_STATE_ESTABLISHED, call_state(call_b));
+	ASSERT_TRUE(stream_is_secure(audio_strm(call_audio(call_a))));
+	ASSERT_TRUE(stream_is_secure(audio_strm(call_audio(call_b))));
+
+	err = call_create_datachannel(
+		call_a, "sip-data", &config, &data.local);
+	TEST_ERR(err);
+	err = call_sdp_get(call_a, &sdp, true);
+	TEST_ERR(err);
+	ASSERT_TRUE(memmem(sdp->buf, sdp->end,
+			   "m=application ", 14) != NULL);
+	ASSERT_TRUE(memmem(sdp->buf, sdp->end,
+			   "a=group:BUNDLE 0 1", 18) != NULL);
+	sdp = mem_deref(sdp);
+	err = datachannel_set_handlers(
+		data.local, call_data_message_handler,
+		call_data_state_handler, NULL, &data);
+	TEST_ERR(err);
+
+	err = re_main_timeout(15000);
+	TEST_ERR(err);
+	err = data.err;
+	TEST_ERR(err);
+	err = fix.err;
+	TEST_ERR(err);
+	ASSERT_TRUE(data.sent);
+	ASSERT_TRUE(data.received);
+	ASSERT_TRUE(data.remote != NULL);
+	ASSERT_EQ(DATACHANNEL_OPEN, datachannel_state(data.local));
+	ASSERT_EQ(DATACHANNEL_OPEN, datachannel_state(data.remote));
+	ASSERT_EQ(CALL_STATE_ESTABLISHED, call_state(call_a));
+	ASSERT_EQ(CALL_STATE_ESTABLISHED, call_state(call_b));
+	ASSERT_TRUE(stream_is_secure(audio_strm(call_audio(call_a))));
+	ASSERT_TRUE(stream_is_secure(audio_strm(call_audio(call_b))));
+
+	/* Exercise rollback on an already-stable data context without replacing
+	 * the late in-band scenario above.  Fail after the receiver decoded the
+	 * re-INVITE and encoded its answer, then require an identical retry. */
+	err = call_sdp_get(call_b, &baseline_sdp, false);
+	TEST_ERR(err);
+	f->fail_event = BEVENT_CALL_LOCAL_SDP;
+	f->fail_event_prm = "answer";
+	f->fail_event_err = EPROTO;
+	receiver_offers = f->b.n_offer_cnt;
+	receiver_holds = f->b.n_hold_cnt;
+	receiver_resumes = f->b.n_resume_cnt;
+	err = call_modify(call_a);
+	TEST_ERR(err);
+	err = re_main_timeout(15000);
+	TEST_ERR(err);
+	ASSERT_EQ(1, f->n_failed_events);
+	/* LOCAL_SDP is the final veto.  A rejected description must not publish
+	 * its remote-SDP or derived hold/resume notifications. */
+	ASSERT_EQ(receiver_offers, f->b.n_offer_cnt);
+	ASSERT_EQ(receiver_holds, f->b.n_hold_cnt);
+	ASSERT_EQ(receiver_resumes, f->b.n_resume_cnt);
+	err = call_sdp_get(call_b, &sdp, false);
+	TEST_ERR(err);
+	{
+		const uint8_t *baseline_origin = memchr(
+			baseline_sdp->buf, '\n', baseline_sdp->end);
+		const uint8_t *actual_origin = memchr(
+			sdp->buf, '\n', sdp->end);
+		const uint8_t *baseline_rest;
+		const uint8_t *actual_rest;
+
+		ASSERT_TRUE(baseline_origin != NULL);
+		ASSERT_TRUE(actual_origin != NULL);
+		++baseline_origin;
+		++actual_origin;
+		baseline_rest = memchr(
+			baseline_origin, '\n',
+			baseline_sdp->end - (size_t)(baseline_origin -
+							 baseline_sdp->buf));
+		actual_rest = memchr(
+			actual_origin, '\n',
+			sdp->end - (size_t)(actual_origin - sdp->buf));
+		ASSERT_TRUE(baseline_rest != NULL);
+		ASSERT_TRUE(actual_rest != NULL);
+		++baseline_rest;
+		++actual_rest;
+		/* Encoding increments only the origin version; all description state
+		 * following that line must be restored exactly. */
+		ASSERT_EQ(baseline_sdp->end -
+			  (size_t)(baseline_rest - baseline_sdp->buf),
+			  sdp->end - (size_t)(actual_rest - sdp->buf));
+		ASSERT_TRUE(!memcmp(
+			baseline_rest, actual_rest,
+			sdp->end - (size_t)(actual_rest - sdp->buf)));
+	}
+	sdp = mem_deref(sdp);
+	ASSERT_EQ(DATACHANNEL_OPEN, datachannel_state(data.local));
+	ASSERT_EQ(DATACHANNEL_OPEN, datachannel_state(data.remote));
+
+	/* Negative control: the one-shot failure must have fired, while the next
+	 * remote answer must arrive and complete on the same dialog. */
+	cancel_rule_new(BEVENT_CALL_REMOTE_SDP, f->a.ua, 0, 0, 1);
+	cr->prm = "answer";
+	retry_answers = f->a.n_answer_cnt + 1;
+	cr->n_answer_cnt = retry_answers;
+	err = call_modify(call_a);
+	TEST_ERR(err);
+	err = re_main_timeout(15000);
+	TEST_ERR(err);
+	ASSERT_EQ(1, f->n_failed_events);
+	ASSERT_EQ(retry_answers, f->a.n_answer_cnt);
+	ASSERT_EQ(DATACHANNEL_OPEN, datachannel_state(data.local));
+	ASSERT_EQ(DATACHANNEL_OPEN, datachannel_state(data.remote));
+
+ out:
+	tmr_cancel(&data.tmr);
+	mem_deref(baseline_sdp);
+	mem_deref(sdp);
+	fixture_close(f);
+	module_unload("ausine");
+	module_unload("dtls_srtp");
+	mock_mnat_unregister();
+	conf_config()->avt.bundle = false;
+	conf_config()->avt.rtcp_mux = false;
+
+	if (fix.err)
+		return fix.err;
+	return err;
+#else
+	return 0;
+#endif
+}
+
+
+int test_call_datachannel_nonmux(void)
+{
+#ifdef USE_DATACHANNEL
+	struct data_channel_config config = {
+		.ordered = true,
+		.max_retransmits = -1,
+		.max_packet_lifetime = -1,
+	};
+	struct data_channel *dc = NULL;
+	struct fixture fix = {0}, *f = &fix;
+	struct cancel_rule *cr;
+	struct mbuf *sdp = NULL;
+	struct call *call_a;
+	struct call *call_b;
+	int err;
+
+	if (conf_config()->avt.rxmode == RECEIVE_MODE_THREAD)
+		return 0;
+
+	mock_mnat_register(baresip_mnatl());
+	err = module_load(".", "dtls_srtp");
+	TEST_ERR(err);
+	err = module_load(".", "ausine");
+	TEST_ERR(err);
+
+	fixture_init_prm(f, ";medianat=XNAT;mediaenc=dtls_srtp");
+	f->estab_action = ACTION_NOTHING;
+	f->behaviour = BEHAVIOUR_ANSWER;
+	cancel_rule_new(BEVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
+	cancel_rule_and(BEVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
+
+	err = ua_connect(f->a.ua, &call_a, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+	err = call_create_datachannel(
+		call_a, "rejected-data", &config, &dc);
+	ASSERT_EQ(ENOTSUP, err);
+	err = 0;
+	ASSERT_TRUE(dc == NULL);
+
+	err = call_sdp_get(call_a, &sdp, true);
+	TEST_ERR(err);
+	ASSERT_TRUE(memmem(sdp->buf, sdp->end,
+			   "m=application ", 14) == NULL);
+	sdp = mem_deref(sdp);
+
+	err = re_main_timeout(15000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	call_b = ua_call(f->b.ua);
+	ASSERT_TRUE(call_b != NULL);
+	ASSERT_EQ(CALL_STATE_ESTABLISHED, call_state(call_a));
+	ASSERT_EQ(CALL_STATE_ESTABLISHED, call_state(call_b));
+	ASSERT_TRUE(fix.a.n_rtpestab > 0);
+	ASSERT_TRUE(fix.b.n_rtpestab > 0);
+	ASSERT_TRUE(stream_is_secure(audio_strm(call_audio(call_a))));
+	ASSERT_TRUE(stream_is_secure(audio_strm(call_audio(call_b))));
+
+ out:
+	mem_deref(sdp);
+	fixture_close(f);
+	module_unload("ausine");
+	module_unload("dtls_srtp");
+	mock_mnat_unregister();
+
+	if (fix.err)
+		return fix.err;
+	return err;
+#else
+	return 0;
+#endif
+}
+
+
+int test_call_datachannel_rejected(void)
+{
+#ifdef USE_DATACHANNEL
+	struct data_channel_config config = {
+		.ordered = true,
+		.max_retransmits = -1,
+		.max_packet_lifetime = -1,
+	};
+	struct data_channel *dc = NULL;
+	struct fixture fix = {0}, *f = &fix;
+	struct cancel_rule *cr;
+	struct mbuf *sdp = NULL;
+	struct call *call_a;
+	struct call *call_b;
+	const uint8_t payload = 0x5a;
+	int channel_id;
+	int err;
+
+	if (conf_config()->avt.rxmode == RECEIVE_MODE_THREAD)
+		return 0;
+
+	conf_config()->avt.bundle = true;
+	conf_config()->avt.rtcp_mux = true;
+	mock_mnat_register(baresip_mnatl());
+	err = module_load(".", "dtls_srtp");
+	TEST_ERR(err);
+	err = module_load(".", "ausine");
+	TEST_ERR(err);
+
+	fixture_init_prm(f,
+		";medianat=XNAT;mediaenc=dtls_srtp;rtcp_mux=yes");
+	err = account_set_medianat(ua_account(f->b.ua), NULL);
+	TEST_ERR(err);
+	f->estab_action = ACTION_NOTHING;
+	f->behaviour = BEHAVIOUR_ANSWER;
+	cancel_rule_new(BEVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
+	cancel_rule_and(BEVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
+
+	err = ua_connect(f->a.ua, &call_a, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+	err = call_create_datachannel(call_a, "rejected-data", &config, &dc);
+	TEST_ERR(err);
+	channel_id = datachannel_id(dc);
+	err = re_main_timeout(15000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	call_b = ua_call(f->b.ua);
+	ASSERT_TRUE(call_b != NULL);
+	ASSERT_EQ(CALL_STATE_ESTABLISHED, call_state(call_a));
+	ASSERT_EQ(CALL_STATE_ESTABLISHED, call_state(call_b));
+	ASSERT_TRUE(fix.a.n_rtpestab > 0);
+	ASSERT_TRUE(fix.b.n_rtpestab > 0);
+	ASSERT_TRUE(stream_is_secure(audio_strm(call_audio(call_a))));
+	ASSERT_TRUE(stream_is_secure(audio_strm(call_audio(call_b))));
+	ASSERT_EQ(DATACHANNEL_CLOSED, datachannel_state(dc));
+	ASSERT_EQ(channel_id, datachannel_id(dc));
+	err = datachannel_send(dc, DATACHANNEL_MESSAGE_BINARY,
+			       &payload, sizeof(payload));
+	ASSERT_EQ(ENOTCONN, err);
+	err = 0;
+
+	err = call_sdp_get(call_b, &sdp, false);
+	TEST_ERR(err);
+	ASSERT_TRUE(memmem(sdp->buf, sdp->end,
+			   "m=application 0 UDP/DTLS/SCTP", 29) != NULL);
+	ASSERT_TRUE(memmem(sdp->buf, sdp->end,
+			   "a=mid:1", 7) != NULL);
+	ASSERT_TRUE(memmem(sdp->buf, sdp->end,
+			   "a=group:BUNDLE 0 1", 18) == NULL);
+
+ out:
+	mem_deref(sdp);
+	fixture_close(f);
+	module_unload("ausine");
+	module_unload("dtls_srtp");
+	mock_mnat_unregister();
+	conf_config()->avt.bundle = false;
+	conf_config()->avt.rtcp_mux = false;
+
+	if (fix.err)
+		return fix.err;
+	return err;
+#else
+	return 0;
+#endif
+}
+
+
 static int test_call_bundle_base(bool use_mnat, bool use_menc)
 {
 	struct fixture fix = {0}, *f = &fix;
@@ -2234,6 +2902,38 @@ static int test_call_bundle_base(bool use_mnat, bool use_menc)
 
 		ASSERT_TRUE(stream_is_secure(video_strm(videov[0])));
 		ASSERT_TRUE(stream_is_secure(video_strm(videov[1])));
+	}
+
+	if (use_mnat) {
+		struct stream *video = video_strm(videov[0]);
+
+		/* A BUNDLE slave retains dormant native MNAT participation.  Its
+		 * activation is reversible and a failed prepare leaves the shared
+		 * path untouched. */
+		ASSERT_TRUE(stream_native_mnat_suspended(video));
+		mock_mnat_fail_media_prepare(ENOMEM);
+		err = stream_native_mnat_prepare(video, true);
+		ASSERT_EQ(ENOMEM, err);
+		err = 0;
+		ASSERT_TRUE(stream_native_mnat_suspended(video));
+
+		err = stream_native_mnat_prepare(video, true);
+		TEST_ERR(err);
+		stream_native_mnat_activate(video);
+		ASSERT_TRUE(!stream_native_mnat_suspended(video));
+		stream_native_mnat_rollback(video);
+		ASSERT_TRUE(stream_native_mnat_suspended(video));
+
+		err = stream_native_mnat_prepare(video, true);
+		TEST_ERR(err);
+		stream_native_mnat_activate(video);
+		stream_native_mnat_finalize(video);
+		ASSERT_TRUE(!stream_native_mnat_suspended(video));
+		err = stream_native_mnat_prepare(video, false);
+		TEST_ERR(err);
+		stream_native_mnat_activate(video);
+		stream_native_mnat_finalize(video);
+		ASSERT_TRUE(stream_native_mnat_suspended(video));
 	}
 
 	for (i=0; i<2; i++) {

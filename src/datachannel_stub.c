@@ -29,6 +29,24 @@ int peerconnection_create_datachannel(struct peer_connection *pc,
 }
 
 
+int call_set_datachannel_handler(struct call *call,
+				 call_datachannel_h *channelh, void *arg)
+{
+	(void)channelh;
+	(void)arg;
+	return call ? ENOTSUP : EINVAL;
+}
+
+
+int call_create_datachannel(struct call *call, const char *label,
+			    const struct data_channel_config *cfg,
+			    struct data_channel **dcp)
+{
+	(void)cfg;
+	return call && label && dcp ? ENOTSUP : EINVAL;
+}
+
+
 int datachannel_set_handlers(struct data_channel *dc,
 			     datachannel_message_h *messageh,
 			     datachannel_state_h *stateh,

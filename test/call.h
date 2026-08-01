@@ -109,6 +109,12 @@ struct fixture {
 	bool fail_transfer;
 	const struct list *hdrs;
 	const char *dtmf_digits;
+	call_datachannel_h *data_channelh;
+	void *data_channel_arg;
+	enum bevent_ev fail_event;
+	const char *fail_event_prm;
+	int fail_event_err;
+	unsigned n_failed_events;
 	struct list rules;
 	char *command;
 };

@@ -2131,6 +2131,7 @@ struct data_channel_config {
 
 typedef void (datachannel_h)(struct data_channel *dc, void *arg);
 typedef datachannel_h peerconnection_datachannel_h;
+typedef datachannel_h call_datachannel_h;
 typedef void (datachannel_message_h)(
 	struct data_channel *dc, enum data_channel_message_type type,
 	const uint8_t *buf, size_t len, void *arg);
@@ -2146,6 +2147,11 @@ int peerconnection_create_datachannel(struct peer_connection *pc,
 				      const char *label,
 				      const struct data_channel_config *cfg,
 				      struct data_channel **dcp);
+int call_set_datachannel_handler(struct call *call,
+				 call_datachannel_h *channelh, void *arg);
+int call_create_datachannel(struct call *call, const char *label,
+			    const struct data_channel_config *cfg,
+			    struct data_channel **dcp);
 int datachannel_set_handlers(struct data_channel *dc,
 			     datachannel_message_h *messageh,
 			     datachannel_state_h *stateh,
