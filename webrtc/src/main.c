@@ -44,20 +44,24 @@ static const char *modv[] = {
 };
 
 static const char *ice_server = NULL;
+static bool ice_relay_only;
 
-static const char *modconfig =
-	"opus_bitrate       96000\n"
-	"opus_stereo        yes\n"
-	"opus_sprop_stereo  yes\n"
-	"\n"
+#define MODCONFIG_COMMON \
+	"opus_bitrate       96000\n" \
+	"opus_stereo        yes\n" \
+	"opus_sprop_stereo  yes\n" \
+	"\n" \
 	"avformat_pass_through  no\n"
-	;
+
+static const char *modconfig = MODCONFIG_COMMON "ice_policy all\n";
+static const char *modconfig_relay =
+	MODCONFIG_COMMON "ice_policy relay\n";
+
+#undef MODCONFIG_COMMON
 
 
 static void signal_handler(int signum)
 {
-	(void)signum;
-
 	re_fprintf(stderr, "terminated on signal %d\n", signum);
 
 	re_cancel();
@@ -81,6 +85,7 @@ static void usage(void)
 		   "\t-i <server>      ICE server (%s)\n"
 		   "\t-u <username>    ICE username\n"
 		   "\t-p <password>    ICE password\n"
+		   "\t-R               Require relay-only ICE candidates\n"
 		   "\n",
 		   server_cert,
 		   www_path,
@@ -97,7 +102,7 @@ int main(int argc, char *argv[])
 #ifdef HAVE_GETOPT
 	for (;;) {
 
-		const int c = getopt(argc, argv, "c:hl:i:u:tvu:p:w:");
+		const int c = getopt(argc, argv, "c:hl:i:u:tvu:p:w:R");
 		if (0 > c)
 			break;
 
@@ -129,6 +134,10 @@ int main(int argc, char *argv[])
 
 		case 'p':
 			stun_pass = optarg;
+			break;
+
+		case 'R':
+			ice_relay_only = true;
 			break;
 
 		case 'v':
@@ -166,7 +175,9 @@ int main(int argc, char *argv[])
 
 	sys_coredump_set(true);
 
-	err = conf_configure_buf((uint8_t *)modconfig, str_len(modconfig));
+	err = conf_configure_buf(
+		(uint8_t *)(ice_relay_only ? modconfig_relay : modconfig),
+		str_len(ice_relay_only ? modconfig_relay : modconfig));
 	if (err) {
 		warning("main: configure failed: %m\n", err);
 		goto out;

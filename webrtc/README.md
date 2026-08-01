@@ -47,6 +47,16 @@ demo: listening on:
 
 `http://localhost:9000/`
 
+To require every local ICE candidate and selected path to use a TURN relay,
+pass `-R` with a TURN server and credentials:
+
+```
+$ ./baresip-webrtc -R -i turn:turn.example.com:3478 -u user -p password
+```
+
+Without `-R`, TURN remains available alongside the normal host and
+server-reflexive candidates.
+
 
 ## Protocol Diagram
 
