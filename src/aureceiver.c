@@ -679,7 +679,7 @@ int aurecv_start_player(struct audio_recv *ar, struct list *auplayl)
 			warning("audio_recv: start_player failed (%s.%s): "
 				"%m\n",
 				ar->module, ar->device, err);
-			goto out;
+			return err;
 		}
 
 		ar->ap = auplay_find(auplayl, ar->module);
@@ -687,8 +687,6 @@ int aurecv_start_player(struct audio_recv *ar, struct list *auplayl)
 		info("audio_recv: player started with sample format %s\n",
 		     aufmt_name(ar->play_fmt));
 	}
-
-out:
 
 	return 0;
 }
