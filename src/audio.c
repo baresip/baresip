@@ -355,7 +355,7 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 		af->sampc = 0;
 	}
 	else if (err) {
-		warning("audio: %s encode error: %d samples (%m)\n",
+		warning("audio: %s encode error: %zu samples (%m)\n",
 			tx->ac->name, af->sampc, err);
 		goto out;
 	}
