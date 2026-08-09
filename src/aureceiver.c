@@ -207,12 +207,38 @@ static int aurecv_push_aubuf(struct audio_recv *ar, const struct auframe *af)
 }
 
 
+static int aurecv_plc_frame(struct audio_recv *ar,
+			    const struct rtp_header *hdr,
+			    const uint8_t *buf, size_t len)
+{
+	struct auframe af;
+	size_t sampc = ar->sampvsz / aufmt_sample_size(ar->fmt);
+	int err;
+	const struct aucodec *ac = ar->ac;
+
+	err = ac->plch(ar->dec, ar->fmt, ar->sampv, &sampc, buf, len);
+	if (err) {
+		warning("audio_recv: %s codec PLC error: %m\n",
+			ac->name, err);
+		return err;
+	}
+
+	auframe_init(&af, ar->fmt, ar->sampv, sampc, ac->srate, ac->ch);
+	af.timestamp = ((uint64_t) hdr->ts) * AUDIO_TIMEBASE / ac->crate;
+
+	err = aurecv_process_decfilt(ar, &af);
+	if (err)
+		return err;
+
+	return aurecv_push_aubuf(ar, &af);
+}
+
+
 static int aurecv_stream_decode(struct audio_recv *ar,
 				const struct rtp_header *hdr,
 				struct mbuf *mb, unsigned lostc)
 {
 	struct auframe af;
-	size_t sampc = ar->sampvsz / aufmt_sample_size(ar->fmt);
 	bool marker = hdr->m;
 	int err = 0;
 	const struct aucodec *ac = ar->ac;
@@ -221,19 +247,34 @@ static int aurecv_stream_decode(struct audio_recv *ar,
 	if (!ac)
 		return 0;
 
-	/* TODO: PLC */
+	/*
+	 * Packet Loss Concealment (PLC)
+	 *
+	 * One or more packets were lost before this one arrived. Generate
+	 * a concealment frame for each lost packet.
+	 *
+	 * Only the last lost packet can potentially be recovered using
+	 * in-band FEC data carried in the current (just received) packet
+	 * -- e.g. Opus -- so it is the only one handed the current
+	 * packet's payload. Earlier losses fall back to plain
+	 * concealment, since no coded data is available for them.
+	 */
 	if (lostc && ac->plch) {
+		for (unsigned i = 0; i < lostc; i++) {
 
-		err = ac->plch(ar->dec,
-				   ar->fmt, ar->sampv, &sampc,
-				   mbuf_buf(mb), mbuf_get_left(mb));
-		if (err) {
-			warning("audio_recv: %s codec decode %zu bytes: %m\n",
-				ac->name, mbuf_get_left(mb), err);
-			goto out;
+			bool last = (i == lostc - 1);
+
+			err = aurecv_plc_frame(ar, hdr,
+					last ? mbuf_buf(mb) : NULL,
+					last ? mbuf_get_left(mb) : 0);
+			if (err)
+				goto out;
 		}
 	}
-	else if (mbuf_get_left(mb)) {
+
+	size_t sampc = ar->sampvsz / aufmt_sample_size(ar->fmt);
+
+	if (mbuf_get_left(mb)) {
 
 		err = ac->dech(ar->dec,
 				   ar->fmt, ar->sampv, &sampc,
@@ -245,7 +286,7 @@ static int aurecv_stream_decode(struct audio_recv *ar,
 		}
 	}
 	else {
-		/* no PLC in the codec, might be done in filters below */
+		/* PLC might be done in filters below or above within Codec */
 		sampc = 0;
 	}
 
@@ -281,7 +322,6 @@ void aurecv_receive(struct audio_recv *ar, const struct rtp_header *hdr,
 {
 	bool discard = false;
 	int wrap;
-	(void) lostc;
 
 	if (!mb)
 		return;
@@ -334,14 +374,7 @@ void aurecv_receive(struct audio_recv *ar, const struct rtp_header *hdr,
 		goto out;
 	}
 
-	/* TODO:  what if lostc > 1 ?*/
-	/* PLC should generate lostc frames here. Not only one.
-	 * aubuf should replace PLC frames with late arriving real frames.
-	 * It should use timestamp to decide if a frame should be replaced. */
-/*        if (lostc)*/
-/*                (void)aurecv_stream_decode(ar, hdr, mb, lostc, drop);*/
-
-	(void)aurecv_stream_decode(ar, hdr, mb, 0);
+	(void)aurecv_stream_decode(ar, hdr, mb, lostc);
 
 out:
 	mtx_unlock(ar->mtx);

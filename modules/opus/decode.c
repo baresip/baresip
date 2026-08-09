@@ -118,10 +118,17 @@ int opus_decode_pkloss(struct audec_state *ads,
 		return EINVAL;
 
 	/*
-	 * FEC=0 -> use PLC
-	 * FEC=1 -> use inband FEC
+	 * FEC=0 -> use PLC (packet loss concealment, no coded data
+	 *          available for this lost frame)
+	 * FEC=1 -> use inband FEC (recover this lost frame from the
+	 *          FEC data carried in the next, already received,
+	 *          packet)
+	 *
+	 * Inband FEC can only be attempted when the caller actually
+	 * supplies the coded payload of the following packet; otherwise
+	 * fall back to plain concealment.
 	 */
-	fec = opus_packet_loss > 0;
+	fec = buf && len && opus_packet_loss > 0;
 
 	opus_decoder_ctl(ads->dec, OPUS_GET_LAST_PACKET_DURATION(&frame_size));
 
