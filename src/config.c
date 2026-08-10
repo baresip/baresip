@@ -52,7 +52,6 @@ static struct config core_config = {
 		.enc_fmt = AUFMT_S16LE,
 		.dec_fmt = AUFMT_S16LE,
 		.buffer = {20, 160},
-		.silence = -35.0,
 		.telev_pt = 101
 	},
 
@@ -453,7 +452,6 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 		return EINVAL;
 	}
 
-	(void)conf_get_float(conf, "audio_silence", &cfg->audio.silence);
 	(void)conf_get_u32(conf, "audio_telev_pt", &cfg->audio.telev_pt);
 
 	/* Video */
@@ -619,7 +617,6 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "auenc_format\t\t%s\n"
 			 "audec_format\t\t%s\n"
 			 "audio_buffer\t\t%H\t\t# ms\n"
-			 "audio_silence\t\t%.1lf\t\t# in [dB]\n"
 			 "audio_telev_pt\t\t%u\n"
 			 "\n",
 			 cfg->audio.audio_path,
@@ -634,7 +631,6 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 aufmt_name(cfg->audio.enc_fmt),
 			 aufmt_name(cfg->audio.dec_fmt),
 			 range_print, &cfg->audio.buffer,
-			 cfg->audio.silence,
 			 cfg->audio.telev_pt);
 	if (err)
 		return err;
@@ -881,7 +877,6 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "auenc_format\t\ts16\t\t# s16, float, ..\n"
 			  "audec_format\t\ts16\t\t# s16, float, ..\n"
 			  "audio_buffer\t\t%H\t\t# ms\n"
-			  "audio_silence\t\t%.1lf\t\t# in [dB]\n"
 			  "audio_telev_pt\t\t%u\t\t"
 			  "# payload type for telephone-event\n"
 			  "\n"
@@ -891,7 +886,6 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  default_audio_device(),
 			  default_audio_device(),
 			  range_print, &cfg->audio.buffer,
-			  cfg->audio.silence,
 			  cfg->audio.telev_pt);
 
 	err |= re_hprintf(pf,
