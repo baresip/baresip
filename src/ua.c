@@ -958,8 +958,11 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 	if (err)
 		return err;
 
+	if (!list_isempty(&ua->acc->custom_hdrs))
+		call_set_custom_hdrs(*callp, &ua->acc->custom_hdrs);
+
 	if (!list_isempty(&ua->custom_hdrs))
-		call_set_custom_hdrs(*callp, &ua->custom_hdrs);
+		call_append_custom_hdrs(*callp, &ua->custom_hdrs);
 
 	call_set_handlers(*callp, NULL, call_dtmf_handler, ua);
 

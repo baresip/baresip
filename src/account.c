@@ -48,6 +48,7 @@ static void destructor(void *arg)
 	mem_deref(acc->extra);
 	mem_deref(acc->uas_user);
 	mem_deref(acc->uas_pass);
+	list_flush(&acc->custom_hdrs);
 }
 
 
@@ -472,6 +473,42 @@ static void uasauth_decode(struct account *acc, const struct pl *prm)
 }
 
 
+static int xhdrs_decode(struct account *acc, const struct pl *prm)
+{
+	struct pl xhdrs;
+	char pair[256];
+	int err = 0;
+
+	if (msg_param_decode(prm, "x_headers", &xhdrs))
+		return 0;
+
+	while (0 == csl_parse(&xhdrs, pair, sizeof(pair))) {
+		struct pl name, val;
+		char *nbuf = NULL;
+
+		if (re_regex(pair, str_len(pair), "[^:]+:[~]+",
+			     &name, &val)) {
+			warning("account: x_headers: bad pair '%s'"
+				" (expected Name:Value)\n", pair);
+			err = EINVAL;
+			break;
+		}
+
+		err = re_sdprintf(&nbuf, "%r", &name);
+		if (err)
+			break;
+
+		err = custom_hdrs_add(&acc->custom_hdrs, nbuf,
+				      "%r", &val);
+		mem_deref(nbuf);
+		if (err)
+			break;
+	}
+
+	return err;
+}
+
+
 static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 {
 	struct pl auth_user;
@@ -613,6 +650,7 @@ int account_alloc(struct account **accp, const char *sipaddr)
 	err |= video_codecs_decode(acc, &acc->laddr.params);
 	err |= media_decode(acc, &acc->laddr.params);
 	err |= param_bool(&acc->catchall, &acc->laddr.params, "catchall");
+	err |= xhdrs_decode(acc, &acc->laddr.params);
 	if (err)
 		goto out;
 
@@ -2100,6 +2138,10 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 			  dtmfmode_str(acc->dtmfmode));
 	err |= re_hprintf(pf, " extra:            %s\n",
 			  acc->extra ? acc->extra : "none");
+	err |= re_hprintf(pf, " x_headers:        %H",
+			  custom_hdrs_print, &acc->custom_hdrs);
+	if (list_isempty(&acc->custom_hdrs))
+		err |= re_hprintf(pf, "\n");
 	err |= re_hprintf(pf, " fbregint:         %u\n", acc->fbregint);
 	err |= re_hprintf(pf, " inreq_allowed:    %s\n",
 			  inreq_mode_str(acc->inreq_mode));
