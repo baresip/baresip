@@ -58,6 +58,7 @@ static const char str[] =
 	";video_codecs=h266"
 	";video_display=sdl,default"
 	";video_source=null,null"
+	";x_headers=X-Foo:bar,X-Baz:qux"
 	;
 
 
@@ -135,6 +136,8 @@ int test_account(void)
 
 	err = verify_account(acc);
 	TEST_ERR(err);
+
+	ASSERT_EQ(2, list_count(account_custom_hdrs(acc)));
 
 	acc = mem_deref(acc);
 

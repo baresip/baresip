@@ -1949,6 +1949,19 @@ const char *account_extra(const struct account *acc)
 
 
 /**
+ * Get the list of static custom SIP headers for an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return List of custom SIP headers (struct sip_hdr)
+ */
+const struct list *account_custom_hdrs(const struct account *acc)
+{
+	return acc ? &acc->custom_hdrs : NULL;
+}
+
+
+/**
  * Auto complete a SIP uri, add scheme and domain if missing
  *
  * @param acc User-Agent account
