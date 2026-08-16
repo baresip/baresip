@@ -15,9 +15,6 @@
  */
 
 
-enum {NR_CODECS = 10};
-
-
 static int encode(struct auenc_state *st,
 		  bool *marker, uint8_t *buf, size_t *len,
 		  int fmt, const void *sampv, size_t sampc)
@@ -73,7 +70,7 @@ static int decode(struct audec_state *st, int fmt, void *sampv, size_t *sampc,
 
 
 /* See RFC 3551 */
-static struct aucodec l16v[NR_CODECS] = {
+static struct aucodec l16v[] = {
 {LE_INIT,    0, "L16", 48000, 48000, 2, 2,  4, 0, 0, encode, 0, decode, 0,0,0},
 {LE_INIT, "10", "L16", 44100, 44100, 2, 2,  4, 0, 0, encode, 0, decode, 0,0,0},
 {LE_INIT,    0, "L16", 32000, 32000, 2, 2, 10, 0, 0, encode, 0, decode, 0,0,0},
@@ -90,9 +87,8 @@ static struct aucodec l16v[NR_CODECS] = {
 static int module_init(void)
 {
 	struct list *aucodecl = baresip_aucodecl();
-	size_t i;
 
-	for (i=0; i<NR_CODECS; i++)
+	for (size_t i = 0; i < RE_ARRAY_SIZE(l16v); i++)
 		aucodec_register(aucodecl, &l16v[i]);
 
 	return 0;
@@ -101,9 +97,7 @@ static int module_init(void)
 
 static int module_close(void)
 {
-	size_t i;
-
-	for (i=0; i<NR_CODECS; i++)
+	for (size_t i = 0; i < RE_ARRAY_SIZE(l16v); i++)
 		aucodec_unregister(&l16v[i]);
 
 	return 0;
