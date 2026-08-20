@@ -30,6 +30,7 @@ static const struct test tests[] = {
 	TEST(test_call_answer_hangup_b),
 	TEST(test_call_aulevel),
 	TEST(test_call_ptime_cap),
+	TEST(test_call_l16_ptime),
 	TEST(test_call_custom_headers),
 	TEST(test_call_account_custom_headers),
 	TEST(test_call_dtmf),

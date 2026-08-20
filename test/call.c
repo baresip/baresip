@@ -1411,6 +1411,52 @@ int test_call_ptime_cap(void)
 }
 
 
+int test_call_l16_ptime(void)
+{
+	struct fixture fix, *f = &fix;
+	struct cancel_rule *cr;
+	struct stream *strm;
+	uint32_t bytes, n;
+	int err;
+
+	err = module_load(".", "l16");
+	TEST_ERR(err);
+	err = module_load(".", "ausine");
+	TEST_ERR(err);
+
+	fixture_init_prm(f, ";audio_codecs=L16/48000/2");
+
+	cancel_rule_new(BEVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
+	cancel_rule_and(BEVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+	f->estab_action = ACTION_NOTHING;
+
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	/* 48kHz stereo caps the 20ms default at 7ms, i.e. 1344 bytes */
+	strm = audio_strm(call_audio(ua_call(f->a.ua)));
+	rx_metric_snapshot(strm, &n, &bytes);
+	ASSERT_TRUE(n > 0);
+	ASSERT_EQ(n * 1344, bytes);
+
+	strm = audio_strm(call_audio(ua_call(f->b.ua)));
+	rx_metric_snapshot(strm, &n, &bytes);
+	ASSERT_TRUE(n > 0);
+	ASSERT_EQ(n * 1344, bytes);
+
+ out:
+	fixture_close(f);
+	module_unload("ausine");
+	module_unload("l16");
+	return err;
+}
+
+
 static int test_100rel_audio_base(void)
 {
 	struct fixture fix, *f = &fix;
