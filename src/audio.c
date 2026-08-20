@@ -1066,13 +1066,15 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 			.fmt        = tx->src_fmt
 		};
 
-		tx->ausrc_prm = prm;
-
 		sz = aufmt_sample_size(tx->src_fmt);
 
 		psize_alloc = sz * au_calc_nsamp(prm.srate, prm.ch, prm.ptime);
+
+		mtx_lock(tx->mtx);
+		tx->ausrc_prm = prm;
 		tx->psize = psize_alloc;
 		tx->aubuf_maxsz = tx->psize * 30;
+		mtx_unlock(tx->mtx);
 
 		if (!tx->aubuf) {
 			err = aubuf_alloc(&tx->aubuf, tx->psize,
@@ -1334,7 +1336,9 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 		}
 
 		tx->enc = mem_deref(tx->enc);
+		mtx_lock(tx->mtx);
 		tx->ac = ac;
+		mtx_unlock(tx->mtx);
 
 		if (!list_isempty(baresip_aufiltl())) {
 			err = aufilt_setup(a, baresip_aufiltl());
