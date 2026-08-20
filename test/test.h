@@ -202,6 +202,7 @@ int test_call_answer(void);
 int test_call_answer_hangup_a(void);
 int test_call_answer_hangup_b(void);
 int test_call_aulevel(void);
+int test_call_ptime_cap(void);
 int test_call_custom_headers(void);
 int test_call_dtmf(void);
 int test_call_format_float(void);
