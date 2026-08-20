@@ -91,6 +91,7 @@ struct autx {
 	char *device;                 /**< Audio source device name        */
 	void *sampv;                  /**< Sample buffer                   */
 	uint32_t ptime;               /**< Packet time for sending         */
+	uint32_t ptime_req;           /**< Requested packet time           */
 	uint64_t ts_ext;              /**< Ext. Timestamp for outgoing RTP */
 	uint32_t ts_base;             /**< First timestamp sent            */
 	uint32_t ts_tel;              /**< Timestamp for Telephony Events  */
@@ -796,7 +797,7 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 			goto out;
 	}
 
-	tx->ptime  = ptime;
+	tx->ptime = tx->ptime_req = ptime;
 	tx->ts_ext = tx->ts_base = rand_u16();
 	tx->marker = true;
 
@@ -858,7 +859,9 @@ static int tx_thread(void *arg)
 
 	mtx_lock(tx->mtx);
 	while (re_atomic_rlx(&tx->thr.run)) {
+		uint32_t ptime;
 		uint64_t now;
+		size_t psize;
 
 		mtx_unlock(tx->mtx);
 		sys_msleep(4);
@@ -872,6 +875,9 @@ static int tx_thread(void *arg)
 		if (!re_atomic_rlx(&tx->thr.run))
 			break;
 
+		psize = tx->psize;
+		ptime = tx->ptime;
+
 		mtx_unlock(tx->mtx);
 
 		now = tmr_jiffies();
@@ -883,7 +889,7 @@ static int tx_thread(void *arg)
 
 		/* Now is the time to send */
 
-		if (aubuf_cur_size(tx->aubuf) >= tx->psize) {
+		if (aubuf_cur_size(tx->aubuf) >= psize) {
 
 			poll_aubuf_tx(a);
 		}
@@ -897,7 +903,7 @@ static int tx_thread(void *arg)
 			      " (total %llu)\n", tx->stats.aubuf_underrun);
 		}
 
-		ts += tx->ptime;
+		ts += ptime;
 
 		/* Exact timing: send Telephony-Events from here.
 		 * Be aware check_telev sets tx->mtx, so it must released!
@@ -1362,13 +1368,18 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 
 	mtx_lock(a->tx.mtx);
 	stream_update_encoder(a->strm, pt_tx);
+
+	/* a codec ptime is an upper bound on the requested one */
+	tx->ptime = ac->ptime ? min(tx->ptime_req, ac->ptime) : tx->ptime_req;
+	if (tx->ausrc) {
+		tx->psize = aufmt_sample_size(tx->src_fmt) *
+			au_calc_nsamp(tx->ausrc_prm.srate,
+				      tx->ausrc_prm.ch, tx->ptime);
+		tx->ausrc_prm.ptime = tx->ptime;
+	}
 	mtx_unlock(a->tx.mtx);
 
 	telev_set_srate(a->telev, ac->crate);
-
-	/* use a codec-specific ptime */
-	if (ac->ptime)
-		tx->ptime = ac->ptime;
 
 	return err;
 }
@@ -1562,27 +1573,22 @@ void audio_sdp_attr_decode(struct audio *a)
 	if (attr) {
 		struct autx *tx = &a->tx;
 		uint32_t ptime_tx = atoi(attr);
+		int err;
 
-		if (ptime_tx && ptime_tx != a->tx.ptime
+		if (ptime_tx && ptime_tx != a->tx.ptime_req
 		    && ptime_tx <= MAX_PTIME) {
 
 			info("audio: peer changed ptime_tx %ums -> %ums\n",
-			     a->tx.ptime, ptime_tx);
+			     a->tx.ptime_req, ptime_tx);
 
-			tx->ptime = ptime_tx;
+			tx->ptime_req = ptime_tx;
 
-			if (tx->ac) {
-				size_t sz;
-
-				sz = aufmt_sample_size(tx->src_fmt);
-
-				tx->psize = sz * au_calc_nsamp(tx->ac->srate,
-							    tx->ac->ch,
-							    ptime_tx);
-			}
-
-			sdp_media_set_lattr(stream_sdpmedia(a->strm), true,
-					    "ptime", "%u", ptime_tx);
+			err = sdp_media_set_lattr(stream_sdpmedia(a->strm),
+						  true, "ptime", "%u",
+						  ptime_tx);
+			if (err)
+				warning("audio: mirror peer ptime (%m)\n",
+					err);
 		}
 	}
 
