@@ -91,6 +91,7 @@ struct autx {
 	char *device;                 /**< Audio source device name        */
 	void *sampv;                  /**< Sample buffer                   */
 	uint32_t ptime;               /**< Packet time for sending         */
+	uint32_t ptime_req;           /**< Requested packet time           */
 	uint64_t ts_ext;              /**< Ext. Timestamp for outgoing RTP */
 	uint32_t ts_base;             /**< First timestamp sent            */
 	uint32_t ts_tel;              /**< Timestamp for Telephony Events  */
@@ -798,7 +799,7 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 			goto out;
 	}
 
-	tx->ptime  = ptime;
+	tx->ptime = tx->ptime_req = ptime;
 	tx->ts_ext = tx->ts_base = rand_u16();
 	tx->marker = true;
 
@@ -1364,9 +1365,8 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 	mtx_lock(a->tx.mtx);
 	stream_update_encoder(a->strm, pt_tx);
 
-	/* use a codec-specific ptime */
-	if (ac->ptime)
-		tx->ptime = ac->ptime;
+	/* a codec ptime is an upper bound on the requested one */
+	tx->ptime = ac->ptime ? min(tx->ptime_req, ac->ptime) : tx->ptime_req;
 
 	/* re-packetize a running source for the current ptime */
 	if (tx->ausrc) {
@@ -1572,16 +1572,14 @@ void audio_sdp_attr_decode(struct audio *a)
 		struct autx *tx = &a->tx;
 		uint32_t ptime_tx = atoi(attr);
 
-		if (ptime_tx && ptime_tx != a->tx.ptime
+		if (ptime_tx && ptime_tx != a->tx.ptime_req
 		    && ptime_tx <= MAX_PTIME) {
 			int err;
 
 			info("audio: peer changed ptime_tx %ums -> %ums\n",
-			     a->tx.ptime, ptime_tx);
+			     a->tx.ptime_req, ptime_tx);
 
-			mtx_lock(tx->mtx);
-			tx->ptime = ptime_tx;
-			mtx_unlock(tx->mtx);
+			tx->ptime_req = ptime_tx;
 
 			err = sdp_media_set_lattr(stream_sdpmedia(a->strm),
 						  true, "ptime", "%u",
