@@ -1015,31 +1015,6 @@ void call_set_custom_hdrs(struct call *call, const struct list *hdrs)
 }
 
 
-void call_append_custom_hdrs(struct call *call, const struct list *hdrs)
-{
-	struct le *le;
-
-	if (!call)
-		return;
-
-	LIST_FOREACH(hdrs, le) {
-		struct sip_hdr *hdr = le->data;
-		char *buf = NULL;
-
-		if (re_sdprintf(&buf, "%r", &hdr->name))
-			return;
-
-		if (custom_hdrs_add(&call->custom_hdrs, buf,
-				    "%r", &hdr->val)) {
-			mem_deref(buf);
-			return;
-		}
-
-		mem_deref(buf);
-	}
-}
-
-
 /**
  * Get the list of custom SIP headers
  *

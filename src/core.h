@@ -181,7 +181,6 @@ int  call_info(struct re_printf *pf, const struct call *call);
 int  call_reset_transp(struct call *call, const struct sa *laddr);
 void call_set_xrtpstat(struct call *call);
 void call_set_custom_hdrs(struct call *call, const struct list *hdrs);
-void call_append_custom_hdrs(struct call *call, const struct list *hdrs);
 const struct sa *call_laddr(const struct call *call);
 int call_streams_alloc(struct call *call);
 int call_modify_nosdp(struct call *call);
