@@ -32,26 +32,6 @@ static void destructor(void *arg)
 }
 
 
-static void call_event_handler(struct call *call, enum call_event ev,
-			       const char *str, void *arg)
-{
-	struct session *sess = arg;
-	(void)call;
-
-	switch (ev) {
-
-	case CALL_EVENT_CLOSED:
-		debug("echo: CALL_CLOSED: %s\n", str);
-		mem_deref(sess->call_in);
-		mem_deref(sess);
-		break;
-
-	default:
-		break;
-	}
-}
-
-
 static void call_dtmf_handler(struct call *call, char key, void *arg)
 {
 	(void)arg;
@@ -79,8 +59,7 @@ static int new_session(struct ua *ua, struct call *call)
 	audio_set_devicename(call_audio(sess->call_in), a, a);
 	video_set_devicename(call_video(sess->call_in), a, a);
 
-	call_set_handlers(sess->call_in, call_event_handler,
-			call_dtmf_handler, sess);
+	call_set_handlers(sess->call_in, NULL, call_dtmf_handler, NULL);
 
 	list_append(&sessionl, &sess->le, sess);
 	err = ua_answer(ua, call, VIDMODE_ON);
@@ -107,11 +86,26 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 				call_localuri(call));
 
 		err = new_session(ua, call);
-		if (err) {
+		if (err)
 			call_hangup(call, 500, "Server Error");
-		}
 		break;
 
+	case BEVENT_CALL_CLOSED:
+		info("echo: CALL_CLOSED: peer=%s  -->  local=%s\n",
+				call_peeruri(call),
+				call_localuri(call));
+
+		struct le *le;
+		LIST_FOREACH(&sessionl, le)
+		{
+			struct session *sess = le->data;
+			if (sess->call_in == call) {
+				mem_deref(sess);
+				break;
+			}
+		}
+
+		break;
 	default:
 		break;
 	}
