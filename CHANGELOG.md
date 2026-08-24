@@ -5,6 +5,29 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v4.11.0 - 2026-08-25
+
+## What's Changed
+* core: cleanup stream_rtp_h ignore handling by @sreimers in https://github.com/baresip/baresip/pull/3770
+* audio: increase RTP timestamp also for underruns by @cspiel1 in https://github.com/baresip/baresip/pull/3775
+* aubuf: remove adaptive mode by @cspiel1 in https://github.com/baresip/baresip/pull/3780
+* webrtc_aec: fix system cmake include by @sreimers in https://github.com/baresip/baresip/pull/3782
+* call: avoid call progress if media is inactive by @cspiel1 in https://github.com/baresip/baresip/pull/3783
+* conf: remove unused conf_aubuf_adaptive() by @alfredh in https://github.com/baresip/baresip/pull/3785
+* audio: reuse mbuf for telephony events by @maximilianfridrich in https://github.com/baresip/baresip/pull/3787
+* call: add callback for incoming SIP INFO by @SnowMaster12 in https://github.com/baresip/baresip/pull/3762
+* test: check fixture error and fix call progress by @alfredh in https://github.com/baresip/baresip/pull/3786
+* aureceiver: fix return on error case in aurecv_start_player() by @alfredh in https://github.com/baresip/baresip/pull/3792
+* audio: fix warning() %d format in encode_rtp_send() by @alfredh in https://github.com/baresip/baresip/pull/3793
+* opus,aureceiver: fix PLC/FEC handling by @sreimers in https://github.com/baresip/baresip/pull/3794
+* l16: refactor NR_CODECS by RE_ARRAY_SIZE by @sreimers in https://github.com/baresip/baresip/pull/3803
+* config: remove unused config option 'audio_silence' by @alfredh in https://github.com/baresip/baresip/pull/3798
+* echo: refactor call_event_handler closed with bevent by @sreimers in https://github.com/baresip/baresip/pull/3806
+
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v4.10.0...v4.11.0
+
+
 ## v4.10.0 - 2026-07-22
 
 ### What's Changed
