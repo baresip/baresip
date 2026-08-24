@@ -27,7 +27,6 @@ struct ua {
 	char *pub_gruu;              /**< SIP Public GRUU                    */
 	enum presence_status pstat;  /**< Presence Status                    */
 	struct list hdr_filter;      /**< Filter for incoming headers        */
-	struct list custom_hdrs;     /**< List of outgoing headers           */
 	char *ansval;                /**< SIP auto answer value              */
 	struct sa dst;               /**< Current destination address        */
 };
@@ -65,7 +64,6 @@ static void ua_destructor(void *arg)
 		sip_close(uag_sip(), false);
 	}
 
-	list_flush(&ua->custom_hdrs);
 	list_flush(&ua->hdr_filter);
 }
 
@@ -222,8 +220,8 @@ static int start_register(struct ua *ua, bool fallback)
 	for (le = ua->regl.head, i=0; le; le = le->next, i++) {
 		struct reg *reg = le->data;
 
-		if (!list_isempty(&ua->custom_hdrs))
-			reg_set_custom_hdrs(reg, &ua->custom_hdrs);
+		if (!list_isempty(&ua->acc->custom_hdrs))
+			reg_set_custom_hdrs(reg, &ua->acc->custom_hdrs);
 
 		err = reg_register(reg, reg_uri, params,
 				   fallback ? 0 : acc->regint,
@@ -958,8 +956,8 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 	if (err)
 		return err;
 
-	if (!list_isempty(&ua->custom_hdrs))
-		call_set_custom_hdrs(*callp, &ua->custom_hdrs);
+	if (!list_isempty(&ua->acc->custom_hdrs))
+		call_set_custom_hdrs(*callp, &ua->acc->custom_hdrs);
 
 	call_set_handlers(*callp, NULL, call_dtmf_handler, ua);
 
@@ -1201,23 +1199,6 @@ static int ua_cuser_gen(struct ua *ua)
 }
 
 
-static void ua_add_acc_hdrs(struct ua *ua)
-{
-	struct le *le;
-
-	LIST_FOREACH(&ua->acc->custom_hdrs, le) {
-		const struct sip_hdr *h = le->data;
-		char *buf = NULL;
-
-		if (re_sdprintf(&buf, "%r", &h->name))
-			return;
-
-		custom_hdrs_add(&ua->custom_hdrs, buf, "%r", &h->val);
-		mem_deref(buf);
-	}
-}
-
-
 /**
  * Allocate a SIP User-Agent
  *
@@ -1256,8 +1237,6 @@ int ua_alloc(struct ua **uap, const char *aor)
 	err = account_alloc(&ua->acc, aor);
 	if (err)
 		goto out;
-
-	ua_add_acc_hdrs(ua);
 
 	err = ua_cuser_gen(ua);
 	if (err)
@@ -2147,7 +2126,7 @@ int ua_add_custom_hdr(struct ua *ua, const struct pl *name,
 	if (err)
 		return err;
 
-	err = custom_hdrs_add(&ua->custom_hdrs, buf, "%r", value);
+	err = custom_hdrs_add(&ua->acc->custom_hdrs, buf, "%r", value);
 	mem_deref(buf);
 	if (err)
 		return err;
@@ -2171,7 +2150,7 @@ int ua_rm_custom_hdr(struct ua *ua, struct pl *name)
 	if (!ua)
 		return EINVAL;
 
-	le = list_head(&ua->custom_hdrs);
+	le = list_head(&ua->acc->custom_hdrs);
 	while (le) {
 		struct sip_hdr *h = le->data;
 		le = le->next;
@@ -2202,9 +2181,7 @@ int ua_set_custom_hdrs(struct ua *ua, struct list *custom_headers)
 	if (!ua)
 		return EINVAL;
 
-	list_flush(&ua->custom_hdrs);
-
-	ua_add_acc_hdrs(ua);
+	list_flush(&ua->acc->custom_hdrs);
 
 	LIST_FOREACH(custom_headers, le) {
 		const struct sip_hdr *hdr = le->data;
