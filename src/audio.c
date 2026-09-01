@@ -872,6 +872,9 @@ static int tx_thread(void *arg)
 		if (!re_atomic_rlx(&tx->thr.run))
 			break;
 
+		size_t psize = tx->psize;
+		uint32_t ptime = tx->ptime;
+
 		mtx_unlock(tx->mtx);
 
 		now = tmr_jiffies();
@@ -883,21 +886,21 @@ static int tx_thread(void *arg)
 
 		/* Now is the time to send */
 
-		if (aubuf_cur_size(tx->aubuf) >= tx->psize) {
+		if (aubuf_cur_size(tx->aubuf) >= psize) {
 
 			poll_aubuf_tx(a);
 		}
 		else {
 			++tx->stats.aubuf_underrun;
 			mtx_lock(tx->mtx);
-			tx->ts_ext += (tx->ptime * tx->ac->crate / 1000);
+			tx->ts_ext += (ptime * tx->ac->crate / 1000);
 			mtx_unlock(tx->mtx);
 
 			debug("audio: thread: tx aubuf underrun"
 			      " (total %llu)\n", tx->stats.aubuf_underrun);
 		}
 
-		ts += tx->ptime;
+		ts += ptime;
 
 		/* Exact timing: send Telephony-Events from here.
 		 * Be aware check_telev sets tx->mtx, so it must released!
