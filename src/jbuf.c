@@ -60,7 +60,7 @@ struct packet {
  * sequence number.
  */
 struct jbuf {
-	struct pl *id;       /**< Jitter buffer Identifier                   */
+	char *id;            /**< Jitter buffer Identifier                   */
 	struct rtp_sock *gnack_rtp; /**< Generic NACK RTP Socket             */
 	struct list pooll;   /**< List of free packets in pool               */
 	struct list packetl; /**< List of buffered packets                   */
@@ -266,14 +266,16 @@ void jbuf_set_srate(struct jbuf *jb, uint32_t srate)
  * @param jb  The jitter buffer.
  * @param id  Identifier.
  */
-void jbuf_set_id(struct jbuf *jb, struct pl *id)
+int jbuf_set_id(struct jbuf *jb, const char *id)
 {
 	if (!jb)
-		return;
+		return EINVAL;
 
+	int err;
 	mtx_lock(jb->lock);
-	jb->id = mem_ref(id);
+	err = str_dup(&jb->id, id);
 	mtx_unlock(jb->lock);
+	return err;
 }
 
 

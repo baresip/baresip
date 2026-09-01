@@ -802,12 +802,9 @@ int rtprecv_alloc(struct rtp_receiver **rxp,
 			goto out;
 	}
 
-	struct pl *id = pl_alloc_str(name);
-	if (!id)
+	err = jbuf_set_id(rx->jbuf, name);
+	if (err)
 		goto out;
-
-	jbuf_set_id(rx->jbuf, id);
-	mem_deref(id);
 
 	rx->metric = metric_alloc();
 	if (!rx->metric)
