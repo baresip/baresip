@@ -92,6 +92,7 @@ struct account {
 	bool rtcp_mux;               /**< RTCP multiplexing                  */
 	bool pinhole;                /**< NAT pinhole flag                   */
 	bool catchall;               /**< Catch all inbound requests         */
+	struct list custom_hdrs;     /**< Static outbound SIP headers        */
 };
 
 

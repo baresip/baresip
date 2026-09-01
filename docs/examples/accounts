@@ -50,6 +50,7 @@
 #    ;video_codecs=h264,vp8,...
 #    ;video_display=x11,nil
 #    ;video_source=v4l2,/dev/video0
+#    ;x_headers=Header-Name:value,Other-Header:value
 #
 # Examples:
 #
@@ -86,3 +87,8 @@
 
 
 # ... more examples can be added here ...
+
+#
+# Send static custom SIP headers on every outbound call from this account
+#
+<sip:user@example.com>;auth_pass=pass;x_headers=X-My-Header:value,X-Other:value

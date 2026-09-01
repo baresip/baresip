@@ -151,6 +151,7 @@ bool account_mwi(const struct account *acc);
 bool account_call_transfer(const struct account *acc);
 bool account_rtcp_mux(const struct account *acc);
 const char *account_extra(const struct account *acc);
+const struct list *account_custom_hdrs(const struct account *acc);
 int account_uri_complete_strdup(const struct account *acc, char **strp,
 				const struct pl *uri);
 int account_uri_complete(const struct account *acc, struct mbuf *buf,

@@ -1661,6 +1661,62 @@ int test_call_custom_headers(void)
 }
 
 
+int test_call_account_custom_headers(void)
+{
+	struct fixture fix, *f = &fix;
+	int err = 0;
+	bool headers_matched = true;
+
+	fixture_init_prm(f, ";x_headers=X-CALL_ID:7,X-HEADER_NAME:VALUE");
+
+	ua_add_xhdr_filter(f->b.ua, "X-CALL_ID");
+	ua_add_xhdr_filter(f->b.ua, "X-HEADER_NAME");
+
+	f->behaviour = BEHAVIOUR_GET_HDRS;
+
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	err = re_main_timeout(5000);
+
+	if (!list_isempty(f->hdrs)) {
+		struct le *le;
+		for (le = list_head(f->hdrs); le; le = le->next) {
+			struct sip_hdr *hdr = le->data;
+			if (pl_strcasecmp(&hdr->name, "X-CALL_ID") == 0) {
+				if (pl_strcasecmp(&hdr->val, "7") != 0)
+					headers_matched = false;
+			}
+			if (pl_strcasecmp(&hdr->name, "X-HEADER_NAME") == 0) {
+				if (pl_strcasecmp(&hdr->val, "VALUE") != 0)
+					headers_matched = false;
+			}
+		}
+	}
+	else {
+		headers_matched = false;
+	}
+
+	ASSERT_TRUE(headers_matched);
+
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(0, fix.a.n_incoming);
+	ASSERT_EQ(1, fix.a.n_established);
+	ASSERT_EQ(0, fix.a.n_closed);
+
+	ASSERT_EQ(1, fix.b.n_incoming);
+	ASSERT_EQ(1, fix.b.n_established);
+	ASSERT_EQ(0, fix.b.n_closed);
+
+ out:
+	fixture_close(f);
+
+	return err;
+}
+
+
 int test_call_tcp(void)
 {
 	struct fixture fix, *f = &fix;
