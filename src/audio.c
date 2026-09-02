@@ -545,10 +545,12 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 
 	if (aubuf_cur_size(tx->aubuf) >= tx->aubuf_maxsz) {
 
-		++tx->stats.aubuf_overrun;
+		mtx_lock(tx->mtx);
+		uint64_t aubuf_overrun = ++tx->stats.aubuf_overrun;
+		mtx_unlock(tx->mtx);
 
 		debug("audio: tx aubuf overrun (total %llu)\n",
-		      tx->stats.aubuf_overrun);
+		      aubuf_overrun);
 	}
 
 	(void)aubuf_write_auframe(tx->aubuf, af);
@@ -891,13 +893,13 @@ static int tx_thread(void *arg)
 			poll_aubuf_tx(a);
 		}
 		else {
-			++tx->stats.aubuf_underrun;
 			mtx_lock(tx->mtx);
+			uint64_t aubuf_underrun = ++tx->stats.aubuf_underrun;
 			tx->ts_ext += (ptime * tx->ac->crate / 1000);
 			mtx_unlock(tx->mtx);
 
 			debug("audio: thread: tx aubuf underrun"
-			      " (total %llu)\n", tx->stats.aubuf_underrun);
+			      " (total %llu)\n", aubuf_underrun);
 		}
 
 		ts += ptime;
@@ -1653,6 +1655,11 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 	tx = &a->tx;
 	sztx = aufmt_sample_size(tx->src_fmt);
 
+	mtx_lock(tx->mtx);
+	uint64_t aubuf_overrun = tx->stats.aubuf_overrun;
+	uint64_t aubuf_underrun = tx->stats.aubuf_underrun;
+	mtx_unlock(tx->mtx);
+
 	err  = re_hprintf(pf, "%s", "\n--- Audio stream ---\n");
 
 	err |= re_hprintf(pf, " tx:   encode: %H ptime=%ums %s\n",
@@ -1668,8 +1675,8 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 			  calc_ptime(tx->aubuf_maxsz/sztx,
 				     tx->ausrc_prm.srate,
 				     tx->ausrc_prm.ch),
-			  tx->stats.aubuf_overrun,
-			  tx->stats.aubuf_underrun);
+			  aubuf_overrun,
+			  aubuf_underrun);
 	err |= re_hprintf(pf, "       source: %s,%s %s\n",
 			  tx->as ? tx->as->name : "none",
 			  tx->device,
