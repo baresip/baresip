@@ -60,7 +60,7 @@ struct packet {
  * sequence number.
  */
 struct jbuf {
-	char *id;            /**< Jitter buffer Identifier                   */
+	struct pl *id;       /**< Jitter buffer Identifier                   */
 	struct rtp_sock *gnack_rtp; /**< Generic NACK RTP Socket             */
 	struct list pooll;   /**< List of free packets in pool               */
 	struct list packetl; /**< List of buffered packets                   */
@@ -271,11 +271,10 @@ int jbuf_set_id(struct jbuf *jb, const char *id)
 	if (!jb)
 		return EINVAL;
 
-	int err;
 	mtx_lock(jb->lock);
-	err = str_dup(&jb->id, id);
+	jb->id = pl_alloc_str(id);
 	mtx_unlock(jb->lock);
-	return err;
+	return jb->id ? 0 : ENOMEM;
 }
 
 
