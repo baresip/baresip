@@ -266,14 +266,15 @@ void jbuf_set_srate(struct jbuf *jb, uint32_t srate)
  * @param jb  The jitter buffer.
  * @param id  Identifier.
  */
-void jbuf_set_id(struct jbuf *jb, struct pl *id)
+int jbuf_set_id(struct jbuf *jb, const char *id)
 {
 	if (!jb)
-		return;
+		return EINVAL;
 
 	mtx_lock(jb->lock);
-	jb->id = mem_ref(id);
+	jb->id = pl_alloc_str(id);
 	mtx_unlock(jb->lock);
+	return jb->id ? 0 : ENOMEM;
 }
 
 
