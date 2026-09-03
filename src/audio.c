@@ -344,8 +344,10 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 
 	len = mbuf_get_space(tx->mb);
 
+	mtx_lock(tx->mtx);
 	err = tx->ac->ench(tx->enc, &marker, mbuf_buf(tx->mb), &len,
 			   af->fmt, af->sampv, af->sampc);
+	mtx_unlock(tx->mtx);
 
 	if ((err & 0xffff0000) == 0x00010000) {
 
@@ -1335,8 +1337,8 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 			aubuf_flush(tx->aubuf);
 		}
 
-		tx->enc = mem_deref(tx->enc);
 		mtx_lock(tx->mtx);
+		tx->enc = mem_deref(tx->enc);
 		tx->ac = ac;
 		mtx_unlock(tx->mtx);
 
