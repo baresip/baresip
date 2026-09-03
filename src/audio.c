@@ -1363,13 +1363,21 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 
 	mtx_lock(a->tx.mtx);
 	stream_update_encoder(a->strm, pt_tx);
-	mtx_unlock(a->tx.mtx);
-
-	telev_set_srate(a->telev, ac->crate);
 
 	/* use a codec-specific ptime */
 	if (ac->ptime)
 		tx->ptime = ac->ptime;
+
+	/* re-packetize a running source for the current ptime */
+	if (tx->ausrc) {
+		tx->psize = aufmt_sample_size(tx->src_fmt) *
+			au_calc_nsamp(tx->ausrc_prm.srate,
+				      tx->ausrc_prm.ch, tx->ptime);
+		tx->ausrc_prm.ptime = tx->ptime;
+	}
+	mtx_unlock(a->tx.mtx);
+
+	telev_set_srate(a->telev, ac->crate);
 
 	return err;
 }
@@ -1566,24 +1574,21 @@ void audio_sdp_attr_decode(struct audio *a)
 
 		if (ptime_tx && ptime_tx != a->tx.ptime
 		    && ptime_tx <= MAX_PTIME) {
+			int err;
 
 			info("audio: peer changed ptime_tx %ums -> %ums\n",
 			     a->tx.ptime, ptime_tx);
 
+			mtx_lock(tx->mtx);
 			tx->ptime = ptime_tx;
+			mtx_unlock(tx->mtx);
 
-			if (tx->ac) {
-				size_t sz;
-
-				sz = aufmt_sample_size(tx->src_fmt);
-
-				tx->psize = sz * au_calc_nsamp(tx->ac->srate,
-							    tx->ac->ch,
-							    ptime_tx);
-			}
-
-			sdp_media_set_lattr(stream_sdpmedia(a->strm), true,
-					    "ptime", "%u", ptime_tx);
+			err = sdp_media_set_lattr(stream_sdpmedia(a->strm),
+						  true, "ptime", "%u",
+						  ptime_tx);
+			if (err)
+				warning("audio: mirror peer ptime (%m)\n",
+					err);
 		}
 	}
 
