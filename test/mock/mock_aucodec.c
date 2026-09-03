@@ -76,6 +76,7 @@ static struct aucodec aucmock = {
 	.crate = 48000,
 	.ch    = 2,
 	.pch   = 2,
+	.ptime = 10,		/* cap exercised by test_call_ptime_cap */
 	.ench  = encode,
 	.dech  = decode,
 };
