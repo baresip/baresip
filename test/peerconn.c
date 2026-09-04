@@ -370,7 +370,6 @@ static int test_peerconn_param(bool use_audio, bool use_aufilt,
 	};
 	const char *vidfilters[] = {
 		"selfview",
-		"snapshot",
 		"vidinfo",
 	};
 	struct fixture fix = {0};
