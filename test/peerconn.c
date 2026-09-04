@@ -296,6 +296,7 @@ static int agent_alloc(struct agent **agp, struct fixture *fix,
 	if (use_video) {
 		err = peerconnection_add_video_track(ag->pc, conf_config(),
 						     baresip_vidcodecl(),
+						     baresip_vidfiltl(),
 						     SDP_SENDRECV);
 		TEST_ERR(err);
 	}
@@ -370,7 +371,6 @@ static int test_peerconn_param(bool use_audio, bool use_aufilt,
 	};
 	const char *vidfilters[] = {
 		"selfview",
-		"snapshot",
 		"vidinfo",
 	};
 	struct fixture fix = {0};
@@ -398,15 +398,6 @@ static int test_peerconn_param(bool use_audio, bool use_aufilt,
 				aufilt_enable(baresip_aufiltl(), name, true);
 			}
 		}
-
-		if (use_vidfilt) {
-			for (size_t i=0; i<RE_ARRAY_SIZE(vidfilters); i++) {
-				const char *name = vidfilters[i];
-
-				err = module_load(".", name);
-				TEST_ERR(err);
-			}
-		}
 	}
 
 	if (use_video) {
@@ -418,6 +409,15 @@ static int test_peerconn_param(bool use_audio, bool use_aufilt,
 
 		err = module_load(".", "fakevideo");
 		TEST_ERR(err);
+
+		if (use_vidfilt) {
+			for (size_t i=0; i<RE_ARRAY_SIZE(vidfilters); i++) {
+				const char *name = vidfilters[i];
+
+				err = module_load(".", name);
+				TEST_ERR(err);
+			}
+		}
 	}
 
 	const struct mnat *mnat = mnat_find(baresip_mnatl(), "ice");
