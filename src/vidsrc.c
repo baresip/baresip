@@ -80,36 +80,3 @@ const struct vidsrc *vidsrc_find(const struct list *vidsrcl, const char *name)
 
 	return NULL;
 }
-
-
-/**
- * Allocate a new video source state
- *
- * @param stp     Pointer to allocated state
- * @param vidsrcl List of Video Sources
- * @param name    Name of the video source
- * @param prm     Video source parameters
- * @param size    Wanted video size of the source
- * @param fmt     Format parameter
- * @param dev     Video device
- * @param frameh  Video frame handler
- * @param packeth Video packet handler
- * @param errorh  Error handler (optional)
- * @param arg     Handler argument
- *
- * @return 0 if success, otherwise errorcode
- */
-int vidsrc_alloc(struct vidsrc_st **stp, struct list *vidsrcl,
-		 const char *name,
-		 struct vidsrc_prm *prm,
-		 const struct vidsz *size, const char *fmt, const char *dev,
-		 vidsrc_frame_h *frameh, vidsrc_packet_h *packeth,
-		 vidsrc_error_h *errorh, void *arg)
-{
-	struct vidsrc *vs = (struct vidsrc *)vidsrc_find(vidsrcl, name);
-	if (!vs)
-		return ENOENT;
-
-	return vs->alloch(stp, vs, prm, size, fmt, dev,
-			  frameh, packeth, errorh, arg);
-}
