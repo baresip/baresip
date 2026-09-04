@@ -296,6 +296,7 @@ static int agent_alloc(struct agent **agp, struct fixture *fix,
 	if (use_video) {
 		err = peerconnection_add_video_track(ag->pc, conf_config(),
 						     baresip_vidcodecl(),
+						     baresip_vidfiltl(),
 						     SDP_SENDRECV);
 		TEST_ERR(err);
 	}
