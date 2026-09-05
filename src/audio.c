@@ -296,6 +296,8 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	size_t ext_len = 0;
 	uint32_t ts_delta = 0;
 	bool marker = tx->marker;
+	const struct aucodec *ac;
+	struct auenc_state *enc;
 	int err;
 
 	if (!tx->ac || !tx->ac->ench)
@@ -345,9 +347,13 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	len = mbuf_get_space(tx->mb);
 
 	mtx_lock(tx->mtx);
-	err = tx->ac->ench(tx->enc, &marker, mbuf_buf(tx->mb), &len,
-			   af->fmt, af->sampv, af->sampc);
+	ac  = tx->ac;
+	enc = mem_ref(tx->enc);
 	mtx_unlock(tx->mtx);
+
+	err = ac->ench(enc, &marker, mbuf_buf(tx->mb), &len,
+		       af->fmt, af->sampv, af->sampc);
+	mem_deref(enc);
 
 	if ((err & 0xffff0000) == 0x00010000) {
 
