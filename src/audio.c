@@ -296,6 +296,8 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	size_t ext_len = 0;
 	uint32_t ts_delta = 0;
 	bool marker = tx->marker;
+	const struct aucodec *ac;
+	struct auenc_state *enc;
 	int err;
 
 	if (!tx->ac || !tx->ac->ench)
@@ -344,8 +346,14 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 
 	len = mbuf_get_space(tx->mb);
 
-	err = tx->ac->ench(tx->enc, &marker, mbuf_buf(tx->mb), &len,
-			   af->fmt, af->sampv, af->sampc);
+	mtx_lock(tx->mtx);
+	ac  = tx->ac;
+	enc = mem_ref(tx->enc);
+	mtx_unlock(tx->mtx);
+
+	err = ac->ench(enc, &marker, mbuf_buf(tx->mb), &len,
+		       af->fmt, af->sampv, af->sampc);
+	mem_deref(enc);
 
 	if ((err & 0xffff0000) == 0x00010000) {
 
@@ -356,7 +364,7 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	}
 	else if (err) {
 		warning("audio: %s encode error: %zu samples (%m)\n",
-			tx->ac->name, af->sampc, err);
+			ac->name, af->sampc, err);
 		goto out;
 	}
 
@@ -385,14 +393,14 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	}
 
 	/* Convert from audio samplerate to RTP clockrate */
-	sampc_rtp = af->sampc * tx->ac->crate / tx->ac->srate;
+	sampc_rtp = af->sampc * ac->crate / ac->srate;
 
 	/* The RTP clock rate used for generating the RTP timestamp is
 	 * independent of the number of channels and the encoding
 	 * However, MPA support variable packet durations. Thus, MPA
 	 * should update the ts according to its current internal state.
 	 */
-	frame_size = sampc_rtp / tx->ac->ch;
+	frame_size = sampc_rtp / ac->ch;
 
 	mtx_lock(a->tx.mtx);
 	tx->ts_ext += (uint32_t)frame_size;
@@ -530,12 +538,13 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 	enum aufmt fmt = tx->src_fmt;
 	bool muted = tx->muted;
 	size_t psize = tx->psize;
+	size_t aubuf_maxsz = tx->aubuf_maxsz;
 	mtx_unlock(tx->mtx);
 
 	if (fmt != af->fmt) {
 		warning("audio: ausrc format mismatch:"
 			" expected=%d(%s), actual=%d(%s)\n",
-			fmt, aufmt_name(tx->src_fmt),
+			fmt, aufmt_name(fmt),
 			af->fmt, aufmt_name(af->fmt));
 		return;
 	}
@@ -543,7 +552,7 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 	if (muted)
 		auframe_mute(af);
 
-	if (aubuf_cur_size(tx->aubuf) >= tx->aubuf_maxsz) {
+	if (aubuf_cur_size(tx->aubuf) >= aubuf_maxsz) {
 
 		mtx_lock(tx->mtx);
 		uint64_t aubuf_overrun = ++tx->stats.aubuf_overrun;
@@ -1066,13 +1075,15 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 			.fmt        = tx->src_fmt
 		};
 
-		tx->ausrc_prm = prm;
-
 		sz = aufmt_sample_size(tx->src_fmt);
 
 		psize_alloc = sz * au_calc_nsamp(prm.srate, prm.ch, prm.ptime);
+
+		mtx_lock(tx->mtx);
+		tx->ausrc_prm = prm;
 		tx->psize = psize_alloc;
 		tx->aubuf_maxsz = tx->psize * 30;
+		mtx_unlock(tx->mtx);
 
 		if (!tx->aubuf) {
 			err = aubuf_alloc(&tx->aubuf, tx->psize,
@@ -1314,6 +1325,7 @@ bool audio_started(const struct audio *a)
 int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 		      int pt_tx, const char *params)
 {
+	struct auenc_param prm = { .bitrate = 0 };  /* auto */
 	struct autx *tx;
 	int err = 0;
 
@@ -1333,8 +1345,16 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 			aubuf_flush(tx->aubuf);
 		}
 
+		mtx_lock(tx->mtx);
 		tx->enc = mem_deref(tx->enc);
 		tx->ac = ac;
+		if (ac->encupdh)
+			err = ac->encupdh(&tx->enc, ac, &prm, params);
+		mtx_unlock(tx->mtx);
+		if (err) {
+			warning("audio: alloc encoder: %m\n", err);
+			return err;
+		}
 
 		if (!list_isempty(baresip_aufiltl())) {
 			err = aufilt_setup(a, baresip_aufiltl());
@@ -1342,13 +1362,10 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 				return err;
 		}
 	}
-
-	if (ac->encupdh) {
-		struct auenc_param prm;
-
-		prm.bitrate = 0;        /* auto */
-
+	else if (ac->encupdh) {
+		mtx_lock(tx->mtx);
 		err = ac->encupdh(&tx->enc, ac, &prm, params);
+		mtx_unlock(tx->mtx);
 		if (err) {
 			warning("audio: alloc encoder: %m\n", err);
 			return err;
@@ -1484,7 +1501,9 @@ void audio_mute(struct audio *a, bool muted)
 	if (!a)
 		return;
 
+	mtx_lock(a->tx.mtx);
 	a->tx.muted = muted;
+	mtx_unlock(a->tx.mtx);
 }
 
 
