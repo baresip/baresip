@@ -364,7 +364,7 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	}
 	else if (err) {
 		warning("audio: %s encode error: %zu samples (%m)\n",
-			tx->ac->name, af->sampc, err);
+			ac->name, af->sampc, err);
 		goto out;
 	}
 
@@ -393,14 +393,14 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	}
 
 	/* Convert from audio samplerate to RTP clockrate */
-	sampc_rtp = af->sampc * tx->ac->crate / tx->ac->srate;
+	sampc_rtp = af->sampc * ac->crate / ac->srate;
 
 	/* The RTP clock rate used for generating the RTP timestamp is
 	 * independent of the number of channels and the encoding
 	 * However, MPA support variable packet durations. Thus, MPA
 	 * should update the ts according to its current internal state.
 	 */
-	frame_size = sampc_rtp / tx->ac->ch;
+	frame_size = sampc_rtp / ac->ch;
 
 	mtx_lock(a->tx.mtx);
 	tx->ts_ext += (uint32_t)frame_size;
@@ -544,7 +544,7 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 	if (fmt != af->fmt) {
 		warning("audio: ausrc format mismatch:"
 			" expected=%d(%s), actual=%d(%s)\n",
-			fmt, aufmt_name(tx->src_fmt),
+			fmt, aufmt_name(fmt),
 			af->fmt, aufmt_name(af->fmt));
 		return;
 	}
