@@ -1325,6 +1325,7 @@ bool audio_started(const struct audio *a)
 int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 		      int pt_tx, const char *params)
 {
+	struct auenc_param prm = { .bitrate = 0 };  /* auto */
 	struct autx *tx;
 	int err = 0;
 
@@ -1347,7 +1348,13 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 		mtx_lock(tx->mtx);
 		tx->enc = mem_deref(tx->enc);
 		tx->ac = ac;
+		if (ac->encupdh)
+			err = ac->encupdh(&tx->enc, ac, &prm, params);
 		mtx_unlock(tx->mtx);
+		if (err) {
+			warning("audio: alloc encoder: %m\n", err);
+			return err;
+		}
 
 		if (!list_isempty(baresip_aufiltl())) {
 			err = aufilt_setup(a, baresip_aufiltl());
@@ -1355,13 +1362,10 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 				return err;
 		}
 	}
-
-	if (ac->encupdh) {
-		struct auenc_param prm;
-
-		prm.bitrate = 0;        /* auto */
-
+	else if (ac->encupdh) {
+		mtx_lock(tx->mtx);
 		err = ac->encupdh(&tx->enc, ac, &prm, params);
+		mtx_unlock(tx->mtx);
 		if (err) {
 			warning("audio: alloc encoder: %m\n", err);
 			return err;
