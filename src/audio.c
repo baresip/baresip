@@ -538,6 +538,7 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 	enum aufmt fmt = tx->src_fmt;
 	bool muted = tx->muted;
 	size_t psize = tx->psize;
+	size_t aubuf_maxsz = tx->aubuf_maxsz;
 	mtx_unlock(tx->mtx);
 
 	if (fmt != af->fmt) {
@@ -551,7 +552,7 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 	if (muted)
 		auframe_mute(af);
 
-	if (aubuf_cur_size(tx->aubuf) >= tx->aubuf_maxsz) {
+	if (aubuf_cur_size(tx->aubuf) >= aubuf_maxsz) {
 
 		mtx_lock(tx->mtx);
 		uint64_t aubuf_overrun = ++tx->stats.aubuf_overrun;
