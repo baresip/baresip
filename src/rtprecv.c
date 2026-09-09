@@ -31,7 +31,8 @@ struct rtp_receiver {
 	uint32_t pseq;                 /**< Sequence number for incoming RTP */
 	bool pseq_set;                 /**< True if sequence number is set   */
 	bool rtp_estab;                /**< True if RTP stream established   */
-	RE_ATOMIC bool run;            /**< True if RX thread is running     */
+	RE_ATOMIC bool run;            /**< Keep the RX thread loop running  */
+	RE_ATOMIC bool threaded;       /**< RX callbacks belong to RX thread */
 	bool start_rtcp;               /**< Start RTCP flag                  */
 	char *cname;                   /**< Canonical Name for RTCP send     */
 	struct sa rtcp_peer;           /**< RTCP address of Peer             */
@@ -89,6 +90,11 @@ static void work_destructor(void *arg);
 
 /*
  * functions that run in RX thread (if "rxmode thread" is configured)
+ *
+ * `run` is cleared before the RX thread has left its event loop.  Keep using
+ * `threaded` for dispatch until that thread has been joined; otherwise a late
+ * callback can be executed inline on the RX thread while its owner is being
+ * destroyed.
  */
 
 
@@ -96,7 +102,7 @@ static void pass_rtcp_work(struct rtp_receiver *rx, struct rtcp_msg *msg)
 {
 	struct work *w;
 
-	if (!re_atomic_rlx(&rx->run)) {
+	if (!re_atomic_rlx(&rx->threaded)) {
 		stream_process_rtcp(rx->strm, msg);
 		return;
 	}
@@ -116,7 +122,7 @@ static int pass_pt_work(struct rtp_receiver *rx, uint8_t pt, struct mbuf *mb)
 {
 	struct work *w;
 
-	if (!re_atomic_rlx(&rx->run))
+	if (!re_atomic_rlx(&rx->threaded))
 		return rx->pth(pt, mb, rx->arg);
 
 	w = mem_zalloc(sizeof(*w), work_destructor);
@@ -136,7 +142,7 @@ static void pass_rtpestab_work(struct rtp_receiver *rx)
 {
 	struct work *w;
 
-	if (!re_atomic_rlx(&rx->run)) {
+	if (!re_atomic_rlx(&rx->threaded)) {
 		rx->rtpestabh(rx->strm, rx->sessarg);
 		return;
 	}
@@ -154,7 +160,7 @@ static void pass_mnat_work(struct rtp_receiver *rx, const struct sa *raddr1,
 {
 	struct work *w;
 
-	if (!re_atomic_rlx(&rx->run)) {
+	if (!re_atomic_rlx(&rx->threaded)) {
 		stream_mnat_connected(rx->strm, raddr1, raddr2);
 		return;
 	}
@@ -503,14 +509,12 @@ void rtprecv_handle_rtcp(const struct sa *src, struct rtcp_msg *msg,
 
 	MAGIC_CHECK(rx);
 	mtx_lock(rx->mtx);
-	if (!rx->enabled) {
-		mtx_unlock(rx->mtx);
-		return;
-	}
-
-	rx->ts_last = tmr_jiffies();
+	if (rx->enabled)
+		rx->ts_last = tmr_jiffies();
 	mtx_unlock(rx->mtx);
 
+	/* RTCP feedback can control the transmit path even when RTP receive is
+	 * disabled, for example a PLI received by a send-only video stream. */
 	pass_rtcp_work(rx, msg);
 }
 
@@ -722,11 +726,12 @@ static void destructor(void *arg)
 {
 	struct rtp_receiver *rx = arg;
 
-	if (re_atomic_rlx(&rx->run)) {
+	if (re_atomic_rlx(&rx->threaded)) {
 		rtprecv_enable(rx, false);
 		re_atomic_rlx_set(&rx->run, false);
 		thrd_join(rx->thr, NULL);
 		re_thread_async_main_cancel((intptr_t)rx);
+		re_atomic_rlx_set(&rx->threaded, false);
 	}
 	else {
 		udp_thread_detach(rtp_sock(rx->rtp));
@@ -829,17 +834,19 @@ int rtprecv_start_thread(struct rtp_receiver *rx)
 	if (!rx)
 		return EINVAL;
 
-	if (re_atomic_rlx(&rx->run))
+	if (re_atomic_rlx(&rx->threaded))
 		return 0;
 
 	udp_thread_detach(rtp_sock(rx->rtp));
 	udp_thread_detach(rtcp_sock(rx->rtp));
 	re_atomic_rlx_set(&rx->run, true);
+	re_atomic_rlx_set(&rx->threaded, true);
 	err = thread_create_name(&rx->thr,
 				 "RX thread",
 				 rtprecv_thread, rx);
 	if (err) {
 		re_atomic_rlx_set(&rx->run, false);
+		re_atomic_rlx_set(&rx->threaded, false);
 		udp_thread_attach(rtp_sock(rx->rtp));
 		udp_thread_attach(rtcp_sock(rx->rtp));
 	}
@@ -853,7 +860,7 @@ bool rtprecv_running(const struct rtp_receiver *rx)
 	if (!rx)
 		return false;
 
-	return re_atomic_rlx(&rx->run);
+	return re_atomic_rlx(&rx->threaded);
 }
 
 
