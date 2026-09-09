@@ -195,9 +195,8 @@ static int aurecv_push_aubuf(struct audio_recv *ar, const struct auframe *af)
 
 	ar->srate = af->srate;
 	ar->ch    = af->ch;
-	ar->fmt   = af->fmt;
 
-	bpms = (uint64_t)ar->srate * ar->ch * aufmt_sample_size(ar->fmt) /
+	bpms = (uint64_t)ar->srate * ar->ch * aufmt_sample_size(af->fmt) /
 	       1000;
 	if (bpms)
 		re_atomic_rlx_set(&ar->stats.latency,
