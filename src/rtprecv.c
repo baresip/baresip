@@ -231,6 +231,7 @@ static int rtprecv_thread(void *arg)
 		return err;
 	}
 
+	rtprecv_enable(rx, true);
 	err = re_main(NULL);
 
 	tmr_cancel(&rx->tmr);
