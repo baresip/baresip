@@ -439,12 +439,13 @@ void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 	metric_add_packet(rx->metric, mbuf_get_left(mb));
 
 	if (!rx->rtp_estab) {
+		rx->rtp_estab = true;
 		if (rx->rtpestabh) {
 			debug("rtprecv: incoming rtp for '%s' established, "
 			      "receiving from %J\n", rx->name, src);
-			rx->rtp_estab = true;
 			pass_rtpestab_work(rx);
 		}
+
 		tmr_start(&rx->tmr_decode, 0, decode_tmr, rx);
 	}
 
