@@ -34,9 +34,9 @@ enum {
 
 
 struct audio_recv {
-	uint32_t srate;               /**< Decoder sample rate               */
-	uint32_t ch;                  /**< Decoder channel number            */
 	enum aufmt fmt;               /**< Decoder sample format             */
+	void *sampv;                  /**< Decoder sample buffer             */
+	size_t sampvsz;               /**< Decoder sample buffer size        */
 	const struct config_audio *cfg;  /**< Audio configuration            */
 	struct audec_state *dec;      /**< Audio decoder state (optional)    */
 	const struct aucodec *ac;     /**< Current audio decoder             */
@@ -44,8 +44,7 @@ struct audio_recv {
 	mtx_t *aubuf_mtx;             /**< Mutex for aubuf allocation        */
 	uint32_t ssrc;                /**< Incoming synchronization source   */
 	struct list filtl;            /**< Audio filters in decoding order   */
-	void *sampv;                  /**< Sample buffer                     */
-	size_t sampvsz;               /**< Sample buffer size                */
+	uint64_t t;                   /**< Last auframe push time            */
 	uint32_t ptime;               /**< Packet time for receiving [us]    */
 
 	double level_last;            /**< Last audio level value [dBov]     */
@@ -171,7 +170,6 @@ out:
 static int aurecv_push_aubuf(struct audio_recv *ar, const struct auframe *af)
 {
 	int err;
-	uint64_t bpms;
 
 	if (!ar->aubuf) {
 		err = aurecv_alloc_aubuf(ar, af);
@@ -196,12 +194,8 @@ static int aurecv_push_aubuf(struct audio_recv *ar, const struct auframe *af)
 	if (err)
 		return err;
 
-	ar->srate = af->srate;
-	ar->ch    = af->ch;
-	ar->fmt   = af->fmt;
-
-	bpms = (uint64_t)ar->srate * ar->ch * aufmt_sample_size(ar->fmt) /
-	       1000;
+	uint64_t bpms = (uint64_t)af->srate * af->ch *
+			aufmt_sample_size(af->fmt) / 1000;
 	if (bpms)
 		re_atomic_rlx_set(&ar->latency,
 				  aubuf_cur_size(ar->aubuf) / bpms);
@@ -438,8 +432,6 @@ int aurecv_alloc(struct audio_recv **aupp, const struct config_audio *cfg,
 		return ENOMEM;
 
 	ar->cfg = cfg;
-	ar->srate = cfg->srate_play;
-	ar->ch    = cfg->channels_play;
 	ar->fmt   = cfg->dec_fmt;
 	ar->play_fmt = cfg->play_fmt;
 	ar->sampvsz = sampc * aufmt_sample_size(ar->fmt);
@@ -750,7 +742,6 @@ bool aurecv_player_started(const struct audio_recv *ar)
 int aurecv_debug(struct re_printf *pf, const struct audio_recv *ar)
 {
 	struct mbuf *mb;
-	double bpms;
 	int err;
 
 	if (!ar)
@@ -763,8 +754,10 @@ int aurecv_debug(struct re_printf *pf, const struct audio_recv *ar)
 	}
 
 	mtx_lock(ar->mtx);
-	bpms = (double)ar->srate * ar->ch * aufmt_sample_size(ar->fmt) /
-	       1000.0;
+	uint32_t srate = ar->auplay_prm.srate;
+	uint8_t ch     = ar->auplay_prm.ch;
+	int fmt        = ar->auplay_prm.fmt;
+	double bpms = (double)srate * ch * aufmt_sample_size(fmt) / 1000.0;
 	err  = mbuf_printf(mb,
 			   " rx:   decode: %H %s\n",
 			   aucodec_print, ar->ac,
