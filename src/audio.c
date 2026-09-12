@@ -535,7 +535,7 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 	if (fmt != af->fmt) {
 		warning("audio: ausrc format mismatch:"
 			" expected=%d(%s), actual=%d(%s)\n",
-			fmt, aufmt_name(tx->src_fmt),
+			fmt, aufmt_name(fmt),
 			af->fmt, aufmt_name(af->fmt));
 		return;
 	}
