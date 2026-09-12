@@ -1897,7 +1897,8 @@ int peerconnection_add_audio_track(struct peer_connection *pc,
 				   struct list *aucodecl, enum sdp_dir dir);
 int peerconnection_add_video_track(struct peer_connection *pc,
 				   const struct config *cfg,
-				   struct list *vidcodecl, enum sdp_dir dir);
+				   struct list *vidcodecl,
+				   struct list *vidfiltl, enum sdp_dir dir);
 int  peerconnection_set_remote_descr(struct peer_connection *pc,
 				    const struct session_description *sd);
 int  peerconnection_create_offer(struct peer_connection *pc,

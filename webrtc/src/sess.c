@@ -160,7 +160,8 @@ int session_start(struct session *sess,
 	}
 
 	err = peerconnection_add_video_track(
-		sess->pc, config, baresip_vidcodecl(), SDP_SENDRECV);
+		sess->pc, config, baresip_vidcodecl(),
+		baresip_vidfiltl(), SDP_SENDRECV);
 	if (err) {
 		warning("demo: add_video failed (%m)\n", err);
 		return err;

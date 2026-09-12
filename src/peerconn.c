@@ -347,7 +347,8 @@ int peerconnection_add_audio_track(struct peer_connection *pc,
  */
 int peerconnection_add_video_track(struct peer_connection *pc,
 				   const struct config *cfg,
-				   struct list *vidcodecl, enum sdp_dir dir)
+				   struct list *vidcodecl,
+				   struct list *vidfiltl, enum sdp_dir dir)
 {
 	struct media_track *media;
 	bool offerer;
@@ -370,7 +371,7 @@ int peerconnection_add_video_track(struct peer_connection *pc,
 
 	err = video_alloc(&media->u.vid, &pc->streaml, &pc->stream_prm, cfg,
 			  NULL, pc->sdp, pc->mnat, pc->mnats, pc->menc,
-			  pc->mencs, NULL, vidcodecl, NULL, offerer,
+			  pc->mencs, NULL, vidcodecl, vidfiltl, offerer,
 			  video_error_handler, media);
 	if (err) {
 		warning("peerconnection: video alloc failed (%m)\n", err);
