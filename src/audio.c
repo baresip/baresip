@@ -344,8 +344,16 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 
 	len = mbuf_get_space(tx->mb);
 
-	err = tx->ac->ench(tx->enc, &marker, mbuf_buf(tx->mb), &len,
-			   af->fmt, af->sampv, af->sampc);
+	mtx_lock(tx->mtx);
+	const struct aucodec *ac = tx->ac;
+	struct auenc_state *enc  = tx->enc;
+	mtx_unlock(tx->mtx);
+
+	if (!ac || !ac->ench)
+		return;
+
+	err = ac->ench(enc, &marker, mbuf_buf(tx->mb), &len,
+		       af->fmt, af->sampv, af->sampc);
 
 	if ((err & 0xffff0000) == 0x00010000) {
 
@@ -356,7 +364,7 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	}
 	else if (err) {
 		warning("audio: %s encode error: %zu samples (%m)\n",
-			tx->ac->name, af->sampc, err);
+			ac->name, af->sampc, err);
 		goto out;
 	}
 
@@ -385,14 +393,14 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	}
 
 	/* Convert from audio samplerate to RTP clockrate */
-	sampc_rtp = af->sampc * tx->ac->crate / tx->ac->srate;
+	sampc_rtp = af->sampc * ac->crate / ac->srate;
 
 	/* The RTP clock rate used for generating the RTP timestamp is
 	 * independent of the number of channels and the encoding
 	 * However, MPA support variable packet durations. Thus, MPA
 	 * should update the ts according to its current internal state.
 	 */
-	frame_size = sampc_rtp / tx->ac->ch;
+	frame_size = sampc_rtp / ac->ch;
 
 	mtx_lock(a->tx.mtx);
 	tx->ts_ext += (uint32_t)frame_size;
