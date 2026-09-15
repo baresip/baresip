@@ -257,7 +257,6 @@ int stream_enable_rx(struct stream *strm, bool enable)
 		return ENOTSUP;
 
 	debug("stream: enable %s RTP receiver\n", media_name(strm->type));
-	rtprecv_enable(strm->rx, true);
 
 	if (strm->rtp && strm->cfg.rxmode == RECEIVE_MODE_THREAD &&
 	    strm->type == MEDIA_AUDIO && !rtprecv_running(strm->rx)) {
@@ -270,9 +269,11 @@ int stream_enable_rx(struct stream *strm, bool enable)
 			strm->rxm.use_rxthread = true;
 			tmr_start(&strm->rxm.tmr_rec, 1, stream_start_receiver,
 				  strm);
+			return 0;
 		}
 	}
 
+	rtprecv_enable(strm->rx, true);
 	return 0;
 }
 
