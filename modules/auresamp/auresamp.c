@@ -208,7 +208,15 @@ static int common_resample(struct auresamp_st *st, struct auframe *af)
 	af->fmt   = st->oprm.fmt;
 	af->srate = st->oprm.srate;
 	af->ch    = st->oprm.ch;
+
 	if (st->oprm.fmt != AUFMT_S16LE) {
+
+		if (!st->sampv)
+			err = sampv_alloc(st, af);
+
+		if (err)
+			return err;
+
 		auconv_from_s16(st->oprm.fmt, st->sampv, st->rsampv, rsampc);
 		af->sampv = st->sampv;
 	}
