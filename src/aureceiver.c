@@ -46,7 +46,6 @@ struct audio_recv {
 	struct list filtl;            /**< Audio filters in decoding order   */
 	void *sampv;                  /**< Sample buffer                     */
 	size_t sampvsz;               /**< Sample buffer size                */
-	uint64_t t;                   /**< Last auframe push time            */
 	uint32_t ptime;               /**< Packet time for receiving [us]    */
 
 	double level_last;            /**< Last audio level value [dBov]     */
@@ -55,12 +54,16 @@ struct audio_recv {
 	uint8_t extmap_aulevel;       /**< ID Range 1-14 inclusive           */
 	int pt;                       /**< Payload type of audio codec       */
 
+	uint64_t n_discard;           /**< Nbr of discarded packets          */
+	RE_ATOMIC uint64_t latency;   /**< Latency in [ms]                   */
+
+#ifndef RELEASE
 	struct {
-		uint64_t n_discard;   /**< Nbr of discarded packets          */
-		RE_ATOMIC uint64_t latency;   /**< Latency in [ms]           */
+		uint64_t t;           /**< Last auframe push time            */
 		int32_t jitter;       /**< Auframe push jitter [us]          */
 		int32_t dmax;         /**< Max deviation [us]                */
 	} stats;
+#endif
 
 	mtx_t *mtx;
 
@@ -180,14 +183,14 @@ static int aurecv_push_aubuf(struct audio_recv *ar, const struct auframe *af)
 	int32_t d, da;
 	uint64_t t;
 	t = tmr_jiffies_usec();
-	if (ar->t) {
-		d = (int32_t) (int64_t) ((t - ar->t) - ar->ptime);
+	if (ar->stats.t) {
+		d = (int32_t) (int64_t) ((t - ar->stats.t) - ar->ptime);
 		da = abs(d);
 		ar->stats.dmax = max(ar->stats.dmax, da);
 		ar->stats.jitter += (da - ar->stats.jitter) / JITTER_EMA_COEFF;
 	}
 
-	ar->t = t;
+	ar->stats.t = t;
 #endif
 	err = aubuf_write_auframe(ar->aubuf, af);
 	if (err)
@@ -200,7 +203,7 @@ static int aurecv_push_aubuf(struct audio_recv *ar, const struct auframe *af)
 	bpms = (uint64_t)ar->srate * ar->ch * aufmt_sample_size(ar->fmt) /
 	       1000;
 	if (bpms)
-		re_atomic_rlx_set(&ar->stats.latency,
+		re_atomic_rlx_set(&ar->latency,
 				  aubuf_cur_size(ar->aubuf) / bpms);
 
 	return 0;
@@ -370,7 +373,7 @@ void aurecv_receive(struct audio_recv *ar, const struct rtp_header *hdr,
 	ar->ts_recv.last = hdr->ts;
 
 	if (discard) {
-		++ar->stats.n_discard;
+		++ar->n_discard;
 		goto out;
 	}
 
@@ -417,7 +420,7 @@ uint64_t aurecv_latency(const struct audio_recv *ar)
 	if (!ar)
 		return 0;
 
-	return re_atomic_rlx(&ar->stats.latency);
+	return re_atomic_rlx(&ar->latency);
 }
 
 
@@ -779,8 +782,7 @@ int aurecv_debug(struct re_printf *pf, const struct audio_recv *ar)
 	err |= mbuf_printf(mb, "       deviation: %.2fms\n",
 			   (double) ar->stats.dmax / 1000);
 #endif
-	err |= mbuf_printf(mb, "       n_discard: %llu\n",
-			   ar->stats.n_discard);
+	err |= mbuf_printf(mb, "       n_discard: %llu\n", ar->n_discard);
 	if (ar->level_set) {
 		err |= mbuf_printf(mb, "       level %.3f dBov\n",
 				   ar->level_last);
