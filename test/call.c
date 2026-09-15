@@ -1186,6 +1186,277 @@ int test_call_aulevel(void)
 }
 
 
+static void rx_metric_snapshot(const struct stream *strm,
+			       uint32_t *packets, uint32_t *bytes)
+{
+	do {
+		*packets = stream_metric_get_rx_n_packets(strm);
+		*bytes = stream_metric_get_rx_n_bytes(strm);
+	}
+	while (*packets != stream_metric_get_rx_n_packets(strm));
+}
+
+
+static int wait_for_audio_frames(struct fixture *f, unsigned n)
+{
+	struct cancel_rule *cr;
+	int err = 0;
+
+	cancel_rule_new(BEVENT_CUSTOM, f->a.ua, 0, 0, 1);
+	cr->prm = "auframe";
+	cr->n_auframe = f->a.n_auframe + n;
+	cancel_rule_and(BEVENT_CUSTOM, f->b.ua, 1, 0, 1);
+	cr->prm = "auframe";
+	cr->n_auframe = f->b.n_auframe + n;
+
+	err = re_main_timeout(5000);
+	cancel_rule_pop();
+	if (!err)
+		err = f->err;
+	TEST_ERR(err);
+
+ out:
+	return err;
+}
+
+
+static int reinvite_from_b_expect_payload(struct fixture *f, uint32_t psize)
+{
+	struct agent *agents[] = {&f->a, &f->b};
+	struct stream *strmv[RE_ARRAY_SIZE(agents)];
+	struct cancel_rule *cr;
+	uint32_t packetv[2], bytesv[2];
+	size_t i;
+	int err = 0;
+
+	cancel_rule_new(BEVENT_CALL_REMOTE_SDP, f->a.ua, 0, 0, 1);
+	cr->prm = "offer";
+	cancel_rule_and(BEVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 1);
+	cr->prm = "answer";
+
+	err = call_modify(ua_call(f->b.ua));
+	TEST_ERR(err);
+	err = re_main_timeout(5000);
+	cancel_rule_pop();
+	TEST_ERR(err);
+	TEST_ERR(f->err);
+
+	err = agent_wait_for_ack(&f->a, 0, 0, 1);
+	TEST_ERR(err);
+
+	/* drain packets that were already in flight during renegotiation */
+	err = wait_for_audio_frames(f, 10);
+	TEST_ERR(err);
+	for (i=0; i<RE_ARRAY_SIZE(agents); i++) {
+		strmv[i] = audio_strm(call_audio(ua_call(agents[i]->ua)));
+		rx_metric_snapshot(strmv[i], &packetv[i], &bytesv[i]);
+	}
+
+	err = wait_for_audio_frames(f, 10);
+	TEST_ERR(err);
+
+	for (i=0; i<RE_ARRAY_SIZE(agents); i++) {
+		uint32_t bytes, packets;
+
+		rx_metric_snapshot(strmv[i], &packets, &bytes);
+		ASSERT_TRUE(packets > packetv[i]);
+		ASSERT_EQ((packets - packetv[i]) * psize, bytes - bytesv[i]);
+	}
+
+ out:
+	return err;
+}
+
+
+static int test_call_ptime_cap_base(uint32_t aptime, uint32_t wire_ptime)
+{
+	struct fixture fix, *f = &fix;
+	struct cancel_rule *cr;
+	struct stream *strm;
+	const char *attr;
+	uint32_t bytes, n;
+	size_t psize;
+	char prm[64];
+	int err;
+
+	re_snprintf(prm, sizeof(prm),
+		    ";ptime=%u;audio_codecs=aucmock/48000/2", aptime);
+	fixture_init_prm(f, prm);
+
+	psize = 4 * (48000 * wire_ptime / 1000);
+
+	cancel_rule_new(BEVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
+	cancel_rule_and(BEVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+	f->estab_action = ACTION_NOTHING;
+
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	strm = audio_strm(call_audio(ua_call(f->a.ua)));
+
+	/* the answer mirrors the raw request, not the effective cap */
+	attr = sdp_media_rattr(stream_sdpmedia(strm), "ptime");
+	ASSERT_TRUE(attr != NULL);
+	ASSERT_EQ(aptime, (uint32_t)atoi(attr));
+
+	rx_metric_snapshot(strm, &n, &bytes);
+	ASSERT_TRUE(n > 0);
+	ASSERT_EQ(n * psize, bytes);
+
+	strm = audio_strm(call_audio(ua_call(f->b.ua)));
+	rx_metric_snapshot(strm, &n, &bytes);
+	ASSERT_TRUE(n > 0);
+	ASSERT_EQ(n * psize, bytes);
+
+ out:
+	fixture_close(f);
+	return err;
+}
+
+
+static int test_call_ptime_cap_reinvite(void)
+{
+	struct fixture fix, *f = &fix;
+	struct cancel_rule *cr;
+	struct auplay *auplay = NULL;
+	struct sdp_format *pcmu;
+	struct sdp_media *m;
+	int err = 0;
+
+	fixture_init_prm(f, ";audio_codecs=aucmock/48000/2,PCMU/8000/1"
+			 ";audio_player=mock-auplay,a");
+	f->b.ua = mem_deref(f->b.ua);
+	err = ua_alloc(&f->b.ua, "B <sip:b@127.0.0.1>;regint=0"
+		       ";audio_codecs=aucmock/48000/2,PCMU/8000/1"
+		       ";audio_player=mock-auplay,b");
+	TEST_ERR(err);
+
+	err = mock_auplay_register(&auplay, baresip_auplayl(),
+				   auframe_handler, f);
+	TEST_ERR(err);
+
+	cancel_rule_new(BEVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
+	cancel_rule_and(BEVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+	f->estab_action = ACTION_NOTHING;
+
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+	err = re_main_timeout(5000);
+	cancel_rule_pop();
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
+
+	/* a smaller peer request must resize active packetization */
+	err = sdp_media_set_lattr(m, true, "ptime", "%u", 5);
+	TEST_ERR(err);
+	err = reinvite_from_b_expect_payload(f, 960);
+	TEST_ERR(err);
+
+	/* restoring the raw request leaves the codec cap in force */
+	err = sdp_media_set_lattr(m, true, "ptime", "%u", 20);
+	TEST_ERR(err);
+	err = reinvite_from_b_expect_payload(f, 1920);
+	TEST_ERR(err);
+
+	/* switching codecs alone must release the previous cap */
+	pcmu = sdp_media_format(m, true, NULL, -1, "PCMU", 8000, 1);
+	ASSERT_TRUE(pcmu != NULL);
+	list_unlink(&pcmu->le);
+	list_prepend((struct list *)sdp_media_format_lst(m, true),
+		     &pcmu->le, pcmu);
+
+	err = reinvite_from_b_expect_payload(f, 160);
+	TEST_ERR(err);
+
+	ASSERT_STREQ("PCMU",
+		     audio_codec(call_audio(ua_call(f->a.ua)), true)->name);
+
+ out:
+	fixture_close(f);
+	mem_deref(auplay);
+	return err;
+}
+
+
+int test_call_ptime_cap(void)
+{
+	int err;
+
+	mock_aucodec_register();
+
+	err = module_load(".", "ausine");
+	TEST_ERR(err);
+
+	err = test_call_ptime_cap_base(60, 10);
+	TEST_ERR(err);
+	err = test_call_ptime_cap_base(5, 5);
+	TEST_ERR(err);
+
+	err = test_call_ptime_cap_reinvite();
+	TEST_ERR(err);
+
+ out:
+	module_unload("ausine");
+	mock_aucodec_unregister();
+	return err;
+}
+
+
+int test_call_l16_ptime(void)
+{
+	struct fixture fix, *f = &fix;
+	struct cancel_rule *cr;
+	struct stream *strm;
+	uint32_t bytes, n;
+	int err;
+
+	err = module_load(".", "l16");
+	TEST_ERR(err);
+	err = module_load(".", "ausine");
+	TEST_ERR(err);
+
+	fixture_init_prm(f, ";audio_codecs=L16/48000/2");
+
+	cancel_rule_new(BEVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
+	cancel_rule_and(BEVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+	f->estab_action = ACTION_NOTHING;
+
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	/* 48kHz stereo caps the 20ms default at 7ms, i.e. 1344 bytes */
+	strm = audio_strm(call_audio(ua_call(f->a.ua)));
+	rx_metric_snapshot(strm, &n, &bytes);
+	ASSERT_TRUE(n > 0);
+	ASSERT_EQ(n * 1344, bytes);
+
+	strm = audio_strm(call_audio(ua_call(f->b.ua)));
+	rx_metric_snapshot(strm, &n, &bytes);
+	ASSERT_TRUE(n > 0);
+	ASSERT_EQ(n * 1344, bytes);
+
+ out:
+	fixture_close(f);
+	module_unload("ausine");
+	module_unload("l16");
+	return err;
+}
+
+
 static int test_100rel_audio_base(void)
 {
 	struct fixture fix, *f = &fix;

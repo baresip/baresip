@@ -69,18 +69,22 @@ static int decode(struct audec_state *st, int fmt, void *sampv, size_t *sampc,
 }
 
 
+/* ptime cap: keep the payload within 1400 bytes (1500 MTU - hdrs) */
+#define L16_FMT(srate, ch) srate, srate, ch, ch, 1400*1000/((srate)*(ch)*2)
+
+
 /* See RFC 3551 */
 static struct aucodec l16v[] = {
-{LE_INIT,    0, "L16", 48000, 48000, 2, 2,  4, 0, 0, encode, 0, decode, 0,0,0},
-{LE_INIT, "10", "L16", 44100, 44100, 2, 2,  4, 0, 0, encode, 0, decode, 0,0,0},
-{LE_INIT,    0, "L16", 32000, 32000, 2, 2, 10, 0, 0, encode, 0, decode, 0,0,0},
-{LE_INIT,    0, "L16", 16000, 16000, 2, 2, 20, 0, 0, encode, 0, decode, 0,0,0},
-{LE_INIT,    0, "L16",  8000,  8000, 2, 2, 20, 0, 0, encode, 0, decode, 0,0,0},
-{LE_INIT,    0, "L16", 48000, 48000, 1, 1, 10, 0, 0, encode, 0, decode, 0,0,0},
-{LE_INIT, "11", "L16", 44100, 44100, 1, 1, 10, 0, 0, encode, 0, decode, 0,0,0},
-{LE_INIT,    0, "L16", 32000, 32000, 1, 1, 20, 0, 0, encode, 0, decode, 0,0,0},
-{LE_INIT,    0, "L16", 16000, 16000, 1, 1, 20, 0, 0, encode, 0, decode, 0,0,0},
-{LE_INIT,    0, "L16",  8000,  8000, 1, 1, 20, 0, 0, encode, 0, decode, 0,0,0},
+{LE_INIT,    0, "L16", L16_FMT(48000, 2), 0, 0, encode, 0, decode, 0,0,0},
+{LE_INIT, "10", "L16", L16_FMT(44100, 2), 0, 0, encode, 0, decode, 0,0,0},
+{LE_INIT,    0, "L16", L16_FMT(32000, 2), 0, 0, encode, 0, decode, 0,0,0},
+{LE_INIT,    0, "L16", L16_FMT(16000, 2), 0, 0, encode, 0, decode, 0,0,0},
+{LE_INIT,    0, "L16", L16_FMT( 8000, 2), 0, 0, encode, 0, decode, 0,0,0},
+{LE_INIT,    0, "L16", L16_FMT(48000, 1), 0, 0, encode, 0, decode, 0,0,0},
+{LE_INIT, "11", "L16", L16_FMT(44100, 1), 0, 0, encode, 0, decode, 0,0,0},
+{LE_INIT,    0, "L16", L16_FMT(32000, 1), 0, 0, encode, 0, decode, 0,0,0},
+{LE_INIT,    0, "L16", L16_FMT(16000, 1), 0, 0, encode, 0, decode, 0,0,0},
+{LE_INIT,    0, "L16", L16_FMT( 8000, 1), 0, 0, encode, 0, decode, 0,0,0},
 };
 
 
