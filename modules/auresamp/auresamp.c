@@ -162,8 +162,9 @@ static int common_resample(struct auresamp_st *st, struct auframe *af)
 	int err = 0;
 
 	if (st->dbg) {
-		debug("auresamp: resample %s %u/%u --> %u/%u\n", st->dbg,
-		      af->srate, af->ch, st->oprm.srate, st->oprm.ch);
+		debug("auresamp: resample %s %u/%u (%s) --> %u/%u (%s)\n",
+		      st->dbg, af->srate, af->ch, aufmt_name(af->fmt),
+		      st->oprm.srate, st->oprm.ch, aufmt_name(st->oprm.fmt));
 		st->dbg = NULL;
 	}
 
@@ -177,14 +178,16 @@ static int common_resample(struct auresamp_st *st, struct auframe *af)
 		return 0;
 	}
 
-	sampv  = af->sampv;
-	if (af->fmt != AUFMT_S16LE) {
+	if (af->fmt != AUFMT_S16LE || st->oprm.fmt != AUFMT_S16LE) {
 		if (!st->sampv)
 			err = sampv_alloc(st, af);
 
 		if (err)
 			return err;
+	}
 
+	sampv  = af->sampv;
+	if (af->fmt != AUFMT_S16LE) {
 		auconv_to_s16(st->sampv, af->fmt, af->sampv, af->sampc);
 		sampv = st->sampv;
 	}
