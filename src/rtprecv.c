@@ -174,35 +174,35 @@ static void rtprecv_periodic(void *arg)
 {
 	struct rtp_receiver *rx = arg;
 
-	if (!re_atomic_rlx(&rx->stop)) {
-		mtx_lock(rx->mtx);
-		bool pinhole    = rx->pinhole;
-		mtx_unlock(rx->mtx);
-		tmr_start(&rx->tmr, 10, rtprecv_periodic, rx);
-		mtx_lock(rx->mtx);
-		if (rx->start_rtcp) {
-			int err = 0;
-			rx->start_rtcp = false;
-			rtcp_start(rx->rtp, rx->cname, &rx->rtcp_peer);
-			mtx_unlock(rx->mtx);
-			if (pinhole) {
-				err = rtcp_send_app(rx->rtp, "PING",
-						    (void *)"PONG", 4);
-			}
-			if (err) {
-				warning("rtprecv: rtcp_send_app failed (%m)\n",
-					err);
-			}
-		}
-		else {
-			mtx_unlock(rx->mtx);
-		}
-	}
-	else {
+	if (re_atomic_rlx(&rx->stop)) {
 		tmr_cancel(&rx->tmr_decode);
 		udp_thread_detach(rtp_sock(rx->rtp));
 		udp_thread_detach(rtcp_sock(rx->rtp));
 		re_cancel();
+		return;
+	}
+
+	mtx_lock(rx->mtx);
+	bool pinhole    = rx->pinhole;
+	mtx_unlock(rx->mtx);
+	tmr_start(&rx->tmr, 10, rtprecv_periodic, rx);
+	mtx_lock(rx->mtx);
+	if (rx->start_rtcp) {
+		int err = 0;
+		rx->start_rtcp = false;
+		rtcp_start(rx->rtp, rx->cname, &rx->rtcp_peer);
+		mtx_unlock(rx->mtx);
+		if (pinhole) {
+			err = rtcp_send_app(rx->rtp, "PING",
+					    (void *)"PONG", 4);
+		}
+		if (err) {
+			warning("rtprecv: rtcp_send_app failed (%m)\n",
+				err);
+		}
+	}
+	else {
+		mtx_unlock(rx->mtx);
 	}
 }
 
