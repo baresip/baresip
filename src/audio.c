@@ -96,7 +96,7 @@ struct autx {
 	uint32_t ts_tel;              /**< Timestamp for Telephony Events  */
 	size_t psize;                 /**< Packet size for sending         */
 	bool marker;                  /**< Marker bit for outgoing RTP     */
-	bool muted;                   /**< Audio source is muted           */
+	RE_ATOMIC bool muted;         /**< Audio source is muted           */
 	int cur_key;                  /**< Currently transmitted event     */
 	enum aufmt src_fmt;           /**< Sample format for audio source  */
 	enum aufmt enc_fmt;           /**< Sample format for encoder       */
@@ -528,7 +528,6 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 
 	mtx_lock(tx->mtx);
 	enum aufmt fmt = tx->src_fmt;
-	bool muted = tx->muted;
 	size_t psize = tx->psize;
 	mtx_unlock(tx->mtx);
 
@@ -540,7 +539,7 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 		return;
 	}
 
-	if (muted)
+	if (re_atomic_rlx(&tx->muted))
 		auframe_mute(af);
 
 	if (aubuf_cur_size(tx->aubuf) >= tx->aubuf_maxsz) {
@@ -1484,7 +1483,7 @@ void audio_mute(struct audio *a, bool muted)
 	if (!a)
 		return;
 
-	a->tx.muted = muted;
+	re_atomic_rlx_set(&a->tx.muted, muted);
 }
 
 
@@ -1500,7 +1499,7 @@ bool audio_ismuted(const struct audio *a)
 	if (!a)
 		return false;
 
-	return a->tx.muted;
+	return re_atomic_rlx(&a->tx.muted);
 }
 
 
