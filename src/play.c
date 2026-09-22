@@ -186,16 +186,23 @@ static void destructor(void *arg)
 }
 
 
-static int aufile_load(struct mbuf *mb, const char *filename,
+static int aufile_load(struct mbuf **mbp, const char *filename,
 		       uint32_t *srate, uint8_t *channels)
 {
 	struct aufile_prm prm;
 	struct aufile *af;
 	int err;
 
+	if (!mbp || !filename || !srate || !channels)
+		return EINVAL;
+
+	struct mbuf *mb = mbuf_alloc(1024);
+	if (!mb)
+		return ENOMEM;
+
 	err = aufile_open(&af, &prm, filename, AUFILE_READ);
 	if (err)
-		return err;
+		goto out;
 
 	while (!err) {
 		uint8_t buf[4096];
@@ -241,16 +248,19 @@ static int aufile_load(struct mbuf *mb, const char *filename,
 
 	mem_deref(af);
 
-	if (!err) {
-		mb->pos = 0;
-
-		*srate    = prm.srate;
-		*channels = prm.channels;
-	}
-
 	if (err)
-		warning("play: could not load %s (%m)\n",
-			filename ? filename : "null", err);
+		goto out;
+
+	mb->pos = 0;
+
+	*srate    = prm.srate;
+	*channels = prm.channels;
+
+out:
+	if (err)
+		mem_deref(mb);
+	else
+		*mbp = mb;
 
 	return err;
 }
@@ -311,7 +321,7 @@ int play_tone(struct play **playp, struct player *player,
 			play_mod ? play_mod : "-", play_dev ? play_dev : "-",
 			err);
 		goto out;
-       }
+	}
 
 	list_append(&player->playl, &play->le, play);
 	tmr_start(&play->tmr, PTIME,  tmr_polling, play);
@@ -558,13 +568,14 @@ int play_file(struct play **playp, struct player *player,
 
 	parse_play_settings(file, &repeat, &delay);
 
-	/* absolute path? */
+	bool try_wav = true;
 	if (file[0] == '/' ||
 	    !re_regex(file, strlen(file), "https://") ||
 	    !re_regex(file, strlen(file), "http://") ||
 	    !re_regex(file, strlen(file), "file://")) {
 
 		err = re_sdprintf(&path, "%s", file);
+		try_wav = false;
 	}
 	else
 		err = re_sdprintf(&path, "%s/%s", player->play_path, file);
@@ -572,8 +583,11 @@ int play_file(struct play **playp, struct player *player,
 	if (err)
 		goto out;
 
-	if (!conf_get(conf_cur(), "file_ausrc", &opt)) {
-
+	if (try_wav && 0 == aufile_load(&mb, path, &srate, &ch)) {
+	    err = play_tone(&play, player, mb, srate,
+	                    ch, repeat, play_mod, play_dev);
+	}
+	else if (!conf_get(conf_cur(), "file_ausrc", &opt)) {
 		err = pl_strdup(&srcn, &opt);
 		if (err)
 			goto out;
@@ -583,23 +597,16 @@ int play_file(struct play **playp, struct player *player,
 			err = play_file_ausrc(&play, ausrc,
 					      path, repeat,
 					      play_mod, play_dev);
-
-			goto out;
+		}
+		else {
+			warning("play: could not find ausrc '%r'\n", &opt);
+			err = ENOENT;
 		}
 	}
-
-	mb = mbuf_alloc(1024);
-	if (!mb) {
-		err = ENOMEM;
-		goto out;
+	else {
+		warning("play: '%s' not supported\n", path);
+		err = ENOENT;
 	}
-
-	err = aufile_load(mb, path, &srate, &ch);
-	if (err)
-		goto out;
-
-	err = play_tone(&play, player, mb, srate,
-	                ch, repeat, play_mod, play_dev);
 
  out:
 	mem_deref(mb);
