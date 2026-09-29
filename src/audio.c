@@ -172,17 +172,18 @@ static double autx_calc_seconds(const struct autx *autx)
 }
 
 
-static int stop_tx_thread(struct autx *tx)
+static void stop_transmit_thread(struct autx *tx)
 {
-	if (!re_atomic_rlx(&tx->thr.run))
-		return ENOENT;
+	int result;
 
-	if (re_thread_check(false))
-		return EPERM;
+	if (!re_atomic_rlx(&tx->thr.run))
+		return;
 
 	re_atomic_rlx_set(&tx->thr.run, false);
 
-	return thrd_join(tx->thr.tid, NULL) != thrd_success;
+	result = thrd_join(tx->thr.tid, NULL);
+	if (result != thrd_success)
+		debug("audio: failed to join transmit thread (%d)\n", result);
 }
 
 
@@ -192,7 +193,7 @@ static void stop_tx(struct autx *tx, struct audio *a)
 		return;
 
 	stream_enable_tx(a->strm, false);
-	stop_tx_thread(tx);
+	stop_transmit_thread(tx);
 
 	/* audio source must be stopped first */
 	tx->ausrc = mem_deref(tx->ausrc);
@@ -928,9 +929,8 @@ loop:
 }
 
 
-static int start_tx_thread(struct audio *a)
+static int start_transmit_thread(struct autx *tx, struct audio *a)
 {
-	struct autx *tx = &a->tx;
 	int err;
 
 	if (re_atomic_rlx(&tx->thr.run))
@@ -1137,7 +1137,7 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 		mtx_unlock(tx->mtx);
 		tx->as = ausrc_find(ausrcl, tx->module);
 
-		err = start_tx_thread(a);
+		err = start_transmit_thread(tx, a);
 		if (err)
 			return err;
 
