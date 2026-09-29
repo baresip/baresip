@@ -174,14 +174,12 @@ static double autx_calc_seconds(const struct autx *autx)
 
 static void stop_transmit_thread(struct autx *tx)
 {
-	int result;
-
 	if (!re_atomic_rlx(&tx->thr.run))
 		return;
 
 	re_atomic_rlx_set(&tx->thr.run, false);
 
-	result = thrd_join(tx->thr.tid, NULL);
+	int result = thrd_join(tx->thr.tid, NULL);
 	if (result != thrd_success)
 		debug("audio: failed to join transmit thread (%d)\n", result);
 }
