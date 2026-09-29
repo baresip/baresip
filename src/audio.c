@@ -929,13 +929,11 @@ loop:
 
 static int start_transmit_thread(struct autx *tx, struct audio *a)
 {
-	int err;
-
 	if (re_atomic_rlx(&tx->thr.run))
 		return 0;
 
 	re_atomic_rlx_set(&tx->thr.run, true);
-	err = thread_create_name(&tx->thr.tid, "Audio TX", tx_thread, a);
+	int err = thread_create_name(&tx->thr.tid, "Audio TX", tx_thread, a);
 	if (err)
 		re_atomic_rlx_set(&tx->thr.run, false);
 
