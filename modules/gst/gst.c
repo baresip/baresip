@@ -98,11 +98,6 @@ sync_handler(
 			g_free(d);
 
 			st->err = err->code;
-
-			/* Call error handler */
-			if (st->errh)
-				st->errh(err->code, err->message, st->arg);
-
 			g_error_free(err);
 
 			st->run = false;
@@ -404,6 +399,9 @@ static void timeout(void *arg)
 			/* error handler must be called from re_main thread */
 			if (st->errh)
 				st->errh(0, "end of file", st->arg);
+		}
+		else if (st->err && st->errh) {
+			st->errh(st->err, "error", st->arg);
 		}
 	}
 }

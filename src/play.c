@@ -366,13 +366,12 @@ static void aubuf_write_handler(struct auframe *af, void *arg)
 static void ausrc_error_handler(int err, const char *str, void *arg)
 {
 	struct play *play = arg;
+	(void)err;
 	(void)str;
 
-	if (err == 0) {
-		mtx_lock(&play->lock);
-		play->ausrc_st = mem_deref(play->ausrc_st);
-		mtx_unlock(&play->lock);
-	}
+	mtx_lock(&play->lock);
+	play->ausrc_st = mem_deref(play->ausrc_st);
+	mtx_unlock(&play->lock);
 }
 
 
