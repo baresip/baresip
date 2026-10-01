@@ -3166,6 +3166,33 @@ void call_set_handlers(struct call *call, call_event_h *eh,
 }
 
 
+/**
+ * Set custom SIP headers for the BYE (or 200 OK to a BYE) ending the call
+ *
+ * @param call Call object
+ * @param fmt  Formatted headers, each ending in CRLF, or NULL to clear
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int call_set_close_headers(struct call *call, const char *fmt, ...)
+{
+	va_list ap;
+	int err;
+
+	if (!call || !call->sess)
+		return EINVAL;
+
+	if (!fmt)
+		return sipsess_set_close_headers(call->sess, NULL);
+
+	va_start(ap, fmt);
+	err = sipsess_set_close_headers(call->sess, "%v", fmt, &ap);
+	va_end(ap);
+
+	return err;
+}
+
+
 void call_set_xrtpstat(struct call *call)
 {
 	if (!call)
