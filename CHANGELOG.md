@@ -5,9 +5,36 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v4.12.0 - 2026-09-30
+
+### What's Changed
+* Feature: Send Custom X-Headers on Outbound Calls by @ajrice6713 in https://github.com/baresip/baresip/pull/3800
+* audio: thread-safe usage of psize and ptime in tx_thread() by @alfredh in https://github.com/baresip/baresip/pull/3810
+* jbuf: safer jbuf_set_id by @cspiel1 in https://github.com/baresip/baresip/pull/3809
+* audio: add mutex lock for aubuf statistics by @alfredh in https://github.com/baresip/baresip/pull/3812
+* test: add testing of peerconn and vidfilt by @alfredh in https://github.com/baresip/baresip/pull/3815
+* audio: fix format name in ausrc format mismatch warning by @allesrebel in https://github.com/baresip/baresip/pull/3820
+* ci: remove brew fdk-aac package (discontinued) by @alfredh in https://github.com/baresip/baresip/pull/3828
+* test: fix peerconn and vidfilt by @alfredh in https://github.com/baresip/baresip/pull/3816
+* cmake: use variable for libdir libbaresip.pc.in by @fictitiousexistence in https://github.com/baresip/baresip/pull/3832
+* aureceiver: stats cleanup by @cspiel1 in https://github.com/baresip/baresip/pull/3826
+* rtprecv: tiny cleanup for startup by @cspiel1 in https://github.com/baresip/baresip/pull/3825
+* rtprecv: add stop flag fixes race condition by @cspiel1 in https://github.com/baresip/baresip/pull/3838
+* auresamp: alloc for implicit format conversion by @cspiel1 in https://github.com/baresip/baresip/pull/3837
+* aureceiver: fix decoder sample format and cleanup by @cspiel1 in https://github.com/baresip/baresip/pull/3827
+* audio: use RE_ATOMIC for muted flag by @alfredh in https://github.com/baresip/baresip/pull/3839
+* gst,play: fix err handling by @cspiel1 in https://github.com/baresip/baresip/pull/3842
+
+## New Contributors
+* @ajrice6713 made their first contribution in https://github.com/baresip/baresip/pull/3800
+* @allesrebel made their first contribution in https://github.com/baresip/baresip/pull/3820
+* @fictitiousexistence made their first contribution in https://github.com/baresip/baresip/pull/3832
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v4.11.0...v4.12.0
+
 ## v4.11.0 - 2026-08-25
 
-## What's Changed
+### What's Changed
 * core: cleanup stream_rtp_h ignore handling by @sreimers in https://github.com/baresip/baresip/pull/3770
 * audio: increase RTP timestamp also for underruns by @cspiel1 in https://github.com/baresip/baresip/pull/3775
 * aubuf: remove adaptive mode by @cspiel1 in https://github.com/baresip/baresip/pull/3780

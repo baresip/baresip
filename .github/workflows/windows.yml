@@ -47,10 +47,13 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Install OpenSSL
+      - name: Download pre-compiled OpenSSL
         if: ${{ matrix.config.openssl }}
+        shell: bash
         run: |
-          choco install --no-progress ${{ matrix.config.choco }} openssl
+          curl -fsSL -o openssl.zip "https://github.com/baresip/tools/releases/download/v2026.10.0/openssl-windows-x64.zip"
+          7z x openssl.zip
+          echo "OPENSSL_ROOT_DIR=$GITHUB_WORKSPACE\\openssl-windows-x64" >> $GITHUB_ENV
 
       - uses: sreimers/pr-dependency-action@v1
         with:
@@ -70,7 +73,7 @@ jobs:
         shell: cmd
         run: |
           call "${{ matrix.config.environment_script }}"
-          cmake -S . -B build -G "Ninja" -DCMAKE_C_FLAGS="/WX" -DCMAKE_BUILD_TYPE=${{ matrix.config.build }} -DCMAKE_DISABLE_FIND_PACKAGE_OpenSSL=${{ matrix.config.disable_openssl }}
+          cmake -S . -B build -G "Ninja" -DCMAKE_C_FLAGS="/WX" -DCMAKE_BUILD_TYPE=${{ matrix.config.build }} -DCMAKE_DISABLE_FIND_PACKAGE_OpenSSL=${{ matrix.config.disable_openssl }} -DOPENSSL_USE_STATIC_LIBS=TRUE
           cmake --build build -j
 
       - name: selftest
