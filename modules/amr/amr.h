@@ -11,5 +11,6 @@ struct amr_aucodec {
 };
 
 bool amr_octet_align(const char *fmtp);
+int  amr_mode_set_max(const char *fmtp, int maxmode);
 int  amr_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
 		  bool offer, void *arg);

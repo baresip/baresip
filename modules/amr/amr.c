@@ -57,6 +57,7 @@ enum {
 struct auenc_state {
 	const struct amr_aucodec *ac;
 	void *enc;                  /**< Encoder state            */
+	int mode;                   /**< Mode we send, <= mode-set */
 };
 
 struct audec_state {
@@ -141,15 +142,20 @@ static int encode_update(struct auenc_state **aesp,
 #ifdef AMR_NB
 	case 8000:
 		st->enc = Encoder_Interface_init(0);
+		st->mode = amr_mode_set_max(fmtp, MR122);
 		break;
 #endif
 
 #ifdef AMR_WB
 	case 16000:
 		st->enc = E_IF_init();
+		st->mode = amr_mode_set_max(fmtp, 8);
 		break;
 #endif
 	}
+
+	debug("amr: %s encoder mode %d (fmtp \"%s\")\n", ac->name,
+	      st->mode, fmtp ? fmtp : "");
 
 	if (!st->enc)
 		err = ENOMEM;
@@ -280,7 +286,7 @@ static int encode_wb(struct auenc_state *st,
 	if (fmt != AUFMT_S16LE)
 		return ENOTSUP;
 
-	n = IF2E_IF_encode(st->enc, 8, sampv, &buf[1], 0);
+	n = IF2E_IF_encode(st->enc, st->mode, sampv, &buf[1], 0);
 	if (n <= 0)
 		return EPROTO;
 
@@ -347,7 +353,8 @@ static int encode_nb(struct auenc_state *st, bool *marker, uint8_t *buf,
 	if (fmt != AUFMT_S16LE)
 		return ENOTSUP;
 
-	r = Encoder_Interface_Encode(st->enc, MR122, sampv, &buf[1], 0);
+	r = Encoder_Interface_Encode(st->enc, (enum Mode)st->mode, sampv,
+				     &buf[1], 0);
 	if (r <= 0)
 		return EPROTO;
 
