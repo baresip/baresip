@@ -235,6 +235,7 @@ int  call_progress(struct call *call);
 void call_hangup(struct call *call, uint16_t scode, const char *reason);
 void call_hangupf(struct call *call, uint16_t scode, const char *reason,
 		  const char *fmt, ...);
+int  call_set_close_headers(struct call *call, const char *fmt, ...);
 int  call_modify(struct call *call);
 int  call_hold(struct call *call, bool hold);
 void call_set_audio_ldir(struct call *call, enum sdp_dir dir);
