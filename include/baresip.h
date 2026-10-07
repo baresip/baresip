@@ -1582,6 +1582,9 @@ const char *stream_peer(const struct stream *strm);
 int  stream_bundle_init(struct stream *strm, bool offerer);
 int  stream_debug(struct re_printf *pf, const struct stream *s);
 void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms);
+struct twcc_status *stream_twcc(struct stream *strm);
+void stream_set_extmap_twcc(struct stream *strm, uint8_t id);
+uint8_t stream_extmap_twcc(struct stream *strm);
 
 
 /**
@@ -1800,6 +1803,19 @@ int clean_number(char* str);
 int bundle_sdp_encode(struct sdp_session *sdp, const struct list *streaml);
 int bundle_sdp_decode(struct sdp_session *sdp, struct list *streaml);
 
+/* TWCC */
+struct twcc_status;
+int twcc_status_alloc(struct twcc_status **twccstp, struct stream *stream);
+void twcc_status_detach(struct twcc_status *twccst,
+			const struct stream *stream);
+int  twcc_status_offer(struct stream *strm);
+void twcc_status_handle_extmap(struct stream *strm);
+void twcc_status_append(struct twcc_status *twccst, uint16_t tseq,
+			uint64_t ts);
+void twcc_status_send_feedback(struct twcc_status *twccst);
+struct twcc *twcc_status_msg(struct twcc_status *twccst);
+int  twcc_status_debug(struct re_printf *pf, struct twcc_status *twccst);
+
 
 /*
  * Session Description
@@ -1878,6 +1894,7 @@ struct rtc_configuration {
 	const char *stun_user;
 	const char *credential;
 	bool offerer;
+	bool twcc;          /**< Offer Transport-wide Congestion Control */
 };
 
 struct peer_connection;

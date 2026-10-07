@@ -51,7 +51,7 @@ struct rtp_receiver {
 	struct tmr tmr;                /**< Timer for stopping RX thread     */
 	int pt;                        /**< Previous payload type            */
 	int pt_tel;                    /**< Payload type for tel event       */
-	uint32_t srate;                /**< Receiver Samplerate              */
+	RE_ATOMIC uint32_t srate;      /**< Receiver Samplerate              */
 	struct tmr tmr_decode;         /**< Decode Timer                     */
 };
 
@@ -262,6 +262,51 @@ static int lostcalc(struct rtp_receiver *rx, uint16_t seq)
 }
 
 
+static void handle_twcc(struct rtp_receiver *rx, const struct rtp_header *hdr,
+			struct mbuf *mb)
+{
+	const uint8_t id = stream_extmap_twcc(rx->strm);
+	/* ts_arrive in ts units */
+	const uint32_t ts_ms = (uint32_t)re_atomic_rlx(&rx->srate) / 1000;
+
+	if (!id || !ts_ms || !hdr->ext || !hdr->x.len || !mb)
+		return;
+
+	if (hdr->x.type != RTPEXT_TYPE_MAGIC)
+		return;
+
+	const size_t ext_len = hdr->x.len*sizeof(uint32_t);
+	if (mb->pos < ext_len)
+		return;
+
+	const size_t pos = mb->pos;
+	const size_t end = mb->end;
+
+	mb->pos = pos - ext_len;
+	mb->end = pos;
+
+	while (mbuf_get_left(mb)) {
+		struct rtpext ext;
+
+		if (rtpext_decode(&ext, mb))
+			break;
+
+		if (ext.id != id || ext.len < 2)
+			continue;
+
+		uint16_t tseq = ext.data[1];
+		tseq |= ext.data[0] << 8;
+
+		twcc_status_append(stream_twcc(rx->strm), tseq,
+				   hdr->ts_arrive / ts_ms);
+		break;
+	}
+
+	mb->pos = pos;
+	mb->end = end;
+}
+
+
 static void handle_rtp(struct rtp_receiver *rx, const struct rtp_header *hdr,
 		      struct mbuf *mb, unsigned lostc)
 {
@@ -468,6 +513,8 @@ void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 		ssrc_changed = true;
 	}
 	mtx_unlock(rx->mtx);
+
+	handle_twcc(rx, hdr, mb);
 
 	if (ssrc_changed)
 		rtprecv_resync(rx, hdr);
@@ -935,6 +982,6 @@ void rtprecv_set_srate(struct rtp_receiver *rx, uint32_t srate)
 	if (!rx)
 		return;
 
-	rx->srate = srate;
+	re_atomic_rlx_set(&rx->srate, srate);
 	jbuf_set_srate(rx->jbuf, srate);
 }
