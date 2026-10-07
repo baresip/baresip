@@ -388,6 +388,23 @@ static void decode_frames(struct rtp_receiver *rx)
 }
 
 
+/* RFC 3550 section 5.1 -- the last octet contains the padding count */
+static void rtprecv_strip_padding(const struct rtp_header *hdr,
+				  struct mbuf *mb)
+{
+	size_t left = mbuf_get_left(mb);
+
+	if (!hdr->pad || !left)
+		return;
+
+	uint8_t padc = mb->buf[mb->end - 1];
+	if (!padc || padc > left)
+		return;
+
+	mb->end -= padc;
+}
+
+
 static bool rtprecv_filter_pt(struct rtp_receiver *rx,
 			      const struct rtp_header *hdr)
 {
@@ -468,6 +485,8 @@ void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 		ssrc_changed = true;
 	}
 	mtx_unlock(rx->mtx);
+
+	rtprecv_strip_padding(hdr, mb);
 
 	if (ssrc_changed)
 		rtprecv_resync(rx, hdr);
