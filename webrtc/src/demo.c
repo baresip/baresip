@@ -31,6 +31,14 @@ static struct rtc_configuration pc_config = {
 };
 
 
+static bool loopback_requested(const struct http_msg *msg)
+{
+	const struct http_hdr *hdr = http_msg_xhdr(msg, "Loopback");
+
+	return hdr && 0 == pl_strcasecmp(&hdr->val, "true");
+}
+
+
 static int handle_put_sdp(struct session *sess, const struct http_msg *msg)
 {
 	struct session_description sd = {-1, NULL};
@@ -134,6 +142,7 @@ static void http_req_handler(struct http_conn *conn,
 
 		sess->pc_config = pc_config;
 		sess->pc_config.offerer = false; /* browser is offerer */
+		sess->loopback = loopback_requested(msg);
 
 		/* sync reply */
 		http_reply(conn, 201, "Created",
@@ -152,6 +161,7 @@ static void http_req_handler(struct http_conn *conn,
 
 		sess->pc_config = pc_config;
 		sess->pc_config.offerer = true; /* baresip-webrtc is offerer */
+		sess->loopback = loopback_requested(msg);
 
 		err = session_start(sess, &sess->pc_config, demo.mnat,
 				    demo.menc);

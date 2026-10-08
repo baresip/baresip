@@ -12,6 +12,7 @@ const audio            = document.querySelector('audio#audio');
 const remoteVideo      = document.getElementById('remoteVideo');
 const offerer          = document.getElementById('offerer');
 const recvonly         = document.getElementById('recvonly');
+const loopback         = document.getElementById('loopback');
 
 connectButton.onclick     = connect_call;
 disconnectButton.onclick  = disconnect_call;
@@ -268,6 +269,9 @@ function send_post_connect()
 		xhr.open("POST", '' + loc + 'connect/offerer', true);
 	else
 		xhr.open("POST", '' + loc + 'connect', true);
+
+	if (loopback.checked && !recvonly.checked)
+		xhr.setRequestHeader("Loopback", "true");
 
 	xhr.onreadystatechange = function() {
 
