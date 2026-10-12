@@ -136,41 +136,39 @@ void Session::on_secure(Stream *stream)
 
 	++m_encrypted;
 
-	if (m_encrypted == m_streams.size() && m_master) {
-		info("zrtp: All streams are encrypted (%s), "
+	if (stream == m_master) {
+		info("zrtp: Master stream <%s> is encrypted (%s), "
 		     "SAS is [%s] (%s)\n",
-		     m_master->get_ciphers(),
-		     m_master->get_sas(),
+		     m_master->media_name(),
+		     m_master->get_ciphers(), m_master->get_sas(),
 		     (m_master->sas_verified())? "verified" : "NOT VERIFIED");
-		if (m_master->sas_verified() && m_master->session()->eventh) {
-			if (re_snprintf(buf, sizeof(buf), "%d",
-					m_master->session()->id()))
-				(m_master->session()->eventh)
-					(MENC_EVENT_PEER_VERIFIED,
-					 buf,
-					 NULL,
-					 m_master->session()->arg);
-			else
-				warning("zrtp: failed to print"
-					" verified argument\n");
+
+		if (m_master->session()->eventh) {
+			if (m_master->sas_verified()) {
+				if (re_snprintf(buf, sizeof(buf), "%d", m_master->session()->id()))
+					(m_master->session()->eventh)
+						(MENC_EVENT_PEER_VERIFIED, buf, NULL,
+						 m_master->session()->arg);
 			}
-		return;
+			else {
+				(m_master->session()->eventh)
+					(MENC_EVENT_SECURE, NULL, NULL,
+					 m_master->session()->arg);
+			}
+		}
+
+		if (m_streams.size() > 1) {
+			debug("zrtp: Starting other streams (%d)\n", m_streams.size() - 1);
+			for (std::vector<Stream *>::iterator it = m_streams.begin(); it != m_streams.end(); ++it) {
+				if (*it != m_master) {
+					(*it)->start(m_master);
+				}
+			}
+		}
 	}
 
-	if (stream != m_master)
-		return;
-
-	// Master stream has just entered secure state. Start other
-	// streams in the multistream mode.
-
-	debug("zrtp: Starting other streams (%d)\n", m_streams.size() - 1);
-
-	for (std::vector<Stream *>::iterator it = m_streams.begin();
-	     it != m_streams.end(); ++it) {
-
-		if (*it != m_master) {
-			(*it)->start(m_master);
-		}
+	if (m_encrypted == m_streams.size()) {
+		info("zrtp: All streams are encrypted (%s)\n", m_master->get_ciphers());
 	}
 }
 
