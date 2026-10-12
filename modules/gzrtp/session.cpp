@@ -173,7 +173,8 @@ void Session::on_secure(Stream *stream)
 	}
 
 	if (m_encrypted == m_streams.size()) {
-		info("zrtp: All streams are encrypted (%s)\n", m_master->get_ciphers());
+		info("zrtp: All streams are encrypted (%s)\n",
+		     m_master->get_ciphers());
 	}
 }
 
