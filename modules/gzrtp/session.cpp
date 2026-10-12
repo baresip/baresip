@@ -145,9 +145,11 @@ void Session::on_secure(Stream *stream)
 
 		if (m_master->session()->eventh) {
 			if (m_master->sas_verified()) {
-				if (re_snprintf(buf, sizeof(buf), "%d", m_master->session()->id()))
+				if (re_snprintf(buf, sizeof(buf), "%d",
+						m_master->session()->id()))
 					(m_master->session()->eventh)
-						(MENC_EVENT_PEER_VERIFIED, buf, NULL,
+						(MENC_EVENT_PEER_VERIFIED, buf,
+						 NULL,
 						 m_master->session()->arg);
 			}
 			else {
@@ -158,8 +160,11 @@ void Session::on_secure(Stream *stream)
 		}
 
 		if (m_streams.size() > 1) {
-			debug("zrtp: Starting other streams (%d)\n", m_streams.size() - 1);
-			for (std::vector<Stream *>::iterator it = m_streams.begin(); it != m_streams.end(); ++it) {
+			debug("zrtp: Starting other streams (%d)\n",
+			      m_streams.size() - 1);
+			for (std::vector<Stream *>::iterator it =
+				     m_streams.begin(); it != m_streams.end();
+			     ++it) {
 				if (*it != m_master) {
 					(*it)->start(m_master);
 				}
