@@ -1429,7 +1429,7 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 		pl_set_str(&replaces, target);
 		rcall = call_find_replaces(ua_calls(call->ua), &replaces);
 		if (rcall && rcall != call) {
-			/* Preserve the existing close path, but only after 2xx. */
+			/* Close replaced call after a successful 2xx. */
 			call_stream_stop(rcall);
 			call_event_handler(rcall, CALL_EVENT_CLOSED,
 					   "%r replaced", &replaces);
