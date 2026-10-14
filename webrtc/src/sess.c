@@ -134,16 +134,39 @@ int session_start(struct session *sess,
 		  const struct rtc_configuration *pc_config,
 		  const struct mnat *mnat, const struct menc *menc)
 {
-	const struct config *config = conf_config();
-	int err;
-
 	if (!sess)
 		return EINVAL;
 
 	if (sess->pc)
 		return EALREADY;
 
-	err = peerconnection_new(&sess->pc, pc_config, mnat, menc,
+	struct config config = *conf_config();
+
+	str_ncpy(config.audio.play_mod, "aubridge",
+		 sizeof(config.audio.play_mod));
+	str_ncpy(config.audio.play_dev, sess->id,
+		 sizeof(config.audio.play_dev));
+
+	if (sess->loopback) {
+
+		info("demo: session '%s' using loopback\n", sess->id);
+
+		str_ncpy(config.audio.src_mod, "aubridge",
+			 sizeof(config.audio.src_mod));
+		str_ncpy(config.audio.src_dev, sess->id,
+			 sizeof(config.audio.src_dev));
+
+		str_ncpy(config.video.src_mod, "vidbridge",
+			 sizeof(config.video.src_mod));
+		str_ncpy(config.video.src_dev, sess->id,
+			 sizeof(config.video.src_dev));
+		str_ncpy(config.video.disp_mod, "vidbridge",
+			 sizeof(config.video.disp_mod));
+		str_ncpy(config.video.disp_dev, sess->id,
+			 sizeof(config.video.disp_dev));
+	}
+
+	int err = peerconnection_new(&sess->pc, pc_config, mnat, menc,
 				 peerconnection_gather_handler,
 				 peerconnection_estab_handler,
 				 peerconnection_close_handler, sess);
@@ -152,7 +175,7 @@ int session_start(struct session *sess,
 		return err;
 	}
 
-	err = peerconnection_add_audio_track(sess->pc, config,
+	err = peerconnection_add_audio_track(sess->pc, &config,
 					     baresip_aucodecl(), SDP_SENDRECV);
 	if (err) {
 		warning("demo: add_audio failed (%m)\n", err);
@@ -160,7 +183,7 @@ int session_start(struct session *sess,
 	}
 
 	err = peerconnection_add_video_track(
-		sess->pc, config, baresip_vidcodecl(),
+		sess->pc, &config, baresip_vidcodecl(),
 		baresip_vidfiltl(), SDP_SENDRECV);
 	if (err) {
 		warning("demo: add_video failed (%m)\n", err);

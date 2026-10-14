@@ -16,6 +16,7 @@ struct session {
 	struct rtc_configuration pc_config;
 	struct http_conn *conn_pending;
 	char id[4];
+	bool loopback;
 };
 
 int session_new(struct list *sessl, struct session **sessp);
