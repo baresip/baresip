@@ -1089,6 +1089,7 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 			.fmt        = tx->src_fmt
 		};
 
+		stop_transmit_thread(tx);
 		tx->ausrc_prm = prm;
 
 		sz = aufmt_sample_size(tx->src_fmt);
@@ -1133,12 +1134,14 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 		mtx_unlock(tx->mtx);
 		tx->as = ausrc_find(ausrcl, tx->module);
 
+		info("audio: source started with sample format %s\n",
+		     aufmt_name(tx->src_fmt));
+	}
+
+	if (tx->ausrc) {
 		err = start_transmit_thread(tx, a);
 		if (err)
 			return err;
-
-		info("audio: source started with sample format %s\n",
-		     aufmt_name(tx->src_fmt));
 	}
 
 	stream_enable_tx(a->strm, true);
@@ -1317,7 +1320,8 @@ bool audio_started(const struct audio *a)
 /**
  * Set the audio encoder used
  *
- * @note The audio source has to be started separately
+ * @note Stops the transmit thread. The audio source has to be started
+ *       separately, which starts the thread again.
  *
  * @param a      Audio object
  * @param ac     Audio codec to use
@@ -1336,6 +1340,8 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 		return EINVAL;
 
 	tx = &a->tx;
+
+	stop_transmit_thread(tx);
 
 	if (ac != tx->ac) {
 		info("audio: Set audio encoder: %s %uHz %dch\n",
