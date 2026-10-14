@@ -49,6 +49,7 @@ struct call {
 	char *diverter_uri;       /**< Diverter SIP Address                 */
 	char *id;                 /**< Cached session call-id               */
 	char *replaces;           /**< Replaces parameter                   */
+	char *replaces_target;    /**< Incoming Replaces header             */
 	uint16_t supported;       /**< Supported header tags                */
 	struct tmr tmr_inv;       /**< Timer for incoming calls             */
 	struct tmr tmr_dtmf;      /**< Timer for incoming DTMF events       */
@@ -92,6 +93,8 @@ struct call {
 
 static int send_invite(struct call *call);
 static int send_dtmf_info(struct call *call, char key);
+static struct call *call_find_replaces(const struct list *calls,
+				       const struct pl *hdr);
 
 
 static const char *state_name(enum call_state st)
@@ -356,6 +359,7 @@ static void call_destructor(void *arg)
 	mem_deref(call->peer_uri);
 	mem_deref(call->peer_name);
 	mem_deref(call->replaces);
+	mem_deref(call->replaces_target);
 	mem_deref(call->aluri);
 	mem_deref(call->diverter_uri);
 	mem_deref(call->audio);
@@ -1415,6 +1419,24 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 	if (call->got_offer && stream_is_ready(video_strm(call->video)))
 		(void)video_update(call->video, call->peer_uri);
 
+	if (scode >= 200 && scode < 300 && call->replaces_target) {
+		struct pl replaces;
+		struct call *rcall;
+		char *target = call->replaces_target;
+
+		/* The close event may release this call; detach first. */
+		call->replaces_target = NULL;
+		pl_set_str(&replaces, target);
+		rcall = call_find_replaces(ua_calls(call->ua), &replaces);
+		if (rcall && rcall != call) {
+			/* Preserve the existing close path, but only after 2xx. */
+			call_stream_stop(rcall);
+			call_event_handler(rcall, CALL_EVENT_CLOSED,
+					   "%r replaced", &replaces);
+		}
+		mem_deref(target);
+	}
+
 out:
 	mem_deref(desc);
 	return err;
@@ -2404,6 +2426,9 @@ static struct call *call_find_replaces(const struct list *calls,
 	for (le = list_head(calls); le; le = le->next) {
 		struct call *call = le->data;
 
+		if (!call->sess || call->state == CALL_STATE_TERMINATED)
+			continue;
+
 		if (pl_isset(&msg.from.tag) && pl_isset(&msg.to.tag) &&
 		    sip_dialog_cmp(sipsess_dialog(call->sess), &msg)) {
 			ret = call;
@@ -2510,11 +2535,10 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 
 			return 0;
 		}
-		else {
-			call_stream_stop(rcall);
-			call_event_handler(rcall, CALL_EVENT_CLOSED,
-				"%r replaced", &hdr->val);
-		}
+
+		err = pl_strdup(&call->replaces_target, &hdr->val);
+		if (err)
+			return err;
 	}
 
 	err = sipsess_accept(&call->sess, sess_sock, msg, 180, "Ringing",
