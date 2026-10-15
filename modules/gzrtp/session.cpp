@@ -158,7 +158,8 @@ void Session::on_secure(Stream *stream)
 				debug("zrtp: Starting other streams (%d)\n",
 				      m_streams.size() - 1);
 				for (std::vector<Stream *>::iterator it =
-					     m_streams.begin(); it != m_streams.end();
+					     m_streams.begin();
+				     it != m_streams.end();
 				     ++it) {
 					if (*it != m_master) {
 						(*it)->start(m_master);
