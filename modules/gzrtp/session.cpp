@@ -154,7 +154,7 @@ void Session::on_secure(Stream *stream)
 			}
 			else {
 				(m_master->session()->eventh)
-					(MENC_EVENT_SECURE, NULL, NULL,
+					(MENC_EVENT_SECURE, "", NULL,
 					 m_master->session()->arg);
 			}
 		}
