@@ -1478,9 +1478,9 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 
 	telev_set_srate(a->telev, ac->crate);
 
-	/* use a codec-specific ptime */
+	/* Limit the requested ptime to the codec maximum. */
 	if (ac->ptime)
-		tx->ptime = ac->ptime;
+		tx->ptime = min(tx->ptime, ac->ptime);
 
 	return err;
 }

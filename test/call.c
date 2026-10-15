@@ -1293,6 +1293,91 @@ int test_call_aulevel(void)
 }
 
 
+static void rx_metric_snapshot(const struct stream *strm,
+			       uint32_t *packets, uint32_t *bytes)
+{
+	do {
+		*packets = stream_metric_get_rx_n_packets(strm);
+		*bytes = stream_metric_get_rx_n_bytes(strm);
+	}
+	while (*packets != stream_metric_get_rx_n_packets(strm));
+}
+
+
+static int test_call_ptime_cap_base(uint32_t aptime, uint32_t wire_ptime)
+{
+	struct fixture fix = {0}, *f = &fix;
+	struct cancel_rule *cr;
+	struct stream *strm;
+	const char *attr;
+	uint32_t bytes, n;
+	size_t psize;
+	char prm[64];
+	int err;
+
+	re_snprintf(prm, sizeof(prm),
+		    ";ptime=%u;audio_codecs=aucmock/48000/2", aptime);
+	fixture_init_prm(f, prm);
+
+	psize = 4 * (48000 * wire_ptime / 1000);
+
+	cancel_rule_new(BEVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
+	cancel_rule_and(BEVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+	f->estab_action = ACTION_NOTHING;
+
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	strm = audio_strm(call_audio(ua_call(f->a.ua)));
+
+	/* the answer mirrors the raw request, not the effective cap */
+	attr = sdp_media_rattr(stream_sdpmedia(strm), "ptime");
+	ASSERT_TRUE(attr != NULL);
+	ASSERT_EQ(aptime, (uint32_t)atoi(attr));
+
+	rx_metric_snapshot(strm, &n, &bytes);
+	ASSERT_TRUE(n > 0);
+	ASSERT_EQ(n * psize, bytes);
+
+	strm = audio_strm(call_audio(ua_call(f->b.ua)));
+	rx_metric_snapshot(strm, &n, &bytes);
+	ASSERT_TRUE(n > 0);
+	ASSERT_EQ(n * psize, bytes);
+
+ out:
+	fixture_close(f);
+	return err;
+}
+
+
+int test_call_ptime_cap(void)
+{
+	int err;
+
+	mock_aucodec_register();
+
+	err = module_load(".", "ausine");
+	TEST_ERR(err);
+
+	err = test_call_ptime_cap_base(60, 10);
+	TEST_ERR(err);
+	err = test_call_ptime_cap_base(10, 10);
+	TEST_ERR(err);
+	err = test_call_ptime_cap_base(5, 5);
+	TEST_ERR(err);
+
+ out:
+	module_unload("ausine");
+	mock_aucodec_unregister();
+	return err;
+}
+
+
 static int test_100rel_audio_base(void)
 {
 	struct fixture fix, *f = &fix;

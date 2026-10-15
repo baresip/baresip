@@ -63,6 +63,7 @@ static const struct test tests[] = {
 	TEST(test_call_sipnat_rport),
 	TEST(test_call_samplerate_switch),
 	TEST(test_call_audio_set_source),
+	TEST(test_call_ptime_cap),
 #ifdef USE_TLS
 	TEST(test_call_sni),
 	TEST(test_call_cert_select),
