@@ -103,7 +103,7 @@ static bool decode_part_next(const struct pl *part, struct mbuf *mb)
 int sdp_decode_multipart(const struct pl *ctype_prm, struct mbuf *mb)
 {
 	struct pl p, bnd;
-	char bnd_str[64];
+	char bnd_str[73];
 
 	if (!ctype_prm || !mb)
 		return EINVAL;
