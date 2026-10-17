@@ -37,6 +37,7 @@ static const struct test tests[] = {
 	TEST(test_call_mediaenc),
 	TEST(test_call_medianat),
 	TEST(test_call_mixausrc),
+	TEST(test_call_multipart),
 	TEST(test_call_multiple),
 	TEST(test_call_progress),
 	TEST(test_call_reject),
