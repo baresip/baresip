@@ -101,6 +101,29 @@ static bool contact_handler(const struct sip_hdr *hdr,
 }
 
 
+/*
+ * sipnat=rport: the dialogs of the UA use the address the registrar has
+ * registered, which differs from the local one behind a NAT.
+ */
+static void update_pub_contact(struct reg *reg, enum sip_transp tp)
+{
+	const struct sa *caddr = sipreg_contact_addr(reg->sipreg);
+	char *uri = NULL;
+
+	if (!caddr || sa_cmp(caddr, sipreg_laddr(reg->sipreg), SA_ALL)) {
+		ua_pub_contact_set(reg->ua, NULL);
+		return;
+	}
+
+	if (re_sdprintf(&uri, "sip:%s@%J%s", ua_local_cuser(reg->ua), caddr,
+			sip_transp_param(tp)))
+		return;
+
+	ua_pub_contact_set(reg->ua, uri);
+	mem_deref(uri);
+}
+
+
 static void register_handler(int err, const struct sip_msg *msg, void *arg)
 {
 	struct reg *reg = arg;
@@ -148,6 +171,9 @@ static void register_handler(int err, const struct sip_msg *msg, void *arg)
 		}
 
 		reg->scode = msg->scode;
+
+		if (0 == str_casecmp(account_sipnat(acc), "rport"))
+			update_pub_contact(reg, msg->tp);
 
 		hdr = sip_msg_hdr_apply(msg, true, SIP_HDR_CONTACT,
 					contact_handler, reg);
@@ -267,6 +293,9 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 
 	if (acc && acc->tcpsrcport)
 		sipreg_set_srcport(reg->sipreg, acc->tcpsrcport);
+
+	if (acc && 0 == str_casecmp(account_sipnat(acc), "rport"))
+		err |= sipreg_set_contact_rewrite(reg->sipreg, true);
 
 	if (failed)
 		sipreg_incfailc(reg->sipreg);
