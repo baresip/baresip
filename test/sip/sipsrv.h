@@ -21,6 +21,7 @@ struct sip_server {
 
 	unsigned n_register_req;
 	enum sip_transp tp_last;
+	char invite_contact[256];
 
 	uint64_t secret;
 	struct hash *ht_dom;
