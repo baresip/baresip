@@ -503,6 +503,11 @@ static bool sip_msg_handler(const struct sip_msg *msg, void *arg)
 		sip_reply(srv->sip, msg, 503, "Server Error");
 	}
 	else {
+		const struct sip_hdr *hdr = sip_msg_hdr(msg, SIP_HDR_CONTACT);
+		if (hdr && 0 == pl_strcmp(&msg->met, "INVITE"))
+			pl_strcpy(&hdr->val, srv->invite_contact,
+				  sizeof(srv->invite_contact));
+
 		if (forward_msg(srv, msg))
 			goto out;
 

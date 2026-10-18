@@ -295,7 +295,7 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 		sipreg_set_srcport(reg->sipreg, acc->tcpsrcport);
 
 	if (acc && 0 == str_casecmp(account_sipnat(acc), "rport"))
-		err |= sipreg_set_contact_rewrite(reg->sipreg, true);
+		sipreg_set_contact_rewrite(reg->sipreg, true);
 
 	if (failed)
 		sipreg_incfailc(reg->sipreg);

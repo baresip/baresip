@@ -150,6 +150,22 @@ int dns_server_add_srv(struct dns_server *srv, const char *name,
 
 
 /*
+ * Mock NAT-box
+ */
+
+struct nat {
+	struct sa public_addr;
+	struct udp_helper *uh;
+	struct udp_sock *us;
+	struct sa bindingv[16];
+	size_t bindingc;
+};
+
+int nat_alloc(struct nat **natp, struct udp_sock *us,
+	      const struct sa *public_addr);
+
+
+/*
  * Mock Audio-player
  */
 
@@ -232,6 +248,7 @@ int test_call_100rel_required_reject(void);
 int test_call_hold_resume(void);
 int test_call_srtp_tx_rekey(void);
 int test_call_uag_find_msg(void);
+int test_call_sipnat_rport(void);
 int test_call_samplerate_switch(void);
 #ifdef USE_TLS
 int test_call_sni(void);
