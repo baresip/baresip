@@ -90,6 +90,7 @@ struct autx {
 	char *module;                 /**< Audio source module name        */
 	char *device;                 /**< Audio source device name        */
 	void *sampv;                  /**< Sample buffer                   */
+	size_t sampvsz;               /**< Sample buffer size in [bytes]   */
 	uint32_t ptime;               /**< Packet time for sending         */
 	uint64_t ts_ext;              /**< Ext. Timestamp for outgoing RTP */
 	uint32_t ts_base;             /**< First timestamp sent            */
@@ -777,8 +778,8 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 
 	tx->mb = mbuf_alloc(STREAM_PRESZ + 4096);
 	tx->mb_telev = mbuf_alloc(STREAM_PRESZ + 64);
-	tx->sampv = mem_zalloc(AUDIO_SAMPSZ * aufmt_sample_size(tx->enc_fmt),
-			       NULL);
+	tx->sampvsz = AUDIO_SAMPSZ * aufmt_sample_size(tx->enc_fmt);
+	tx->sampv = mem_zalloc(tx->sampvsz, NULL);
 
 	if (!tx->mb || !tx->mb_telev || !tx->sampv) {
 		err = ENOMEM;
@@ -1062,6 +1063,40 @@ static int aufilt_setup(struct audio *a, struct list *aufiltl)
 }
 
 
+/*
+ * Set tx frame size from the source parameters and resize the aubuf
+ *
+ * @note tx->mtx must be locked
+ */
+static int autx_set_psize(struct autx *tx, const struct ausrc_prm *prm)
+{
+	size_t sz = aufmt_sample_size(prm->fmt);
+	size_t psize = sz * au_calc_nsamp(prm->srate, prm->ch, prm->ptime);
+
+	if (psize > tx->sampvsz) {
+		warning("audio: source format %s %uHz %uch %ums exceeds"
+			" the sample buffer (%zu > %zu bytes)\n",
+			aufmt_name(prm->fmt), prm->srate, prm->ch, prm->ptime,
+			psize, tx->sampvsz);
+		return E2BIG;
+	}
+
+	tx->ausrc_prm = *prm;
+	tx->src_fmt   = prm->fmt;
+
+	if (psize == tx->psize)
+		return 0;
+
+	tx->psize       = psize;
+	tx->aubuf_maxsz = psize * 30;
+
+	if (!tx->aubuf)
+		return 0;
+
+	return aubuf_resize(tx->aubuf, psize, tx->aubuf_maxsz);
+}
+
+
 static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 {
 	const struct aucodec *ac = tx->ac;
@@ -1086,7 +1121,6 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 	if (!tx->ausrc && ausrc_find(ausrcl, NULL)) {
 
 		size_t sz;
-		size_t psize_alloc;
 		struct ausrc_prm prm = {
 			.srate      = srate_dsp,
 			.ch         = channels_dsp,
@@ -1098,8 +1132,7 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 
 		sz = aufmt_sample_size(tx->src_fmt);
 
-		psize_alloc = sz * au_calc_nsamp(prm.srate, prm.ch, prm.ptime);
-		tx->psize = psize_alloc;
+		tx->psize = sz * au_calc_nsamp(prm.srate, prm.ch, prm.ptime);
 		tx->aubuf_maxsz = tx->psize * 30;
 
 		if (!tx->aubuf) {
@@ -1121,21 +1154,13 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 
 		mtx_lock(tx->mtx);
 		/* recalculate and resize aubuf if ausrc_alloc changes prm */
-		tx->src_fmt = prm.fmt;
-		sz = aufmt_sample_size(tx->src_fmt);
-		tx->psize = sz * au_calc_nsamp(prm.srate, prm.ch, prm.ptime);
-		if (psize_alloc != tx->psize) {
-			tx->ausrc_prm = prm;
-			tx->aubuf_maxsz = tx->psize * 30;
-			err = aubuf_resize(tx->aubuf, tx->psize,
-					   tx->aubuf_maxsz);
-			if (err) {
-				mtx_unlock(tx->mtx);
-				return err;
-			}
+		err = autx_set_psize(tx, &prm);
+		mtx_unlock(tx->mtx);
+		if (err) {
+			tx->ausrc = mem_deref(tx->ausrc);
+			return err;
 		}
 
-		mtx_unlock(tx->mtx);
 		tx->as = ausrc_find(ausrcl, tx->module);
 
 		err = start_transmit_thread(tx, a);
@@ -1769,17 +1794,37 @@ int audio_set_source(struct audio *au, const char *mod, const char *device)
 	tx->ausrc = mem_deref(tx->ausrc);
 
 	if (str_isset(mod)) {
+		struct ausrc_prm prm = tx->ausrc_prm;
+
 		err  = str_dup(&tx->module, mod);
 		err |= str_dup(&tx->device, device);
 		if (err)
 			return err;
 
+		/* a previous source may have changed tx->ausrc_prm */
+		if (tx->ac) {
+			prm.srate = au->cfg.srate_src ? au->cfg.srate_src :
+				tx->ac->srate;
+			prm.ch    = au->cfg.channels_src ?
+				au->cfg.channels_src : tx->ac->ch;
+			prm.ptime = tx->ptime;
+			prm.fmt   = au->cfg.src_fmt;
+		}
+
 		err = ausrc_alloc(&tx->ausrc, baresip_ausrcl(),
-				  mod, &tx->ausrc_prm, device,
+				  mod, &prm, device,
 				  ausrc_read_handler, ausrc_error_handler, au);
 		if (err) {
 			warning("audio: set_source failed (%s.%s): %m\n",
 				mod, device, err);
+			return err;
+		}
+
+		mtx_lock(tx->mtx);
+		err = autx_set_psize(tx, &prm);
+		mtx_unlock(tx->mtx);
+		if (err) {
+			tx->ausrc = mem_deref(tx->ausrc);
 			return err;
 		}
 

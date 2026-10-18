@@ -3641,6 +3641,100 @@ int test_call_samplerate_switch(void)
 }
 
 
+struct tx_wait {
+	struct tmr tmr;
+	const struct stream *strm;
+	uint32_t n_packets;
+};
+
+
+static void tx_wait_handler(void *arg)
+{
+	struct tx_wait *w = arg;
+
+	if (stream_metric_get_tx_n_packets(w->strm) >= w->n_packets)
+		re_cancel();
+	else
+		tmr_start(&w->tmr, 1, tx_wait_handler, w);
+}
+
+
+int test_call_audio_set_source(void)
+{
+	struct fixture fix = {0}, *f = &fix;
+	struct tx_wait w;
+	struct audio *au;
+	struct pl pl;
+	uint32_t ptime;
+	char expect[32];
+	char *debug_str = NULL;
+	char *path = NULL;
+	int err = 0;
+
+	tmr_init(&w.tmr);
+
+	err  = module_load(".", "l16");
+	err |= module_load(".", "auresamp");
+	err |= module_load(".", "auconv");
+	err |= module_load(".", "ausine");
+	err |= module_load(".", "aufile");
+	TEST_ERR(err);
+
+	fixture_init_prm(f, ";audio_codecs=l16/48000/2"
+			 ";audio_source=ausine,440");
+
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	err = re_main_timeout(10000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	au = call_audio(ua_call(f->a.ua));
+	ASSERT_TRUE(au != NULL);
+
+	/* switch to a source with a different format (8 kHz mono) */
+	err = re_sdprintf(&path, "%s/wav/square_500Hz_0.8.wav",
+			  test_datapath());
+	TEST_ERR(err);
+
+	err = audio_set_source(au, "aufile", path);
+	TEST_ERR(err);
+
+	/* tx aubuf must be resized for the new frame size */
+	err = re_sdprintf(&debug_str, "%H", audio_debug, au);
+	TEST_ERR(err);
+
+	err = re_regex(debug_str, str_len(debug_str), "ptime=[0-9]+ms", &pl);
+	TEST_ERR(err);
+	ptime = pl_u32(&pl);
+	re_snprintf(expect, sizeof(expect), "max %u.00ms", 30 * ptime);
+	ASSERT_TRUE(strstr(debug_str, expect) != NULL);
+
+	/* and the file is resampled, encoded and sent */
+	w.strm = audio_strm(au);
+	w.n_packets = stream_metric_get_tx_n_packets(w.strm) + 2;
+	tmr_start(&w.tmr, 1, tx_wait_handler, &w);
+
+	err = re_main_timeout(10000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+ out:
+	tmr_cancel(&w.tmr);
+	fixture_close(f);
+	module_unload("aufile");
+	module_unload("ausine");
+	module_unload("auconv");
+	module_unload("auresamp");
+	module_unload("l16");
+	mem_deref(debug_str);
+	mem_deref(path);
+
+	return err;
+}
+
+
 struct multipart_uas {
 	struct fixture *f;
 	struct sip *sip;
