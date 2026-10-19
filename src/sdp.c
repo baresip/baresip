@@ -71,21 +71,24 @@ bool sdp_media_has_media(const struct sdp_media *m)
 }
 
 
-static void decode_part(const struct pl *part, struct mbuf *mb)
+static bool decode_part_next(const struct pl *part, struct mbuf *mb)
 {
 	struct pl hdrs, body;
 
 	if (re_regex(part->p, part->l, "\r\n\r\n[^]+", &body))
-		return;
+		return true;
 
 	hdrs.p = part->p;
-	hdrs.l = body.p - part->p - 2;
+	hdrs.l = body.p - part->p;
 
 	if (0 == re_regex(hdrs.p, hdrs.l, "application/sdp")) {
+		mb->pos += hdrs.l;
+		mb->end = mb->pos + body.l;
 
-		mb->pos += (body.p - (char *)mbuf_buf(mb));
-		mb->end  = mb->pos + body.l;
+		return false;
 	}
+
+	return true;
 }
 
 
@@ -100,45 +103,40 @@ static void decode_part(const struct pl *part, struct mbuf *mb)
 int sdp_decode_multipart(const struct pl *ctype_prm, struct mbuf *mb)
 {
 	struct pl p, bnd;
-	char bnd_str[64];
-	char *s, *e;
-	char *buf = NULL;
-	int err;
+	char bnd_str[73];
 
 	if (!ctype_prm || !mb)
 		return EINVAL;
 
 	/* fetch the boundary tag, excluding quotes */
-	err = re_regex(ctype_prm->p, ctype_prm->l,
-		       "boundary=[~]+", &bnd);
+	int err = re_regex(ctype_prm->p, ctype_prm->l, "boundary=[~]+", &bnd);
 	if (err)
 		return err;
 
-	err = pl_strcpy(&bnd, bnd_str, sizeof(bnd_str));
-	if (err)
-		return err;
+	int bnd_slen = re_snprintf(bnd_str, sizeof(bnd_str), "--%r", &bnd);
+	if (bnd_slen == -1)
+		return EMSGSIZE;
 
-	err = mbuf_strdup(mb, &buf, mbuf_get_left(mb));
-	if (err)
-		return err;
+	pl_set_mbuf(&p, mb);
 
 	/* find 1st boundary */
-	s = strstr(buf, bnd_str);
+	const char *s = pl_strstr(&p, bnd_str);
+	if (!s)
+		return EBADMSG;
 
 	/* iterate over each part */
-	while (s) {
-		e = strstr(s + bnd.l, bnd_str);
+	do {
+		mbuf_advance(mb, s - (char *)mbuf_buf(mb) + bnd_slen);
+		pl_set_mbuf(&p, mb);
+
+		const char *e = pl_strstr(&p, bnd_str);
 		if (!e)
 			break;
 
-		p.p = s + bnd.l + 2;
-		p.l = e - p.p - 2;
+		p.l = e - p.p;
+		s   = e;
 
-		decode_part(&p, mb);
+	} while (decode_part_next(&p, mb));
 
-		s = e;
-	}
-
-	mem_deref(buf);
 	return 0;
 }

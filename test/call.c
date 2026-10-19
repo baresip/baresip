@@ -3639,3 +3639,164 @@ int test_call_samplerate_switch(void)
 	mem_deref(debug_str);
 	return err;
 }
+
+
+struct multipart_uas {
+	struct fixture *f;
+	struct sip *sip;
+	struct sipsess_sock *sock;
+	struct sipsess *sess;
+};
+
+
+static const char multipart_body[] =
+	"--bnd42\r\n"
+	"Content-Type: text/plain\r\n"
+	"\r\n"
+	"not an sdp\r\n"
+	"--bnd42\r\n"
+	"Content-Type: application/sdp\r\n"
+	"\r\n"
+	"v=0\r\n"
+	"o=- 1 1 IN IP4 127.0.0.1\r\n"
+	"s=-\r\n"
+	"c=IN IP4 127.0.0.1\r\n"
+	"t=0 0\r\n"
+	"m=audio 50000 RTP/AVP 0\r\n"
+	"a=rtpmap:0 PCMU/8000\r\n"
+	"a=sendrecv\r\n"
+	"--bnd42--\r\n";
+
+
+static void multipart_uas_close_handler(int err, const struct sip_msg *msg,
+					void *arg)
+{
+	struct multipart_uas *uas = arg;
+	(void)msg;
+
+	uas->sess = mem_deref(uas->sess);
+
+	fixture_abort(uas->f, err ? err : EPROTO);
+}
+
+
+static void multipart_uas_conn_handler(const struct sip_msg *msg, void *arg)
+{
+	struct multipart_uas *uas = arg;
+	struct mbuf *mb;
+	int err;
+
+	mb = mbuf_alloc(sizeof(multipart_body));
+	if (!mb) {
+		err = ENOMEM;
+		goto out;
+	}
+
+	err = mbuf_write_str(mb, multipart_body);
+	if (err)
+		goto out;
+
+	mb->pos = 0;
+
+	err = sipsess_accept(&uas->sess, uas->sock, msg, 200, "OK",
+			     REL100_DISABLED, "uas",
+			     "multipart/mixed;boundary=bnd42", mb,
+			     NULL, NULL, false, NULL, NULL, NULL, NULL, NULL,
+			     multipart_uas_close_handler, uas, NULL);
+
+ out:
+	mem_deref(mb);
+
+	if (err) {
+		(void)sip_treply(NULL, uas->sip, msg, 500, "Server Error");
+		fixture_abort(uas->f, err);
+	}
+}
+
+
+static int multipart_uas_init(struct multipart_uas *uas, struct sa *laddr)
+{
+	int err;
+
+	err = sa_set_str(laddr, "127.0.0.1", 0);
+	if (err)
+		return err;
+
+	err = sip_alloc(&uas->sip, NULL, 32, 32, 32, "multipart_uas",
+			NULL, NULL);
+	if (err)
+		return err;
+
+	err = sip_transp_add(uas->sip, SIP_TRANSP_UDP, laddr);
+	if (err)
+		return err;
+
+	err = sip_transp_laddr(uas->sip, laddr, SIP_TRANSP_UDP, NULL);
+	if (err)
+		return err;
+
+	return sipsess_listen(&uas->sock, uas->sip, 32,
+			      multipart_uas_conn_handler, uas);
+}
+
+
+static void multipart_uas_close(struct multipart_uas *uas)
+{
+	mem_deref(uas->sess);
+	sipsess_close_all(uas->sock);
+	mem_deref(uas->sock);
+	sip_close(uas->sip, true);
+	mem_deref(uas->sip);
+}
+
+
+/*
+ * Call from A to a raw SIP UAS that answers with a multipart/mixed body,
+ * where the SDP is the second part.
+ */
+int test_call_multipart(void)
+{
+	struct fixture fix, *f = &fix;
+	struct multipart_uas uas = {0};
+	struct cancel_rule *cr;
+	struct sa laddr;
+	const struct sdp_media *m;
+	char uri[128];
+	int err = 0;
+
+	fixture_init(f);
+
+	uas.f = f;
+
+	err = multipart_uas_init(&uas, &laddr);
+	TEST_ERR(err);
+
+	f->estab_action = ACTION_NOTHING;
+	cancel_rule_new(BEVENT_CALL_ESTABLISHED, f->a.ua, 0, 0, 1);
+
+	re_snprintf(uri, sizeof(uri), "sip:uas@%J", &laddr);
+
+	err = ua_connect(f->a.ua, NULL, NULL, uri, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	err = re_main_timeout(5000);
+	cancel_rule_pop();
+	TEST_ERR(err);
+	err = fix.err;
+	TEST_ERR(err);
+
+	ASSERT_EQ(1, fix.a.n_established);
+	ASSERT_EQ(0, fix.a.n_closed);
+
+	/* verify that the SDP part was decoded */
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
+	ASSERT_TRUE(m != NULL);
+	ASSERT_EQ(50000, sdp_media_rport(m));
+	ASSERT_TRUE(sdp_media_rformat(m, "PCMU") != NULL);
+
+ out:
+	fixture_close(f);
+	multipart_uas_close(&uas);
+
+	return err;
+}
