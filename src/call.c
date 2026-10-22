@@ -1424,8 +1424,6 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 		struct call *rcall;
 		char *target = call->replaces_target;
 
-		/* The close event may release this call; detach first. */
-		call->replaces_target = NULL;
 		pl_set_str(&replaces, target);
 		rcall = call_find_replaces(ua_calls(call->ua), &replaces);
 		if (rcall && rcall != call) {
@@ -1434,7 +1432,6 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 			call_event_handler(rcall, CALL_EVENT_CLOSED,
 					   "%r replaced", &replaces);
 		}
-		mem_deref(target);
 	}
 
 out:
