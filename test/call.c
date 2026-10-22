@@ -3583,14 +3583,17 @@ int test_call_uag_find_msg(void)
  * sipnat=rport behind a NAT: the registrar sees A at a public address, so A
  * must register that address, and use it in the Contact of its calls too.
  */
-int test_call_sipnat_rport(void)
+static int call_sipnat_rport(enum sip_transp tp)
 {
 	struct fixture fix, *f = &fix;
 	struct sip_server *srv = NULL;
 	struct nat *nat = NULL;
+	struct nat_tcp *nat_tcp = NULL;
 	struct sa srv_addr;
 	struct sa public_addr;
+	char *outbound = NULL;
 	char *aor = NULL;
+	char *cert = NULL;
 	char *curi = NULL;
 	char *exp = NULL;
 	struct cancel_rule *cr;
@@ -3601,51 +3604,83 @@ int test_call_sipnat_rport(void)
 	err = sip_server_alloc(&srv, sip_server_exit_handler, NULL);
 	TEST_ERR(err);
 
-	err = sip_transp_laddr(srv->sip, &srv_addr, SIP_TRANSP_UDP, NULL);
+#ifdef USE_TLS
+	err = re_sdprintf(&cert, "%s/sni/other-cert.pem", test_datapath());
+	TEST_ERR(err);
+#endif
+	err = sip_server_add_websock(srv, cert);
 	TEST_ERR(err);
 
-	err = sa_set_str(&public_addr, "192.0.2.10", 0);
+	err = sip_transp_laddr(srv->sip, &srv_addr, tp, NULL);
 	TEST_ERR(err);
 
-	err = nat_alloc(&nat, sip_transp_udp_sock(srv->sip), &public_addr);
+	/* A reaches the registrar through a NAT-box */
+	if (tp == SIP_TRANSP_UDP) {
+		err = sa_set_str(&public_addr, "192.0.2.10", 0);
+		TEST_ERR(err);
+
+		err = nat_alloc(&nat, sip_transp_udp_sock(srv->sip),
+				&public_addr);
+		TEST_ERR(err);
+
+		err = str_dup(&outbound, "");
+	}
+	else {
+		err = nat_tcp_alloc(&nat_tcp, &srv_addr);
+		TEST_ERR(err);
+
+		err = re_sdprintf(&outbound, ";outbound=\"sip:%J%s\"",
+				  &nat_tcp->laddr, sip_transp_param(tp));
+	}
 	TEST_ERR(err);
 
 	f->a.ua = mem_deref(f->a.ua);
 	f->b.ua = mem_deref(f->b.ua);
 
-	err = re_sdprintf(&aor, "A <sip:alice@%J>;regint=60;sipnat=rport",
-			  &srv_addr);
+	err = re_sdprintf(&aor, "A <sip:alice@%J%s>;regint=60;sipnat=rport%s",
+			  &srv_addr, sip_transp_param(tp), outbound);
 	TEST_ERR(err);
 	err = ua_alloc(&f->a.ua, aor);
 	TEST_ERR(err);
 	aor = mem_deref(aor);
+
+	err = ua_register(f->a.ua);
+	TEST_ERR(err);
+
+	cancel_rule_new(BEVENT_REGISTER_OK, f->a.ua, 0, 0, 0);
+	err = re_main_timeout(5000);
+	cancel_rule_pop();
+	TEST_ERR(err);
+
+	/* A learned the address the registrar saw and registered it */
+	ASSERT_EQ(tp, srv->tp_last);
+	ASSERT_TRUE(srv->n_register_req >= 2);
+	err = re_sdprintf(&exp, "sip:alice@%J%s", &srv->register_src,
+			  sip_transp_param(tp));
+	TEST_ERR(err);
+	ASSERT_STREQ(exp, ua_cuser(f->a.ua));
+
+	/* The mock registrar forwards calls over UDP only */
+	if (tp != SIP_TRANSP_UDP)
+		goto out;
+
 	err = re_sdprintf(&aor, "C <sip:carol@%J>;regint=60", &srv_addr);
 	TEST_ERR(err);
 	err = ua_alloc(&f->c.ua, aor);
 	TEST_ERR(err);
 
-	err = ua_register(f->a.ua);
-	TEST_ERR(err);
 	err = ua_register(f->c.ua);
 	TEST_ERR(err);
 
-	cancel_rule_new(BEVENT_REGISTER_OK, f->a.ua, 0, 0, 0);
-	cancel_rule_and(BEVENT_REGISTER_OK, f->c.ua, 0, 0, 0);
+	cancel_rule_new(BEVENT_REGISTER_OK, f->c.ua, 0, 0, 0);
 	err = re_main_timeout(5000);
 	cancel_rule_pop();
 	TEST_ERR(err);
 
-	/* A learned the public address and registered it */
-	err = re_sdprintf(&exp, "sip:alice@192.0.2.10:%u",
-			  sa_port(&f->laddr_udp));
-	TEST_ERR(err);
-	ASSERT_STREQ(exp, ua_cuser(f->a.ua));
-	ASSERT_TRUE(srv->n_register_req >= 3);
-
 	/* C has no sipnat: its Contact stays local */
 	ASSERT_TRUE(0 == str_casecmp(ua_cuser(f->c.ua), "carol"));
 
-	/* A calls C through the registrar, with the public Contact */
+	/* A calls C through the registrar, with the learned Contact */
 	f->a.peer = &f->c;
 	f->c.peer = &f->a;
 	f->behaviour = BEHAVIOUR_ANSWER;
@@ -3668,18 +3703,51 @@ int test_call_sipnat_rport(void)
 	ASSERT_EQ(1, fix.c.n_established);
 
 	exp = mem_deref(exp);
-	err = re_sdprintf(&exp, "<sip:alice@192.0.2.10:%u>",
-			  sa_port(&f->laddr_udp));
+	err = re_sdprintf(&exp, "<%s>", ua_cuser(f->a.ua));
 	TEST_ERR(err);
 	ASSERT_STREQ(exp, srv->invite_contact);
 
  out:
+	if (err)
+		warning("selftest: sipnat=rport over %s failed (%m)\n",
+			sip_transp_name(tp), err);
 	mem_deref(exp);
 	mem_deref(curi);
+	mem_deref(cert);
 	mem_deref(aor);
+	mem_deref(outbound);
+
+	/* Let the WebSocket close handshake finish */
+	if (tp == SIP_TRANSP_WS || tp == SIP_TRANSP_WSS) {
+		struct tmr tmr;
+
+		tmr_init(&tmr);
+		sip_transp_flush(uag_sip());
+		tmr_start(&tmr, 100, sip_server_exit_handler, NULL);
+		(void)re_main(NULL);
+		tmr_cancel(&tmr);
+	}
+
 	fixture_close(f);
+	mem_deref(nat_tcp);
 	mem_deref(nat);
 	mem_deref(srv);
+
+	return err;
+}
+
+
+int test_call_sipnat_rport(void)
+{
+	int err = 0;
+
+	err |= call_sipnat_rport(SIP_TRANSP_UDP);
+	err |= call_sipnat_rport(SIP_TRANSP_TCP);
+	err |= call_sipnat_rport(SIP_TRANSP_WS);
+#ifdef USE_TLS
+	err |= call_sipnat_rport(SIP_TRANSP_TLS);
+	err |= call_sipnat_rport(SIP_TRANSP_WSS);
+#endif
 
 	return err;
 }
