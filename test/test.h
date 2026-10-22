@@ -164,6 +164,15 @@ struct nat {
 int nat_alloc(struct nat **natp, struct udp_sock *us,
 	      const struct sa *public_addr);
 
+struct nat_tcp {
+	struct tcp_sock *ts;
+	struct sa laddr;
+	struct sa dst;
+	struct list connl;
+};
+
+int nat_tcp_alloc(struct nat_tcp **natp, const struct sa *dst);
+
 
 /*
  * Mock Audio-player
