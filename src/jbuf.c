@@ -41,7 +41,8 @@
 enum {
 	JBUF_LATE_TRESHOLD = 3,
 	JBUF_MAX_DRIFT	   = 20,       /* [ms] */
-	JBUF_DRIFT_WINDOW  = 10 * 1000 /* [ms] */
+	JBUF_DRIFT_WINDOW  = 10 * 1000, /* [ms] */
+	JBUF_MAX_TS_JUMP   = 1000       /* [ms] */
 };
 
 /** Defines a packet frame */
@@ -437,6 +438,18 @@ static uint32_t calc_playout_time(struct jbuf *jb, struct packet *p)
 		struct packet *prevp = p->le.prev->data;
 		if (prevp->hdr.ts == p->hdr.ts) {
 			return prevp->playout_time;
+		}
+	}
+
+	/* RTP timestamp jump with same SSRC, offset_min() can't handle it */
+	if (jb->p.offset) {
+		int32_t diff = (int32_t)(offset(p) - jb->p.offset);
+		int32_t max  = (int32_t)(jb->srate / 1000) * JBUF_MAX_TS_JUMP;
+
+		if (diff > max || diff < -max) {
+			DEBUG_INFO("timestamp jump: %d ms, resync playout\n",
+				   delay_ms(diff, jb->srate));
+			memset(&jb->p, 0, sizeof(jb->p));
 		}
 	}
 

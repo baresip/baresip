@@ -36,6 +36,16 @@ static const struct jbtest testv_20ms_late_loss[] = {
 	{3, 4, 480, 80 * JBUF_SRATE / 1000, 640, 0, 0},
 };
 
+/** RTP timestamp jumps forward by more than 2^31, then backward */
+static const struct jbtest testv_20ms_ts_jump[] = {
+	{0, 1, 0, 20 * JBUF_SRATE / 1000, 160, 0, 0},
+	{1, 2, 160, 40 * JBUF_SRATE / 1000, 320, 0, 0},
+	{2, 3, 0x90000140, 60 * JBUF_SRATE / 1000, 480, 0, 0},
+	{3, 4, 0x900001e0, 80 * JBUF_SRATE / 1000, 640, 0, 0},
+	{4, 5, 0x80000280, 100 * JBUF_SRATE / 1000, 800, 0, 0},
+	{5, 6, 0x80000320, 120 * JBUF_SRATE / 1000, 960, 0, 0},
+};
+
 static const struct jbtest testv_25fps_video[] = {
 	{0, 1, 0, 40 * JBUF_SRATE_VIDEO / 1000, 3600, 0, 0},
 	{1, 2, 3600, 80 * JBUF_SRATE_VIDEO / 1000, 7200, 0, EAGAIN},
@@ -168,6 +178,57 @@ int test_jbuf(void)
 
 		err = jbuf_get(jb, &hdr_out, &mem);
 		TEST_ERR(err);
+		mem = mem_deref(mem);
+	}
+
+ out:
+	mem_deref(jb);
+	mem_deref(mem);
+	for (size_t i = 0; i < RE_ARRAY_SIZE(frv); i++)
+		mem_deref(frv[i]);
+
+	return err;
+}
+
+
+int test_jbuf_ts_jump(void)
+{
+	struct jbuf *jb;
+	char *frv[RE_ARRAY_SIZE(testv_20ms_ts_jump)] = {NULL};
+	void *mem = NULL;
+	int err;
+
+	err = jbuf_alloc(&jb, 0, 100, 10);
+	if (err)
+		return err;
+
+	jbuf_set_srate(jb, JBUF_SRATE);
+	jbuf_set_next_play_h(jb, next_play);
+
+	for (size_t i = 0; i < RE_ARRAY_SIZE(frv); i++) {
+		frv[i] = mem_alloc(32, NULL);
+		if (!frv[i]) {
+			err = ENOMEM;
+			goto out;
+		}
+	}
+
+	for (size_t i = 0; i < RE_ARRAY_SIZE(testv_20ms_ts_jump); i++) {
+		struct rtp_header hdr_in = {0}, hdr_out = {0};
+
+		hdr_in.seq	 = testv_20ms_ts_jump[i].seq;
+		hdr_in.ts	 = testv_20ms_ts_jump[i].ts;
+		hdr_in.ts_arrive = testv_20ms_ts_jump[i].ts_arrive;
+
+		err = jbuf_put(jb, &hdr_in, frv[i]);
+		TEST_ERR(err);
+
+		next_play_val = testv_20ms_ts_jump[i].playout;
+
+		err = jbuf_get(jb, &hdr_out, &mem);
+		TEST_ERR(err);
+		ASSERT_EQ(hdr_in.seq, hdr_out.seq);
+		ASSERT_EQ(mem, frv[i]);
 		mem = mem_deref(mem);
 	}
 

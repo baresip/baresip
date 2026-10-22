@@ -246,6 +246,7 @@ int test_contact(void);
 int test_contact_find_call(void);
 int test_bevent_register(void);
 int test_jbuf(void);
+int test_jbuf_ts_jump(void);
 int test_jbuf_adaptive(void);
 int test_jbuf_video(void);
 int test_jbuf_gnack(void);
