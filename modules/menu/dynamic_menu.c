@@ -289,21 +289,46 @@ static int attended_xfer(struct re_printf *pf, void *arg)
 }
 
 
+/**
+ * Execute a pending attended transfer
+ *
+ * @param pf   Print handler
+ * @param arg  Command arguments (carg)
+ *             carg->data is an optional pointer to a User-Agent
+ *             carg->prm is an optional string selecting the call that
+ *             receives the REFER: "orig" (default) or "target"
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 static int exec_att_xfer(struct re_printf *pf, void *arg)
 {
 	struct menu *menu = menu_get();
 	const struct cmd_arg *carg = arg;
 	struct ua *ua = carg->data ? carg->data : menu_uacur();
+	struct call *call = ua_call(ua);
+	bool refer_targ = false;
 	int err = 0;
 
-	(void) pf;
+	if (str_isset(carg->prm)) {
+		if (0 == str_cmp(carg->prm, "target")) {
+			refer_targ = true;
+		}
+		else if (0 != str_cmp(carg->prm, "orig")) {
+			(void)re_hprintf(pf, "usage: /atransferexec "
+					 "[orig|target]\n");
+			return EINVAL;
+		}
+	}
 
 	if (menu->xfer_call) {
-		err = call_hold(ua_call(ua), true);
+		err = call_hold(call, true);
 		if (err)
 			goto out;
 
-		err = call_replace_transfer(menu->xfer_call, ua_call(ua));
+		if (refer_targ)
+			err = call_replace_transfer(call, menu->xfer_call);
+		else
+			err = call_replace_transfer(menu->xfer_call, call);
 	}
 	else {
 		info ("menu: no pending attended call transfer available\n");
@@ -460,7 +485,7 @@ static const struct cmd callcmdv[] = {
 {"statmode",    'S',       0, "Statusmode toggle",    toggle_statmode      },
 {"transfer",    't', CMD_PRM, "Transfer call",        call_xfer            },
 {"atransferstart", 'T', CMD_PRM, "Start attended transfer", attended_xfer  },
-{"atransferexec",   0,    0, "Execute attended transfer",   exec_att_xfer  },
+{"atransferexec",   0, CMD_PRM, "Execute attended transfer", exec_att_xfer  },
 {"atransferabort",  0,    0, "Abort attended transfer",     abort_att_xfer },
 {"video_debug", 'V',       0, "Video stream",         call_video_debug     },
 {"videodir",      0, CMD_PRM, "Set video direction",  set_video_dir        },
