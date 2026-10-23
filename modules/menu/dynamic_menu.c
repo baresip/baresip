@@ -257,18 +257,30 @@ static int attended_xfer(struct re_printf *pf, void *arg)
 	const struct cmd_arg *carg = arg;
 	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	struct menu *menu = menu_get();
+	static const char force_opt[] = " force";
+	const size_t force_len = sizeof(force_opt) - 1;
+	size_t len = str_len(carg->prm);
+	bool force = false;
+	char *uri = NULL;
 	int err = 0;
 
 	(void)pf;
 
-	if (!str_len(carg->prm)) {
+	/* optional trailing " force" skips the Replaces check */
+	if (len > force_len &&
+	    0 == str_casecmp(carg->prm + len - force_len, force_opt)) {
+		force = true;
+		len -= force_len;
+	}
+
+	if (!len) {
 		info ("menu: no transfer target specified\n");
 		goto out;
 	}
 
 	menu->xfer_call = ua_call(ua);
 
-	if (!call_supported(menu->xfer_call, REPLACES)) {
+	if (!call_supported(menu->xfer_call, REPLACES) && !force) {
 		info ("menu: peer does not support Replaces header\n");
 		goto out;
 	}
@@ -277,13 +289,18 @@ static int attended_xfer(struct re_printf *pf, void *arg)
 	if (err)
 		goto out;
 
-	err = ua_connect(ua, &menu->xfer_targ, NULL, carg->prm, VIDMODE_ON);
+	err = re_sdprintf(&uri, "%b", carg->prm, len);
+	if (err)
+		goto out;
+
+	err = ua_connect(ua, &menu->xfer_targ, NULL, uri, VIDMODE_ON);
 
 	if (err)
 		goto out;
 
 	call_set_user_data(menu->xfer_targ, call_user_data(menu->xfer_call));
  out:
+	mem_deref(uri);
 	return err;
 
 }
