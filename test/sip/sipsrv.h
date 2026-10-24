@@ -21,6 +21,8 @@ struct sip_server {
 
 	unsigned n_register_req;
 	enum sip_transp tp_last;
+	struct sa register_src;
+	char invite_contact[256];
 
 	uint64_t secret;
 	struct hash *ht_dom;
@@ -34,6 +36,7 @@ int sip_server_alloc(struct sip_server **srvp,
 		     sip_exit_h *exith, void *arg);
 int sip_server_uri(struct sip_server *srv, char *uri, size_t sz,
 		   enum sip_transp tp);
+int sip_server_add_websock(struct sip_server *srv, const char *cert);
 
 
 /*

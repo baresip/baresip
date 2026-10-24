@@ -497,12 +497,18 @@ static bool sip_msg_handler(const struct sip_msg *msg, void *arg)
 
 	if (0 == pl_strcmp(&msg->met, "REGISTER")) {
 		++srv->n_register_req;
+		srv->register_src = msg->src;
 		if (handle_register(srv, msg))
 			goto out;
 
 		sip_reply(srv->sip, msg, 503, "Server Error");
 	}
 	else {
+		const struct sip_hdr *hdr = sip_msg_hdr(msg, SIP_HDR_CONTACT);
+		if (hdr && 0 == pl_strcmp(&msg->met, "INVITE"))
+			pl_strcpy(&hdr->val, srv->invite_contact,
+				  sizeof(srv->invite_contact));
+
 		if (forward_msg(srv, msg))
 			goto out;
 
@@ -619,6 +625,28 @@ int sip_server_alloc(struct sip_server **srvp,
 		*srvp = srv;
 
 	return err;
+}
+
+
+int sip_server_add_websock(struct sip_server *srv, const char *cert)
+{
+	struct sa laddr;
+	int err;
+
+	if (!srv)
+		return EINVAL;
+
+	err = sa_set_str(&laddr, "127.0.0.1", LOCAL_PORT);
+	if (err)
+		return err;
+
+	err = sip_transp_add_websock(srv->sip, SIP_TRANSP_WS, &laddr, true,
+				     NULL, NULL);
+	if (err || !cert)
+		return err;
+
+	return sip_transp_add_websock(srv->sip, SIP_TRANSP_WSS, &laddr, true,
+				      cert, NULL);
 }
 
 

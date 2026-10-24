@@ -84,7 +84,7 @@ static int account_write_template(const char *file)
 			 "#    ;sip_autoanswer={yes, no}\n"
 			 "#    ;sip_autoanswer_beep={off, on, local}\n"
 			 "#    ;sip_autoredirect={yes, no}  # default: no\n"
-			 "#    ;sipnat={outbound}\n"
+			 "#    ;sipnat={outbound, rport}\n"
 			 "#    ;stunpass=STUN/TURN/ICE-password\n"
 			 "#    ;stunserver=stun:[user]@host[:port]\n"
 			 "#    ;stunuser=STUN/TURN/ICE-username\n"

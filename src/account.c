@@ -798,8 +798,14 @@ void account_set_check_origin(struct account *acc, bool value)
 /**
  * Set the SIP nat protocol for a SIP account
  *
+ * "outbound" is SIP Outbound (RFC 5626). "rport" registers the address the
+ * registrar reports in the received and rport parameters of its responses
+ * (RFC 3581) instead of the local one, and uses it in the Contact of the
+ * UA's dialogs too, for registrars that do not fix the Contact of a client
+ * behind a NAT.
+ *
  * @param acc     User-Agent account
- * @param sipnat  SIP nat protocol
+ * @param sipnat  SIP nat protocol ("outbound" or "rport")
  *
  * @return 0 if success, otherwise errorcode
  */
@@ -809,7 +815,8 @@ int account_set_sipnat(struct account *acc, const char *sipnat)
 		return EINVAL;
 
 	if (sipnat)
-		if (0 == str_casecmp(sipnat, "outbound")) {
+		if (0 == str_casecmp(sipnat, "outbound") ||
+		    0 == str_casecmp(sipnat, "rport")) {
 			acc->sipnat = mem_deref(acc->sipnat);
 			return str_dup(&acc->sipnat, sipnat);
 		}
