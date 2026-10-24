@@ -37,14 +37,17 @@ int sdp_fingerprint_decode(const char *attr, struct pl *hash,
 		return err;
 
 	if (md && sz) {
-		if (*sz < (f.l+1)/3)
+		const size_t n = (f.l + 2) / 3;
+
+		if (*sz < n)
 			return EOVERFLOW;
 
-		for (p = f.p; p < (f.p+f.l); p += 3) {
-			*md++ = ch_hex(p[0]) << 4 | ch_hex(p[1]);
+		for (p = f.p; p < (f.p + f.l); p += 3) {
+			*md++ = ch_hex(p[0]) << 4
+				| ((p + 1 < f.p + f.l) ? ch_hex(p[1]) : 0);
 		}
 
-		*sz = (f.l+1)/3;
+		*sz = n;
 	}
 
 	return 0;

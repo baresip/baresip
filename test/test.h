@@ -241,6 +241,7 @@ int test_call_cert_select(void);
 int test_cmd(void);
 int test_cmd_long(void);
 int test_cparam_call_decode(void);
+int test_sdp_fingerprint_decode(void);
 int test_cparam_ua_decode(void);
 int test_contact(void);
 int test_contact_find_call(void);
