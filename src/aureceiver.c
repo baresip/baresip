@@ -220,6 +220,9 @@ static int aurecv_plc_frame(struct audio_recv *ar,
 		return err;
 	}
 
+	if (!sampc)
+		return 0;
+
 	auframe_init(&af, ar->fmt, ar->sampv, sampc, ac->srate, ac->ch);
 	af.timestamp = ((uint64_t) hdr->ts) * AUDIO_TIMEBASE / ac->crate;
 
@@ -255,6 +258,9 @@ static int aurecv_stream_decode(struct audio_recv *ar,
 	 * -- e.g. Opus -- so it is the only one handed the current
 	 * packet's payload. Earlier losses fall back to plain
 	 * concealment, since no coded data is available for them.
+	 *
+	 * A failed concealment frame must not drop the packet that did
+	 * arrive: stop concealing and decode it.
 	 */
 	if (lostc && ac->plch) {
 		for (unsigned i = 0; i < lostc; i++) {
@@ -265,7 +271,7 @@ static int aurecv_stream_decode(struct audio_recv *ar,
 					last ? mbuf_buf(mb) : NULL,
 					last ? mbuf_get_left(mb) : 0);
 			if (err)
-				goto out;
+				break;
 		}
 	}
 
