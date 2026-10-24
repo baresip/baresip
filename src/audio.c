@@ -126,6 +126,8 @@ struct audio {
 	struct stream *strm;          /**< Generic media stream            */
 	struct telev *telev;          /**< Telephony events                */
 	struct config_audio cfg;      /**< Audio configuration             */
+	char *ausrc_mod;              /**< Initial audio source module     */
+	char *ausrc_dev;              /**< Initial audio source device     */
 	bool started;                 /**< Stream is started flag          */
 	bool level_enabled;           /**< Audio level RTP ext. enabled    */
 	RE_ATOMIC bool conference;    /**< Local conference flag           */
@@ -224,6 +226,8 @@ static void audio_destructor(void *arg)
 	mem_deref(a->strm);
 	mem_deref(a->telev);
 	mem_deref(a->aur);
+	mem_deref(a->ausrc_mod);
+	mem_deref(a->ausrc_dev);
 
 	mem_deref(a->tx.mtx);
 }
@@ -793,20 +797,21 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 		goto out;
 
 	if (acc && acc->ausrc_mod) {
-
-		tx->module = mem_ref(acc->ausrc_mod);
-		tx->device = mem_ref(acc->ausrc_dev);
+		a->ausrc_mod = mem_ref(acc->ausrc_mod);
+		a->ausrc_dev = mem_ref(acc->ausrc_dev);
 
 		info("audio: using account specific source: (%s,%s)\n",
 		     tx->module, tx->device);
 	}
 	else {
-		err  = str_dup(&tx->module, a->cfg.src_mod);
-		err |= str_dup(&tx->device, a->cfg.src_dev);
+		err  = str_dup(&a->ausrc_mod, a->cfg.src_mod);
+		err |= str_dup(&a->ausrc_dev, a->cfg.src_dev);
 		if (err)
 			goto out;
 	}
 
+	tx->module = mem_ref(a->ausrc_mod);
+	tx->device = mem_ref(a->ausrc_dev);
 	tx->ptime  = ptime;
 	tx->ts_ext = tx->ts_base = rand_u16();
 	tx->marker = true;
@@ -1751,7 +1756,7 @@ int audio_set_devicename(struct audio *a, const char *src, const char *play)
 int audio_set_source(struct audio *au, const char *mod, const char *device)
 {
 	struct autx *tx;
-	int err;
+	int err = 0;
 
 	if (!au)
 		return EINVAL;
@@ -1759,9 +1764,15 @@ int audio_set_source(struct audio *au, const char *mod, const char *device)
 	tx = &au->tx;
 
 	/* stop the audio device first */
+	tx->module = mem_deref(tx->module);
+	tx->device = mem_deref(tx->device);
 	tx->ausrc = mem_deref(tx->ausrc);
 
 	if (str_isset(mod)) {
+		err  = str_dup(&tx->module, mod);
+		err |= str_dup(&tx->device, device);
+		if (err)
+			return err;
 
 		err = ausrc_alloc(&tx->ausrc, baresip_ausrcl(),
 				  mod, &tx->ausrc_prm, device,
@@ -1774,8 +1785,12 @@ int audio_set_source(struct audio *au, const char *mod, const char *device)
 
 		tx->as = ausrc_find(baresip_ausrcl(), mod);
 	}
+	else {
+		err  = str_dup(&tx->module, au->ausrc_mod);
+		err |= str_dup(&tx->device, au->ausrc_dev);
+	}
 
-	return 0;
+	return err;
 }
 
 
