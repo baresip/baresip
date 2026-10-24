@@ -24,6 +24,7 @@ add_executable(${PROJECT_NAME}
   message.c
   net.c
   peerconn.c
+  sdp.c
   play.c
   stunuri.c
   ua.c
