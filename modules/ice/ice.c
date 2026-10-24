@@ -714,6 +714,21 @@ static void gather_handler(int err, uint16_t scode, const char *reason,
 }
 
 
+static void media_connected(struct mnat_media *m)
+{
+	const struct ice_cand *cand1, *cand2;
+
+	cand1 = icem_selected_rcand(m->icem, 1);
+	cand2 = icem_selected_rcand(m->icem, 2);
+
+	if (m->connh && cand1) {
+		m->connh(icem_lcand_addr(cand1),
+			 icem_lcand_addr(cand2),
+			 m->arg);
+	}
+}
+
+
 static void conncheck_handler(int err, bool update, void *arg)
 {
 	struct mnat_media *m = arg;
@@ -732,7 +747,6 @@ static void conncheck_handler(int err, bool update, void *arg)
 		warning("ice: connectivity check failed: %m\n", err);
 	}
 	else {
-		const struct ice_cand *cand1, *cand2;
 		bool changed;
 
 		m->complete = true;
@@ -745,16 +759,9 @@ static void conncheck_handler(int err, bool update, void *arg)
 
 		(void)set_media_attributes(m);
 
-		cand1 = icem_selected_rcand(m->icem, 1);
-		cand2 = icem_selected_rcand(m->icem, 2);
-
 		sess_complete = all_completed(sess);
 
-		if (m->connh) {
-			m->connh(icem_lcand_addr(cand1),
-				  icem_lcand_addr(cand2),
-				  m->arg);
-		}
+		media_connected(m);
 	}
 
 	/* call estab-handler and send re-invite */
@@ -791,6 +798,11 @@ static int ice_start(struct mnat_sess *sess)
 				      icem_selected_laddr(m->icem, 2));
 
 			err |= set_media_attributes(m);
+
+			/* RFC 5245 9.3.1.4: the selected pair is kept
+			   after an updated offer/answer */
+			if (m->complete)
+				media_connected(m);
 		}
 
 		return err;
