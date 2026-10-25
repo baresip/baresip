@@ -80,6 +80,8 @@ struct stream {
 	stream_rtcp_h *sessrtcph;    /**< Stream RTCP handler               */
 	stream_error_h *errorh;  /**< Stream error handler                  */
 	void *sess_arg;          /**< Session handlers argument             */
+	struct twcc_status *twcc;/**< Shared TWCC (Transport wide)          */
+	RE_ATOMIC uint8_t extmap_twcc; /**< TWCC RTP extension id           */
 
 	struct bundle *bundle;
 	uint8_t extmap_counter;
@@ -138,6 +140,7 @@ static void stream_destructor(void *arg)
 	tmr_cancel(&s->rxm.tmr_rtp);
 	tmr_cancel(&s->rxm.tmr_rec);
 	tmr_cancel(&s->tmr_natph);
+	twcc_status_detach(s->twcc, s);
 	mem_deref(s->rx);
 	list_unlink(&s->le);
 	mem_deref(s->sdp);
@@ -150,6 +153,7 @@ static void stream_destructor(void *arg)
 	mem_deref(s->peer);
 	mem_deref(s->mid);
 	mem_deref(s->tx.lock);
+	mem_deref(s->twcc);
 }
 
 
@@ -658,6 +662,18 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 			goto out;
 	}
 
+	/* NOTE: the transport-wide sequence numbers are shared by all
+	   streams of a session, also if the streams are not bundled */
+	struct stream *first = list_ledata(list_head(streaml));
+	if (first && first->twcc) {
+		s->twcc = mem_ref(first->twcc);
+	}
+	else {
+		err = twcc_status_alloc(&s->twcc, s);
+		if (err)
+			goto out;
+	}
+
 	list_append(streaml, &s->le, s);
 
  out:
@@ -939,6 +955,8 @@ int stream_update(struct stream *s)
 		if (s->bundle) {
 			bundle_handle_extmap(s->bundle, s->sdp);
 		}
+
+		twcc_status_handle_extmap(s);
 	}
 
 	if (s->mencs && mnat_ready(s)) {
@@ -1695,6 +1713,12 @@ int stream_debug(struct re_printf *pf, const struct stream *s)
 	if (s->bundle)
 		err |= bundle_debug(&pfmb, s->bundle);
 
+	uint8_t extmap_twcc = (uint8_t)re_atomic_rlx(&s->extmap_twcc);
+	if (extmap_twcc) {
+		err |= mbuf_printf(mb, " extmap_twcc: %u\n", extmap_twcc);
+		err |= twcc_status_debug(&pfmb, s->twcc);
+	}
+
 	mtx_unlock(s->tx.lock);
 	if (err)
 		goto out;
@@ -1771,4 +1795,25 @@ void stream_enable_natpinhole(struct stream *strm, bool enable)
 		return;
 
 	strm->pinhole = enable;
+}
+
+
+struct twcc_status *stream_twcc(struct stream *strm)
+{
+	return strm ? strm->twcc : NULL;
+}
+
+
+void stream_set_extmap_twcc(struct stream *strm, uint8_t id)
+{
+	if (!strm)
+		return;
+
+	re_atomic_rlx_set(&strm->extmap_twcc, id);
+}
+
+
+uint8_t stream_extmap_twcc(struct stream *strm)
+{
+	return strm ? (uint8_t)re_atomic_rlx(&strm->extmap_twcc) : 0;
 }

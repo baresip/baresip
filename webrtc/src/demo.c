@@ -27,7 +27,8 @@ static struct demo {
 
 
 static struct rtc_configuration pc_config = {
-	.offerer = true
+	.offerer = true,
+	.twcc = true
 };
 
 
