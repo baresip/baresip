@@ -471,6 +471,32 @@ static void poll_aubuf_tx(struct audio *a)
 }
 
 
+static bool telev_sup_handler(struct sdp_format *fmt, void *arg)
+{
+	(void)arg;
+	return fmt->sup;
+}
+
+
+/* Prefer the telephone-event with the encoder clock rate (RFC 4733) */
+static const struct sdp_format *telev_rformat(const struct audio *a,
+					      const struct autx *tx)
+{
+	const struct sdp_media *m = stream_sdpmedia(audio_strm(a));
+	const struct sdp_format *fmt;
+
+	if (tx->ac) {
+		fmt = sdp_media_format_apply(m, false, NULL, -1, telev_rtpfmt,
+					     (int32_t)tx->ac->crate, -1,
+					     telev_sup_handler, NULL);
+		if (fmt)
+			return fmt;
+	}
+
+	return sdp_media_rformat(m, telev_rtpfmt);
+}
+
+
 static void check_telev(struct audio *a, struct autx *tx)
 {
 	const struct sdp_format *fmt;
@@ -489,7 +515,7 @@ static void check_telev(struct audio *a, struct autx *tx)
 	if (marker)
 		tx->ts_tel = (uint32_t)tx->ts_ext;
 
-	fmt = sdp_media_rformat(stream_sdpmedia(audio_strm(a)), telev_rtpfmt);
+	fmt = telev_rformat(a, tx);
 	if (!fmt)
 		return;
 
@@ -653,10 +679,11 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 }
 
 
-static int add_telev_codec(struct audio *a)
+static int add_telev_codec(struct audio *a, const struct list *aucodecl)
 {
 	struct sdp_media *m = stream_sdpmedia(audio_strm(a));
 	struct sdp_format *sf;
+	struct le *le;
 	uint32_t pt = a->cfg.telev_pt;
 	char pts[11];
 	bool add = !sdp_media_lformat(m, pt);
@@ -671,6 +698,29 @@ static int add_telev_codec(struct audio *a)
 			     NULL, NULL, false, "0-15");
 	if (err)
 		return err;
+
+	/* One telephone-event per codec clock rate (RFC 4733) */
+	if (!a->cfg.telev_multirate)
+		return 0;
+
+	for (le = list_head(aucodecl); le; le = le->next) {
+
+		const struct aucodec *ac = le->data;
+
+		if (ac->crate == TELEV_SRATE ||
+		    sdp_media_format(m, true, NULL, -1, telev_rtpfmt,
+				     (int32_t)ac->crate, -1))
+			continue;
+
+		err = sdp_format_add(NULL, m, false, NULL,
+				     telev_rtpfmt, ac->crate, 1, NULL,
+				     NULL, NULL, false, "0-15");
+		if (err) {
+			warning("audio: telephone-event/%u not offered (%m)\n",
+				ac->crate, err);
+			break;
+		}
+	}
 
 	return 0;
 }
@@ -793,7 +843,7 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 	if (err)
 		goto out;
 
-	err = add_telev_codec(a);
+	err = add_telev_codec(a, aucodecl);
 	if (err)
 		goto out;
 

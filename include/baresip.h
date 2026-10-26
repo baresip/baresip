@@ -440,6 +440,7 @@ struct config_audio {
 	int dec_fmt;            /**< Audio decoder sample format    */
 	struct range buffer;    /**< Audio receive buffer in [ms]   */
 	uint32_t telev_pt;      /**< Payload type for tel.-event    */
+	bool telev_multirate;   /**< Tel.-event per codec clockrate */
 };
 
 /** Video */
