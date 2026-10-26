@@ -1425,12 +1425,11 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 	if (scode >= 200 && scode < 300 && call->replaces_target) {
 		struct pl replaces;
 		struct call *rcall;
-		char *target = call->replaces_target;
+		const char *target = call->replaces_target;
 
 		pl_set_str(&replaces, target);
 		rcall = call_find_replaces(ua_calls(call->ua), &replaces);
 		if (rcall && rcall != call) {
-			/* Close replaced call after a successful 2xx. */
 			call_stream_stop(rcall);
 			call_event_handler(rcall, CALL_EVENT_CLOSED,
 					   "%r replaced", &replaces);
