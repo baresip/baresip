@@ -64,7 +64,6 @@ struct auenc_state {
 struct audec_state {
 	const struct amr_aucodec *ac;
 	void *dec;                  /**< Decoder state            */
-	bool aligned;               /**< Octet-aligned mode       */
 	uint8_t be_dec_arr[1+NB_SERIAL_MAX]; /**< Unpacked BE frame */
 };
 
@@ -184,8 +183,10 @@ static int decode_update(struct audec_state **adsp,
 		return ENOMEM;
 
 	st->ac = amr_ac;
-	st->aligned = amr_octet_align(fmtp);
-	amr_ac->aligned = st->aligned;
+
+	/* The decoder usually gets no fmtp, the encoder sets the mode */
+	if (fmtp)
+		amr_ac->aligned = amr_octet_align(fmtp);
 
 	switch (ac->srate) {
 
@@ -301,7 +302,7 @@ static int decode_wb(struct audec_state *st,
 	if (fmt != AUFMT_S16LE)
 		return ENOTSUP;
 
-	if (st->aligned) {
+	if (st->ac->aligned) {
 		IF2D_IF_decode(st->dec, &buf[1], sampv, 0);
 	}
 	else {
@@ -369,7 +370,7 @@ static int decode_nb(struct audec_state *st, int fmt, void *sampv,
 	if (fmt != AUFMT_S16LE)
 		return ENOTSUP;
 
-	if (st->aligned) {
+	if (st->ac->aligned) {
 		Decoder_Interface_Decode(st->dec, &buf[1], sampv, 0);
 	}
 	else {
