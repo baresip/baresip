@@ -58,11 +58,14 @@ struct auenc_state {
 	const struct amr_aucodec *ac;
 	void *enc;                  /**< Encoder state            */
 	int mode;                   /**< Mode we send, <= mode-set */
+	bool aligned;               /**< Octet-aligned mode       */
 };
 
 struct audec_state {
 	const struct amr_aucodec *ac;
 	void *dec;                  /**< Decoder state            */
+	bool aligned;               /**< Octet-aligned mode       */
+	uint8_t be_dec_arr[1+NB_SERIAL_MAX]; /**< Unpacked BE frame */
 };
 
 
@@ -90,25 +93,18 @@ static void encode_destructor(void *arg)
 static void decode_destructor(void *arg)
 {
 	struct audec_state *st = arg;
-	struct amr_aucodec *amr_ac = (struct amr_aucodec *)st->ac;
 
 	switch (st->ac->ac.srate) {
 
 #ifdef AMR_NB
 	case 8000:
 		Decoder_Interface_exit(st->dec);
-
-		mem_deref(amr_ac->be_dec_arr);
-
 		break;
 #endif
 
 #ifdef AMR_WB
 	case 16000:
 		D_IF_exit(st->dec);
-
-		mem_deref(amr_ac->be_dec_arr);
-
 		break;
 #endif
 	}
@@ -135,7 +131,8 @@ static int encode_update(struct auenc_state **aesp,
 		return ENOMEM;
 
 	st->ac = amr_ac;
-	amr_ac->aligned = amr_octet_align(fmtp);
+	st->aligned = amr_octet_align(fmtp);
+	amr_ac->aligned = st->aligned;
 
 	switch (ac->srate) {
 
@@ -187,33 +184,20 @@ static int decode_update(struct audec_state **adsp,
 		return ENOMEM;
 
 	st->ac = amr_ac;
-	amr_ac->aligned = amr_octet_align(fmtp);
+	st->aligned = amr_octet_align(fmtp);
+	amr_ac->aligned = st->aligned;
 
 	switch (ac->srate) {
 
 #ifdef AMR_NB
 	case 8000:
 		st->dec = Decoder_Interface_init();
-
-		if (!amr_ac->aligned) {
-			amr_ac->be_dec_arr = mem_zalloc(NB_SERIAL_MAX, NULL);
-
-			if (!amr_ac->be_dec_arr)
-				err = ENOMEM;
-		}
 		break;
 #endif
 
 #ifdef AMR_WB
 	case 16000:
 		st->dec = D_IF_init();
-
-		if (!amr_ac->aligned) {
-			amr_ac->be_dec_arr = mem_zalloc(1+NB_SERIAL_MAX, NULL);
-
-			if (!amr_ac->be_dec_arr)
-				err = ENOMEM;
-		}
 		break;
 #endif
 	}
@@ -273,7 +257,6 @@ static int encode_wb(struct auenc_state *st,
 		     bool *marker, uint8_t *buf, size_t *len,
 		     int fmt, const void *sampv, size_t sampc)
 {
-	const struct amr_aucodec *amr_ac = (struct amr_aucodec *)st->ac;
 	int n;
 	(void)marker;
 
@@ -290,7 +273,7 @@ static int encode_wb(struct auenc_state *st,
 	if (n <= 0)
 		return EPROTO;
 
-	if (amr_ac->aligned) {
+	if (st->aligned) {
 		/* CMR value 15 indicates that no mode request is present */
 		buf[0] = 15 << 4;
 		*len = (1 + n);
@@ -308,7 +291,6 @@ static int decode_wb(struct audec_state *st,
 		     int fmt, void *sampv, size_t *sampc,
 		     bool marker, const uint8_t *buf, size_t len)
 {
-	const struct amr_aucodec *amr_ac = (struct amr_aucodec *)st->ac;
 	(void)marker;
 
 	if (*sampc < L_FRAME16k)
@@ -319,12 +301,12 @@ static int decode_wb(struct audec_state *st,
 	if (fmt != AUFMT_S16LE)
 		return ENOTSUP;
 
-	if (amr_ac->aligned) {
+	if (st->aligned) {
 		IF2D_IF_decode(st->dec, &buf[1], sampv, 0);
 	}
 	else {
-		unpack_be(amr_ac->be_dec_arr, buf, len);
-		IF2D_IF_decode(st->dec, amr_ac->be_dec_arr, sampv, 0);
+		unpack_be(st->be_dec_arr, buf, len);
+		IF2D_IF_decode(st->dec, st->be_dec_arr, sampv, 0);
 	}
 
 	*sampc = L_FRAME16k;
@@ -338,14 +320,11 @@ static int decode_wb(struct audec_state *st,
 static int encode_nb(struct auenc_state *st, bool *marker, uint8_t *buf,
 		     size_t *len, int fmt, const void *sampv, size_t sampc)
 {
-	const struct amr_aucodec *amr_ac;
 	int r;
 	(void)marker;
 
 	if (!st || !buf || !len || !sampv || sampc != FRAMESIZE_NB)
 		return EINVAL;
-
-	amr_ac = (struct amr_aucodec *)st->ac;
 
 	if (*len < NB_SERIAL_MAX)
 		return ENOMEM;
@@ -358,7 +337,7 @@ static int encode_nb(struct auenc_state *st, bool *marker, uint8_t *buf,
 	if (r <= 0)
 		return EPROTO;
 
-	if (amr_ac->aligned) {
+	if (st->aligned) {
 		/* CMR value 15 indicates that no mode request is present */
 		buf[0] = 15 << 4;
 		*len = (1 + r);
@@ -376,13 +355,10 @@ static int decode_nb(struct audec_state *st, int fmt, void *sampv,
 		     size_t *sampc,
 		     bool marker, const uint8_t *buf, size_t len)
 {
-	const struct amr_aucodec *amr_ac;
 	(void)marker;
 
 	if (!st || !sampv || !sampc || !buf)
 		return EINVAL;
-
-	amr_ac = (struct amr_aucodec *)st->ac;
 
 	if (len > NB_SERIAL_MAX)
 		return EPROTO;
@@ -393,13 +369,12 @@ static int decode_nb(struct audec_state *st, int fmt, void *sampv,
 	if (fmt != AUFMT_S16LE)
 		return ENOTSUP;
 
-	if (amr_ac->aligned) {
+	if (st->aligned) {
 		Decoder_Interface_Decode(st->dec, &buf[1], sampv, 0);
 	}
 	else {
-		unpack_be(amr_ac->be_dec_arr, buf, len);
-		Decoder_Interface_Decode(
-			st->dec, amr_ac->be_dec_arr, sampv, 0);
+		unpack_be(st->be_dec_arr, buf, len);
+		Decoder_Interface_Decode(st->dec, st->be_dec_arr, sampv, 0);
 	}
 
 	*sampc = FRAMESIZE_NB;
@@ -424,7 +399,6 @@ static struct amr_aucodec amr_wb = {
 		.fmtp_ench = amr_fmtp_enc
 	},
 	.aligned = false,
-	.be_dec_arr = NULL
 };
 #endif
 #ifdef AMR_NB
@@ -442,7 +416,6 @@ static struct amr_aucodec amr_nb = {
 		.fmtp_ench = amr_fmtp_enc
 	},
 	.aligned = false,
-	.be_dec_arr = NULL
 };
 #endif
 
