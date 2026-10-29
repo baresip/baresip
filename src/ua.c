@@ -23,6 +23,7 @@ struct ua {
 	struct list calls;           /**< List of active calls (struct call) */
 	struct pl extensionv[8];     /**< Vector of SIP extensions           */
 	size_t    extensionc;        /**< Number of SIP extensions           */
+	uint32_t  require_mask;      /**< Mask of required SIP extensions    */
 	char *cuser;                 /**< SIP Contact username               */
 	char *pub_gruu;              /**< SIP Public GRUU                    */
 	enum presence_status pstat;  /**< Presence Status                    */
@@ -110,6 +111,24 @@ void ua_remove_extension(struct ua *ua, const char *extension)
 	}
 
 	ua->extensionc -= found;
+}
+
+
+void ua_enable_require(struct ua *ua, enum sip_ext ext)
+{
+	if (!ua || ext >= SIP_EXT_MAX)
+		return;
+
+	ua->require_mask |= (1 << ext);
+}
+
+
+void ua_disable_require(struct ua *ua, enum sip_ext ext)
+{
+	if (!ua || ext >= SIP_EXT_MAX)
+		return;
+
+	ua->require_mask &= ~(1 << ext);
 }
 
 
@@ -960,6 +979,7 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 		call_set_custom_hdrs(*callp, &ua->acc->custom_hdrs);
 
 	call_set_handlers(*callp, NULL, call_dtmf_handler, ua);
+	call_set_require_mask(*callp, ua->require_mask);
 
 	return 0;
 }
@@ -1285,6 +1305,9 @@ int ua_alloc(struct ua **uap, const char *aor)
 			goto out;
 		}
 	}
+
+	if (ua->acc->rel100_mode == REL100_REQUIRED)
+		ua_enable_require(ua, SIP_EXT_100REL);
 
 	err = create_register_clients(ua);
 	if (err)
@@ -2042,28 +2065,6 @@ int ua_print_supported(struct re_printf *pf, const struct ua *ua)
 	}
 
 	err |= re_hprintf(pf, "\r\n");
-
-	return err;
-}
-
-
-/**
- * Print the required extensions
- *
- * @param pf  Print function
- * @param ua  User-Agent object
- *
- * @return 0 if success, otherwise errorcode
- */
-int ua_print_require(struct re_printf *pf, const struct ua *ua)
-{
-	int err = 0;
-
-	if (!ua)
-		return 0;
-
-	if (ua->acc->rel100_mode == REL100_REQUIRED)
-		err = re_hprintf(pf, "Require: 100rel\r\n");
 
 	return err;
 }

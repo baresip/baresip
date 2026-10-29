@@ -896,6 +896,18 @@ void play_set_path(struct player *player, const char *path);
 
 struct ua;
 
+enum sip_ext {
+	SIP_EXT_GRUU,
+	SIP_EXT_PATH,
+	SIP_EXT_OUTBOUND,
+	SIP_EXT_100REL,
+	SIP_EXT_ICE,
+	SIP_EXT_NOREFERSUB,
+	SIP_EXT_REPLACES,
+	SIP_EXT_MAX
+};
+
+
 /** Baresip event value */
 enum bevent_ev {
 	BEVENT_REGISTERING = 0,
@@ -1020,6 +1032,8 @@ int ua_raise(struct ua *ua);
 int ua_set_autoanswer_value(struct ua *ua, const char *value);
 void ua_add_extension(struct ua *ua, const char *extension);
 void ua_remove_extension(struct ua *ua, const char *extension);
+void ua_enable_require(struct ua *ua, enum sip_ext ext);
+void ua_disable_require(struct ua *ua, enum sip_ext ext);
 bool ua_req_allowed(const struct ua *ua, const struct sip_msg *msg);
 bool ua_req_check_origin(const struct ua *ua, const struct sip_msg *msg);
 
