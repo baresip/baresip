@@ -1989,6 +1989,31 @@ int account_uri_complete(const struct account *acc, struct mbuf *buf,
 }
 
 
+static int print_acc_hostport(struct mbuf *mb, const struct account *acc)
+{
+	int err;
+
+	if (AF_INET6 == acc->luri.af)
+		err = mbuf_printf(mb, "@[%r]", &acc->luri.host);
+	else
+		err = mbuf_printf(mb, "@%r", &acc->luri.host);
+
+	/* Also append port if specified and not 5060 */
+	switch (acc->luri.port) {
+
+	case 0:
+	case SIP_PORT:
+		break;
+
+	default:
+		err |= mbuf_printf(mb, ":%u", acc->luri.port);
+		break;
+	}
+
+	return err;
+}
+
+
 /**
  * Auto complete a SIP uri, add scheme and domain if missing
  *
@@ -2009,6 +2034,7 @@ int account_uri_complete_strdup(const struct account *acc, char **strp,
 	bool complete = false;
 	struct mbuf *mb;
 	struct pl trimmed;
+	struct pl tel;
 	int err = 0;
 
 	if (!strp || !pl_isset(uri))
@@ -2023,6 +2049,18 @@ int account_uri_complete_strdup(const struct account *acc, char **strp,
 	mb = mbuf_alloc(64);
 	if (!mb)
 		return ENOMEM;
+
+	/* tel: URI (RFC 3966) */
+	tel = trimmed;
+	if (acc && tel.l > 4 && !pl_strncasecmp(&tel, "tel:", 4)) {
+		pl_advance(&tel, 4);
+
+		/* Map to a SIP URI as in RFC 3261 section 19.1.6 */
+		err  = mbuf_printf(mb, "sip:%r", &tel);
+		err |= print_acc_hostport(mb, acc);
+		err |= mbuf_printf(mb, ";user=phone");
+		goto out;
+	}
 
 	/* Append sip: scheme if missing */
 	if (re_regex(trimmed.p, trimmed.l, "sip:"))
@@ -2064,26 +2102,8 @@ int account_uri_complete_strdup(const struct account *acc, char **strp,
 	mem_deref(uridup);
 
 	if (!uri_is_ip &&
-	    0 != re_regex(trimmed.p, trimmed.l, "[^@]+@[^]+", NULL, NULL)) {
-		if (AF_INET6 == acc->luri.af)
-			err |= mbuf_printf(mb, "@[%r]",
-					   &acc->luri.host);
-		else
-			err |= mbuf_printf(mb, "@%r",
-					   &acc->luri.host);
-
-		/* Also append port if specified and not 5060 */
-		switch (acc->luri.port) {
-
-		case 0:
-		case SIP_PORT:
-			break;
-
-		default:
-			err |= mbuf_printf(mb, ":%u", acc->luri.port);
-			break;
-		}
-	}
+	    0 != re_regex(trimmed.p, trimmed.l, "[^@]+@[^]+", NULL, NULL))
+		err |= print_acc_hostport(mb, acc);
 
 out:
 	if (!err) {
