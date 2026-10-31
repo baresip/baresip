@@ -61,42 +61,53 @@ int test_sdp_fingerprint_decode(void)
 	ASSERT_EQ(32, sz);
 	TEST_MEMCMP(data, 32, md, 32);
 
-	/*
-	 * 3. Odd-length value: "XX:XX:..:X" has f.l = 3k + 1.  The decode
-	 * loop writes ceil(f.l / 3) = k + 1 bytes, while the old guard only
-	 * required floor((f.l + 1) / 3) = k bytes.  With a buffer of the
-	 * size the old guard accepted, this must be rejected instead of
-	 * writing one byte past the end.
-	 *
-	 * 4. The reported input: "0:1:" (f.l = 4) with a one-byte buffer.
-	 */
+	/* 3. strict format: a valid value uses pairs of hex digits separated
+	 *    by single colons; trailing colons, odd digit counts, empty groups
+	 *    and colons in place of a hex digit are malformed */
 	{
-		uint8_t buf32[32];
-		uint8_t buf1[1];
+		static const uint8_t exp4[4] = {0x11, 0x22, 0x33, 0x44};
 
-		encode_fingerprint(attr + 8, 32, data, false);
-		attr[8 + 95] = ':';
-		attr[8 + 96] = 'A';
-		attr[8 + 97] = '\0';
-		sz = sizeof(buf32);   /* the size the old guard accepted */
-		err = sdp_fingerprint_decode(attr, &hash, buf32, &sz);
-		ASSERT_EQ(EOVERFLOW, err);
+		sz = sizeof(md);
+		err = sdp_fingerprint_decode("SHA-256 11:22:33:44",
+					     &hash, md, &sz);
+		ASSERT_EQ(0, err);
+		ASSERT_EQ(4, sz);
+		TEST_MEMCMP(exp4, 4, md, 4);
 
-		sz = sizeof(buf1);
-		err = sdp_fingerprint_decode("SHA-256 0:1:", &hash, buf1, &sz);
-		ASSERT_EQ(EOVERFLOW, err);
+		err = sdp_fingerprint_decode("SHA-256 11:22:33:44:",
+					     &hash, md, &sz);
+		ASSERT_EQ(EBADMSG, err);
+
+		err = sdp_fingerprint_decode("SHA-256 11:22:3",
+					     &hash, md, &sz);
+		ASSERT_EQ(EBADMSG, err);
+
+		err = sdp_fingerprint_decode("SHA-256 1:2:3",
+					     &hash, md, &sz);
+		ASSERT_EQ(EBADMSG, err);
+
+		err = sdp_fingerprint_decode("SHA-256 11:22::33",
+					     &hash, md, &sz);
+		ASSERT_EQ(EBADMSG, err);
+
+		/* the reported input */
+		err = sdp_fingerprint_decode("SHA-256 0:1:", &hash, md, &sz);
+		ASSERT_EQ(EBADMSG, err);
 	}
 
-	/* 5. with a large enough buffer the odd-length value decodes, and the
-	 *    reported size matches the number of bytes written */
+	/* 4. a valid 33-byte fingerprint reports EOVERFLOW for a 32-byte
+	 *    output buffer, and decodes with a 33-byte buffer */
+	encode_fingerprint(attr + 8, 33, data, false);
+	sz = 32;
+	err = sdp_fingerprint_decode(attr, &hash, md, &sz);
+	ASSERT_EQ(EOVERFLOW, err);
+
 	sz = sizeof(md);
 	memset(md, 0xff, sizeof(md));
 	err = sdp_fingerprint_decode(attr, &hash, md, &sz);
 	ASSERT_EQ(0, err);
 	ASSERT_EQ(33, sz);
-	TEST_MEMCMP(data, 32, md, 32);
-	ASSERT_EQ(0xa0, md[32]);   /* "A" followed by end of value */
-
+	TEST_MEMCMP(data, 33, md, 33);
  out:
 	return err;
 }

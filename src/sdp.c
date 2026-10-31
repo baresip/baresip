@@ -10,6 +10,32 @@
 #include "core.h"
 
 
+static bool is_hex(char c)
+{
+	return ('0' <= c && c <= '9') ||
+	       ('A' <= c && c <= 'F') ||
+	       ('a' <= c && c <= 'f');
+}
+
+
+static bool fingerprint_valid(const struct pl *f)
+{
+	size_t i;
+
+	if (f->l < 2 || f->l % 3 != 2)
+		return false;
+
+	for (i = 0; i < f->l; i += 3) {
+		if (!is_hex(f->p[i]) || !is_hex(f->p[i + 1]))
+			return false;
+		if (i + 2 < f->l && f->p[i + 2] != ':')
+			return false;
+	}
+
+	return true;
+}
+
+
 /**
  * Decode an SDP fingerprint value
  *
@@ -36,16 +62,17 @@ int sdp_fingerprint_decode(const char *attr, struct pl *hash,
 	if (err)
 		return err;
 
+	if (!fingerprint_valid(&f))
+		return EBADMSG;
+
 	if (md && sz) {
-		const size_t n = (f.l + 2) / 3;
+		const size_t n = (f.l + 1) / 3;
 
 		if (*sz < n)
 			return EOVERFLOW;
 
-		for (p = f.p; p < (f.p + f.l); p += 3) {
-			*md++ = ch_hex(p[0]) << 4
-				| ((p + 1 < f.p + f.l) ? ch_hex(p[1]) : 0);
-		}
+		for (p = f.p; p < (f.p + f.l); p += 3)
+			*md++ = (uint8_t)(ch_hex(p[0]) << 4 | ch_hex(p[1]));
 
 		*sz = n;
 	}
