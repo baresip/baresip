@@ -683,7 +683,6 @@ static int add_telev_codec(struct audio *a, const struct list *aucodecl)
 {
 	struct sdp_media *m = stream_sdpmedia(audio_strm(a));
 	struct sdp_format *sf;
-	struct le *le;
 	uint32_t pt = a->cfg.telev_pt;
 	char pts[11];
 	bool add = !sdp_media_lformat(m, pt);
@@ -703,7 +702,7 @@ static int add_telev_codec(struct audio *a, const struct list *aucodecl)
 	if (!a->cfg.telev_multirate)
 		return 0;
 
-	for (le = list_head(aucodecl); le; le = le->next) {
+	for (struct le *le = list_head(aucodecl); le; le = le->next) {
 
 		const struct aucodec *ac = le->data;
 
