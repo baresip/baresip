@@ -53,7 +53,7 @@ static struct config core_config = {
 		.dec_fmt = AUFMT_S16LE,
 		.buffer = {20, 160},
 		.telev_pt = 101,
-		.telev_multirate = true,
+		.telev_multirate = false,
 	},
 
 	/** Video */
@@ -884,7 +884,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "audio_buffer\t\t%H\t\t# ms\n"
 			  "audio_telev_pt\t\t%u\t\t"
 			  "# payload type for telephone-event\n"
-			  "audio_telev_multirate\tyes\t\t"
+			  "audio_telev_multirate\tno\t\t"
 			  "# telephone-event per codec clockrate\n"
 			  "\n"
 			  ,
