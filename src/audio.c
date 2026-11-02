@@ -1221,6 +1221,7 @@ int audio_update(struct audio *a)
 	else {
 		stream_enable_rx(a->strm, false);
 		aurecv_stop(a->aur);
+		aurecv_reset(a->aur);
 	}
 
 	if (dir & SDP_SENDONLY) {
