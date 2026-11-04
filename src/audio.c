@@ -1420,6 +1420,7 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 		reset |= !(sdp_media_dir(m) & SDP_RECVONLY);
 		if (reset) {
 			aurecv_stop(a->aur);
+			aurecv_reset(a->aur);
 			audio_flush_filters(a);
 			stream_flush(a->strm);
 		}

@@ -604,8 +604,6 @@ void aurecv_stop(struct audio_recv *ar)
 	mtx_lock(ar->mtx);
 	ar->ac = NULL;
 	mtx_unlock(ar->mtx);
-
-	aurecv_reset(ar);
 }
 
 
