@@ -151,7 +151,7 @@ static void nat_tcp_out_estab_handler(void *arg)
 	conn->estab = true;
 
 	if (conn->pending) {
-		conn->pending->pos = 0;
+		mbuf_set_pos(conn->pending, 0);
 		(void)tcp_send(conn->out, conn->pending);
 		conn->pending = mem_deref(conn->pending);
 	}

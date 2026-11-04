@@ -17,10 +17,12 @@ struct sip_server {
 	struct sip_lsnr *lsnr;
 	bool auth_enabled;
 	bool terminate;
+	bool record_route;
 	unsigned instance;
 
 	unsigned n_register_req;
 	enum sip_transp tp_last;
+	enum sip_transp tp_invite;
 	struct sa register_src;
 	char invite_contact[256];
 

@@ -3590,6 +3590,7 @@ static int call_sipnat_rport(enum sip_transp tp)
 	struct nat *nat = NULL;
 	struct nat_tcp *nat_tcp = NULL;
 	struct sa srv_addr;
+	struct sa srv_udp;
 	struct sa public_addr;
 	char *outbound = NULL;
 	char *aor = NULL;
@@ -3603,6 +3604,7 @@ static int call_sipnat_rport(enum sip_transp tp)
 
 	err = sip_server_alloc(&srv, sip_server_exit_handler, NULL);
 	TEST_ERR(err);
+	srv->record_route = true;
 
 #ifdef USE_TLS
 	err = re_sdprintf(&cert, "%s/sni/other-cert.pem", test_datapath());
@@ -3612,6 +3614,8 @@ static int call_sipnat_rport(enum sip_transp tp)
 	TEST_ERR(err);
 
 	err = sip_transp_laddr(srv->sip, &srv_addr, tp, NULL);
+	TEST_ERR(err);
+	err = sip_transp_laddr(srv->sip, &srv_udp, SIP_TRANSP_UDP, NULL);
 	TEST_ERR(err);
 
 	/* A reaches the registrar through a NAT-box */
@@ -3660,11 +3664,7 @@ static int call_sipnat_rport(enum sip_transp tp)
 	TEST_ERR(err);
 	ASSERT_STREQ(exp, ua_cuser(f->a.ua));
 
-	/* The mock registrar forwards calls over UDP only */
-	if (tp != SIP_TRANSP_UDP)
-		goto out;
-
-	err = re_sdprintf(&aor, "C <sip:carol@%J>;regint=60", &srv_addr);
+	err = re_sdprintf(&aor, "C <sip:carol@%J>;regint=60", &srv_udp);
 	TEST_ERR(err);
 	err = ua_alloc(&f->c.ua, aor);
 	TEST_ERR(err);
@@ -3688,7 +3688,7 @@ static int call_sipnat_rport(enum sip_transp tp)
 	cancel_rule_new(BEVENT_CALL_ESTABLISHED, f->a.ua, 0, 0, 1);
 	cancel_rule_and(BEVENT_CALL_ESTABLISHED, f->c.ua, 1, 0, 1);
 
-	err = re_sdprintf(&curi, "sip:carol@%J", &srv_addr);
+	err = re_sdprintf(&curi, "sip:carol@%J", &srv_udp);
 	TEST_ERR(err);
 	err = ua_connect(f->a.ua, NULL, NULL, curi, VIDMODE_OFF);
 	TEST_ERR(err);
@@ -3701,11 +3701,20 @@ static int call_sipnat_rport(enum sip_transp tp)
 	ASSERT_EQ(1, fix.c.n_incoming);
 	ASSERT_EQ(1, fix.a.n_established);
 	ASSERT_EQ(1, fix.c.n_established);
+	ASSERT_EQ(tp, srv->tp_invite);
 
 	exp = mem_deref(exp);
 	err = re_sdprintf(&exp, "<%s>", ua_cuser(f->a.ua));
 	TEST_ERR(err);
 	ASSERT_STREQ(exp, srv->invite_contact);
+
+	/* C hangs up: its BYE reaches A at the learned Contact */
+	cancel_rule_new(BEVENT_CALL_CLOSED, f->a.ua, 0, 0, 0);
+	ua_hangup(f->c.ua, NULL, 0, NULL);
+	err = re_main_timeout(5000);
+	cancel_rule_pop();
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
 
  out:
 	if (err)
