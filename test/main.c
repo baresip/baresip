@@ -80,6 +80,7 @@ static const struct test tests[] = {
 	TEST(test_network),
 	TEST(test_peerconn),
 	TEST(test_play),
+	TEST(test_sdp_fingerprint_decode),
 	TEST(test_stunuri),
 	TEST(test_ua_alloc),
 	TEST(test_ua_cuser),
