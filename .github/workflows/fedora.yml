@@ -35,7 +35,7 @@ jobs:
   build:
     needs: dependency
     runs-on: ubuntu-latest
-    container: fedora
+    container: fedora:44
 
     steps:
     - uses: actions/checkout@v5
