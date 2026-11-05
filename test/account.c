@@ -282,6 +282,12 @@ int test_account_uri_complete(void)
 
 		{"x@[2113:1470:1f1b:24b::2]:5677",
 		 "sip:x@[2113:1470:1f1b:24b::2]:5677"},
+
+		{"tel:+491511234567",
+		 "sip:+491511234567@proxy.com;user=phone"},
+
+		{"tel:7042;phone-context=example.com",
+		 "sip:7042;phone-context=example.com@proxy.com;user=phone"},
 	};
 
 	struct mbuf *mb = NULL;
