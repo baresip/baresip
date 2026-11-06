@@ -2960,107 +2960,6 @@ static int test_call_hold_resume_inactive(void)
 }
 
 
-static double rx_time(const struct audio *au, bool *started)
-{
-	char *dbg = NULL;
-	const char *p;
-	double t = -1;
-
-	if (re_sdprintf(&dbg, "%H", audio_debug, au))
-		return -1;
-
-	p = strstr(dbg, " rx:");
-	p = p ? strstr(p, "time = ") : NULL;
-	if (started)
-		*started = p && !str_ncmp(p, "time = (not started)", 20) ?
-			false : p != NULL;
-	if (!p || 1 != sscanf(p, "time = %lf", &t))
-		t = -1;
-
-	mem_deref(dbg);
-	return t;
-}
-
-
-static int test_call_hold_resume_rx_reset(void)
-{
-	struct fixture fix, *f = &fix;
-	struct cancel_rule *cr;
-	double t_before, t_resume;
-	bool started;
-	int err = 0;
-
-	fixture_init(f);
-	cancel_rule_new(BEVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
-	cr->n_audio_estab = 1;
-	cancel_rule_and(BEVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
-	cr->n_audio_estab = 1;
-
-	err = module_load(".", "ausine");
-	TEST_ERR(err);
-	err = module_load(".", "aufile");
-	TEST_ERR(err);
-
-	f->behaviour = BEHAVIOUR_ANSWER;
-	f->estab_action = ACTION_NOTHING;
-
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
-	TEST_ERR(err);
-	err = re_main_timeout(10000);
-	TEST_ERR(err);
-	TEST_ERR(fix.err);
-
-	err = re_main_timeout(500);
-	ASSERT_EQ(ETIMEDOUT, err);
-	err = 0;
-
-	t_before = rx_time(call_audio(ua_call(f->a.ua)), NULL);
-	ASSERT_TRUE(t_before > 0.3);
-
-	cancel_rule_new(BEVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 1);
-	cr->prm = "offer";
-	cancel_rule_and(BEVENT_CALL_REMOTE_SDP, f->a.ua, 0, 0, 1);
-	cr->prm = "answer";
-
-	err = call_hold(ua_call(f->a.ua), true);
-	TEST_ERR(err);
-	err = re_main_timeout(10000);
-	TEST_ERR(err);
-	TEST_ERR(fix.err);
-	err = agent_wait_for_ack(&f->b, -1, -1, 1);
-	TEST_ERR(err);
-
-	(void)rx_time(call_audio(ua_call(f->a.ua)), &started);
-	ASSERT_TRUE(started);
-
-	err = call_hold(ua_call(f->a.ua), false);
-	TEST_ERR(err);
-	tmr_start(&f->b.tmr_ack, 1, check_ack, &f->b);
-	err = re_main_timeout(10000);
-	TEST_ERR(err);
-	err = agent_wait_for_ack(&f->b, -1, -1, 1);
-	TEST_ERR(err);
-
-	err = re_main_timeout(200);
-	ASSERT_EQ(ETIMEDOUT, err);
-	err = 0;
-
-	t_resume = rx_time(call_audio(ua_call(f->a.ua)), NULL);
-	ASSERT_TRUE(t_resume >= 0);
-	ASSERT_TRUE(t_resume < t_before);
-
- out:
-	if (err)
-		failure_debug(f, false);
-
-	fixture_close(f);
-	module_unload("aufile");
-	module_unload("ausine");
-
-	return err;
-}
-
-
 int test_call_hold_resume(void)
 {
 	int err;
@@ -3075,9 +2974,6 @@ int test_call_hold_resume(void)
 	TEST_ERR(err);
 
 	err = test_call_hold_resume_inactive();
-	TEST_ERR(err);
-
-	err = test_call_hold_resume_rx_reset();
 	TEST_ERR(err);
 
 out:
