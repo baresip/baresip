@@ -110,7 +110,7 @@ int opus_decode_pkloss(struct audec_state *ads,
 		       const uint8_t *buf, size_t len)
 {
 	int n;
-	opus_int32 frame_size;
+	opus_int32 frame_size = 0;
 	size_t nsamp = 0;
 	bool fec;
 
@@ -131,6 +131,11 @@ int opus_decode_pkloss(struct audec_state *ads,
 	fec = buf && len && opus_packet_loss > 0;
 
 	opus_decoder_ctl(ads->dec, OPUS_GET_LAST_PACKET_DURATION(&frame_size));
+
+	if (frame_size <= 0) {
+		*sampc = 0;
+		return 0;
+	}
 
 	switch (fmt) {
 
