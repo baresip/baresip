@@ -5,6 +5,31 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v4.13.0 - 2026-11-04
+
+### What's Changed
+* ci/win: use OpenSSL tools build (replaces unstable choco) by @sreimers in https://github.com/baresip/baresip/pull/3847
+* call: add call_set_close_headers() by @ProgrammerIn-wonderland in https://github.com/baresip/baresip/pull/3846
+* amr: respect mode-set instead of using max by @ProgrammerIn-wonderland in https://github.com/baresip/baresip/pull/3849
+* audio: add functions to start and stop the transmit thread by @allesrebel in https://github.com/baresip/baresip/pull/3843
+* rtprecv: strip padding from rtp packet by @sreimers in https://github.com/baresip/baresip/pull/3854
+* modules/gzrtp: multistream fix by @juha-h in https://github.com/baresip/baresip/pull/3857
+* webrtc/demo: add loopback switch by @sreimers in https://github.com/baresip/baresip/pull/3855
+* modules/gzrtp: menc_event_h first argument needs to be string by @juha-h in https://github.com/baresip/baresip/pull/3859
+* sdp: refactor sdp_decode_multipart handling and add test by @sreimers in https://github.com/baresip/baresip/pull/3860
+* jbuf: increase jitter influence by @cspiel1 in https://github.com/baresip/baresip/pull/3869
+* webrtc_aec: enable echo canceller via ApplyConfig by @Andreasdahlberg in https://github.com/baresip/baresip/pull/3863
+* docs: update THANKS file by @alfredh in https://github.com/baresip/baresip/pull/3862
+* audio: remember ausrc module and device by @cspiel1 in https://github.com/baresip/baresip/pull/3864
+* test/sni: replace test certs from libre by @sreimers in https://github.com/baresip/baresip/pull/3884
+
+### New Contributors
+* @ProgrammerIn-wonderland made their first contribution in https://github.com/baresip/baresip/pull/3846
+* @Andreasdahlberg made their first contribution in https://github.com/baresip/baresip/pull/3863
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v4.12.0...v4.13.0
+
+
 ## v4.12.0 - 2026-09-30
 
 ### What's Changed

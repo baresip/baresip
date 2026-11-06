@@ -25,6 +25,7 @@ add_executable(${PROJECT_NAME}
   net.c
   peerconn.c
   play.c
+  sdp.c
   stunuri.c
   ua.c
   video.c

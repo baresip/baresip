@@ -33,6 +33,7 @@ static const char *modv[] = {
 	"opus",
 	"g722",
 	"ausine",
+	"aubridge",
 
 	/* video */
 	"vp8",
@@ -40,7 +41,8 @@ static const char *modv[] = {
 	"vp9",
 	"av1",
 	"avformat",
-	"fakevideo"
+	"fakevideo",
+	"vidbridge"
 };
 
 static const char *ice_server = NULL;

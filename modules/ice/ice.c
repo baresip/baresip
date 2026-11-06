@@ -714,6 +714,45 @@ static void gather_handler(int err, uint16_t scode, const char *reason,
 }
 
 
+static void call_connected_handler(struct mnat_media *m)
+{
+	const struct ice_cand *cand1, *cand2;
+
+	cand1 = icem_selected_rcand(m->icem, 1);
+	cand2 = icem_selected_rcand(m->icem, 2);
+
+	if (m->connh && cand1) {
+		m->connh(icem_lcand_addr(cand1),
+			 icem_lcand_addr(cand2),
+			 m->arg);
+	}
+}
+
+
+/* True if the SDP default destination is the selected pair */
+static bool sdp_raddr_selected(const struct mnat_media *m)
+{
+	struct sa raddr[2];
+	unsigned i;
+
+	raddr[0] = *sdp_media_raddr(m->sdpm);
+	sdp_media_raddr_rtcp(m->sdpm, &raddr[1]);
+
+	for (i=0; i<2; i++) {
+		const struct ice_cand *cand;
+
+		cand = icem_selected_rcand(m->icem, i+1);
+		if (!m->compv[i].sock || !cand)
+			continue;
+
+		if (!sa_cmp(&raddr[i], icem_lcand_addr(cand), SA_ALL))
+			return false;
+	}
+
+	return true;
+}
+
+
 static void conncheck_handler(int err, bool update, void *arg)
 {
 	struct mnat_media *m = arg;
@@ -732,7 +771,6 @@ static void conncheck_handler(int err, bool update, void *arg)
 		warning("ice: connectivity check failed: %m\n", err);
 	}
 	else {
-		const struct ice_cand *cand1, *cand2;
 		bool changed;
 
 		m->complete = true;
@@ -745,16 +783,9 @@ static void conncheck_handler(int err, bool update, void *arg)
 
 		(void)set_media_attributes(m);
 
-		cand1 = icem_selected_rcand(m->icem, 1);
-		cand2 = icem_selected_rcand(m->icem, 2);
-
 		sess_complete = all_completed(sess);
 
-		if (m->connh) {
-			m->connh(icem_lcand_addr(cand1),
-				  icem_lcand_addr(cand2),
-				  m->arg);
-		}
+		call_connected_handler(m);
 	}
 
 	/* call estab-handler and send re-invite */
@@ -791,6 +822,11 @@ static int ice_start(struct mnat_sess *sess)
 				      icem_selected_laddr(m->icem, 2));
 
 			err |= set_media_attributes(m);
+
+			/* RFC 5245 9.3.1.4: the selected pair is kept
+			   after an updated offer/answer */
+			if (m->complete && !sdp_raddr_selected(m))
+				call_connected_handler(m);
 		}
 
 		return err;

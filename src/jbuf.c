@@ -346,7 +346,7 @@ static uint32_t adjust_due_to_jitter(struct jbuf *jb, struct packet *p)
 	if (jb->p.late_pkts >= JBUF_LATE_TRESHOLD) {
 		jb->p.late_pkts = 0;
 
-		jb->p.jitter_offset = 2 * jitter;
+		jb->p.jitter_offset = 3 * jitter;
 		RE_TRACE_ID_INSTANT_I(
 			"jbuf", "jitter_adjust",
 			delay_ms(jb->p.jitter_offset, jb->srate), jb->id);

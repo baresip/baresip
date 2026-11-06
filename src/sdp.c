@@ -10,6 +10,32 @@
 #include "core.h"
 
 
+static bool is_hex(char c)
+{
+	return ('0' <= c && c <= '9') ||
+	       ('A' <= c && c <= 'F') ||
+	       ('a' <= c && c <= 'f');
+}
+
+
+static bool fingerprint_valid(const struct pl *f)
+{
+	size_t i;
+
+	if (f->l < 2 || f->l % 3 != 2)
+		return false;
+
+	for (i = 0; i < f->l; i += 3) {
+		if (!is_hex(f->p[i]) || !is_hex(f->p[i + 1]))
+			return false;
+		if (i + 2 < f->l && f->p[i + 2] != ':')
+			return false;
+	}
+
+	return true;
+}
+
+
 /**
  * Decode an SDP fingerprint value
  *
@@ -36,15 +62,19 @@ int sdp_fingerprint_decode(const char *attr, struct pl *hash,
 	if (err)
 		return err;
 
+	if (!fingerprint_valid(&f))
+		return EBADMSG;
+
 	if (md && sz) {
-		if (*sz < (f.l+1)/3)
+		const size_t n = (f.l + 1) / 3;
+
+		if (*sz < n)
 			return EOVERFLOW;
 
-		for (p = f.p; p < (f.p+f.l); p += 3) {
-			*md++ = ch_hex(p[0]) << 4 | ch_hex(p[1]);
-		}
+		for (p = f.p; p < (f.p + f.l); p += 3)
+			*md++ = (uint8_t)(ch_hex(p[0]) << 4 | ch_hex(p[1]));
 
-		*sz = (f.l+1)/3;
+		*sz = n;
 	}
 
 	return 0;
@@ -71,21 +101,24 @@ bool sdp_media_has_media(const struct sdp_media *m)
 }
 
 
-static void decode_part(const struct pl *part, struct mbuf *mb)
+static bool decode_part_next(const struct pl *part, struct mbuf *mb)
 {
 	struct pl hdrs, body;
 
 	if (re_regex(part->p, part->l, "\r\n\r\n[^]+", &body))
-		return;
+		return true;
 
 	hdrs.p = part->p;
-	hdrs.l = body.p - part->p - 2;
+	hdrs.l = body.p - part->p;
 
 	if (0 == re_regex(hdrs.p, hdrs.l, "application/sdp")) {
+		mb->pos += hdrs.l;
+		mb->end = mb->pos + body.l;
 
-		mb->pos += (body.p - (char *)mbuf_buf(mb));
-		mb->end  = mb->pos + body.l;
+		return false;
 	}
+
+	return true;
 }
 
 
@@ -100,45 +133,40 @@ static void decode_part(const struct pl *part, struct mbuf *mb)
 int sdp_decode_multipart(const struct pl *ctype_prm, struct mbuf *mb)
 {
 	struct pl p, bnd;
-	char bnd_str[64];
-	char *s, *e;
-	char *buf = NULL;
-	int err;
+	char bnd_str[73];
 
 	if (!ctype_prm || !mb)
 		return EINVAL;
 
 	/* fetch the boundary tag, excluding quotes */
-	err = re_regex(ctype_prm->p, ctype_prm->l,
-		       "boundary=[~]+", &bnd);
+	int err = re_regex(ctype_prm->p, ctype_prm->l, "boundary=[~]+", &bnd);
 	if (err)
 		return err;
 
-	err = pl_strcpy(&bnd, bnd_str, sizeof(bnd_str));
-	if (err)
-		return err;
+	int bnd_slen = re_snprintf(bnd_str, sizeof(bnd_str), "--%r", &bnd);
+	if (bnd_slen == -1)
+		return EMSGSIZE;
 
-	err = mbuf_strdup(mb, &buf, mbuf_get_left(mb));
-	if (err)
-		return err;
+	pl_set_mbuf(&p, mb);
 
 	/* find 1st boundary */
-	s = strstr(buf, bnd_str);
+	const char *s = pl_strstr(&p, bnd_str);
+	if (!s)
+		return EBADMSG;
 
 	/* iterate over each part */
-	while (s) {
-		e = strstr(s + bnd.l, bnd_str);
+	do {
+		mbuf_advance(mb, s - (char *)mbuf_buf(mb) + bnd_slen);
+		pl_set_mbuf(&p, mb);
+
+		const char *e = pl_strstr(&p, bnd_str);
 		if (!e)
 			break;
 
-		p.p = s + bnd.l + 2;
-		p.l = e - p.p - 2;
+		p.l = e - p.p;
+		s   = e;
 
-		decode_part(&p, mb);
+	} while (decode_part_next(&p, mb));
 
-		s = e;
-	}
-
-	mem_deref(buf);
 	return 0;
 }
