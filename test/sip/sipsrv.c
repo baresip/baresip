@@ -226,6 +226,7 @@ static int sip_msg_hdr_encode_list(const struct sip_msg *msg,
 struct hdr_handler_arg {
 	struct mbuf *mb;
 	int err;
+	uint32_t idx;
 };
 
 
@@ -246,10 +247,41 @@ static bool enc_handler(const struct sip_hdr *hdr, const struct sip_msg *msg,
 }
 
 
+static bool req_via_handler(const struct sip_hdr *hdr,
+			    const struct sip_msg *msg, void *arg)
+{
+	struct hdr_handler_arg *harg = arg;
+	struct mbuf *mb = harg->mb;
+	struct pl rp;
+	int err;
+
+	err = mbuf_printf(mb, "%r: ", &hdr->name);
+
+	/* RFC 3581: the reply goes back to where the request came from */
+	if (harg->idx++) {
+		err |= mbuf_write_pl(mb, &hdr->val);
+	}
+	else if (!msg_param_exists(&msg->via.params, "rport", &rp)) {
+		err |= mbuf_write_pl_skip(mb, &hdr->val, &rp);
+		err |= mbuf_printf(mb, ";rport=%u;received=%j",
+				   sa_port(&msg->src), &msg->src);
+	}
+	else {
+		err |= mbuf_write_pl(mb, &hdr->val);
+	}
+
+	err |= mbuf_write_str(mb, "\r\n");
+	harg->err |= err;
+
+	return err != 0;
+}
+
+
 struct via_handler_arg {
 	struct mbuf *mb;
 	int err;
 	struct sa *dst;
+	enum sip_transp *tp;
 	uint32_t idx;
 };
 
@@ -276,9 +308,19 @@ static bool reply_via_handler(const struct sip_hdr *hdr,
 		goto out;
 	}
 
-	/* get dst address from next Via */
-	if (!sa_isset(dst, SA_ADDR))
+	/* get dst address and transport from next Via */
+	if (!sa_isset(dst, SA_ADDR)) {
+		struct pl pl;
+
 		*dst = via.addr;
+		*vharg->tp = via.tp;
+
+		if (!msg_param_decode(&via.params, "received", &pl))
+			(void)sa_set(dst, &pl, sa_port(dst));
+
+		if (!msg_param_decode(&via.params, "rport", &pl))
+			sa_set_port(dst, pl_u32(&pl));
+	}
 
 	err = mbuf_printf(mb, "%r: %r\r\n", &hdr->name, &hdr->val);
 	if (err)
@@ -296,33 +338,46 @@ out:
 
 
 static int sip_req_forward(struct sip_server *srv, const struct sip_msg *msg,
-			   struct mbuf *mb, struct sa *dst)
+			   struct mbuf *mb, struct sa *dst,
+			   enum sip_transp *tp)
 {
-	struct aor *aor;
+	struct uri duri = msg->uri;
+	struct pl pl;
 	int err;
 
-	/* use request URI to find contact aor */
-	err = aor_find(srv, &aor, &msg->uri);
-	if (err) {
-		DEBUG_WARNING("aor not found (%r)\n", &msg->uri);
-		return err;
-	}
+	/* in-dialog requests, routed through here, go to the request URI */
+	if (!domain_find(srv, &msg->uri)) {
+		struct aor *aor;
 
-	/* use first contact of aor */
-	struct location *loc = list_ledata(list_head(&aor->locl));
-	if (!loc) {
-		DEBUG_WARNING("aor missing (%r)\n", &msg->uri);
-		return err;
+		/* use request URI to find contact aor */
+		err = aor_find(srv, &aor, &msg->uri);
+		if (err) {
+			DEBUG_WARNING("aor not found (%r)\n", &msg->uri);
+			return err;
+		}
+
+		/* use first contact of aor */
+		struct location *loc = list_ledata(list_head(&aor->locl));
+		if (!loc) {
+			DEBUG_WARNING("aor missing (%r)\n", &msg->uri);
+			return err;
+		}
+
+		duri = loc->duri;
 	}
 
 	/* the contact aor needs to be an IP address + port number */
-	struct uri duri = loc->duri;
 	err = sa_set(dst, &duri.host, duri.port);
 	if (err)
 		return err;
 
+	/* the contact may be on another transport than the request */
+	*tp = SIP_TRANSP_UDP;
+	if (!msg_param_decode(&duri.params, "transport", &pl))
+		*tp = sip_transp_decode(&pl);
+
 	struct sa laddr;
-	sip_transp_laddr(srv->sip, &laddr, msg->tp, dst);
+	sip_transp_laddr(srv->sip, &laddr, *tp, dst);
 
 	struct hdr_handler_arg harg = {
 		.mb = mb,
@@ -333,9 +388,9 @@ static int sip_req_forward(struct sip_server *srv, const struct sip_msg *msg,
 			   uri_encode, &duri);
 	err |= mbuf_printf(mb, "Via: SIP/2.0/%s %J;"
 			   "branch=z9hG4bK%016llx;rport\r\n",
-			   sip_transp_name(msg->tp), &laddr,
+			   sip_transp_name(*tp), &laddr,
 			   rand_u64());
-	sip_msg_hdr_apply(msg, true, SIP_HDR_VIA, enc_handler, &harg);
+	sip_msg_hdr_apply(msg, true, SIP_HDR_VIA, req_via_handler, &harg);
 	if (harg.err) {
 		err |= harg.err;
 		return err;
@@ -355,6 +410,17 @@ static int sip_req_forward(struct sip_server *srv, const struct sip_msg *msg,
 		err |= mbuf_printf(mb, "Max-Forwards: 70\r\n");
 	}
 
+	/* one entry per side, the transports may differ (RFC 5658) */
+	if (srv->record_route && !pl_strcmp(&msg->met, "INVITE")) {
+		struct sa in;
+
+		err |= sip_transp_laddr(srv->sip, &in, msg->tp, NULL);
+		err |= mbuf_printf(mb, "Record-Route: <sip:%J%s;lr>\r\n",
+				   &laddr, sip_transp_param(*tp));
+		err |= mbuf_printf(mb, "Record-Route: <sip:%J%s;lr>\r\n",
+				   &in, sip_transp_param(msg->tp));
+	}
+
 	if (err) {
 		DEBUG_WARNING("could not forward SIP request %r\n", &msg->met);
 		return err;
@@ -367,7 +433,8 @@ static int sip_req_forward(struct sip_server *srv, const struct sip_msg *msg,
 
 
 static int sip_reply_forward(struct sip_server *srv, const struct sip_msg *msg,
-			     struct mbuf *mb, struct sa *dst)
+			     struct mbuf *mb, struct sa *dst,
+			     enum sip_transp *tp)
 {
 	int err;
 
@@ -383,6 +450,7 @@ static int sip_reply_forward(struct sip_server *srv, const struct sip_msg *msg,
 	struct via_handler_arg vharg = {
 		.mb = viamb,
 		.dst = dst,
+		.tp = tp,
 		.idx = 0,
 		.err = 0
 	};
@@ -415,7 +483,7 @@ static bool forward_msg(struct sip_server *srv, const struct sip_msg *msg)
 	int err;
 
 	/* Request URI */
-	if (msg->req) {
+	if (msg->req && !sip_msg_hdr(msg, SIP_HDR_ROUTE)) {
 		err = domain_find(srv, &msg->uri);
 		if (err)
 			return false;
@@ -427,16 +495,18 @@ static bool forward_msg(struct sip_server *srv, const struct sip_msg *msg)
 
 	/* Forward msg */
 	struct sa dst = {0};
+	enum sip_transp tp = msg->tp;
 	if (msg->req)
-		err = sip_req_forward(srv, msg, mb, &dst);
+		err = sip_req_forward(srv, msg, mb, &dst, &tp);
 	else
-		err = sip_reply_forward(srv, msg, mb, &dst);
+		err = sip_reply_forward(srv, msg, mb, &dst, &tp);
 
 	struct hdr_handler_arg harg = {
 		.mb = mb,
 		.err = 0,
 	};
 
+	sip_msg_hdr_apply(msg, true, SIP_HDR_RECORD_ROUTE, enc_handler, &harg);
 	sip_msg_hdr_apply(msg, true, SIP_HDR_CONTACT, enc_handler, &harg);
 	sip_msg_hdr_apply(msg, true, SIP_HDR_FROM, enc_handler, &harg);
 	sip_msg_hdr_apply(msg, true, SIP_HDR_TO, enc_handler, &harg);
@@ -464,8 +534,7 @@ static bool forward_msg(struct sip_server *srv, const struct sip_msg *msg)
 		goto out;
 
 	mbuf_set_pos(mb, 0);
-	err = sip_send_conn(srv->sip, NULL, msg->tp, &dst, NULL, mb, NULL,
-			    NULL);
+	err = sip_send_conn(srv->sip, NULL, tp, &dst, NULL, mb, NULL, NULL);
 	if (err)
 		goto out;
 
@@ -497,12 +566,20 @@ static bool sip_msg_handler(const struct sip_msg *msg, void *arg)
 
 	if (0 == pl_strcmp(&msg->met, "REGISTER")) {
 		++srv->n_register_req;
+		srv->register_src = msg->src;
 		if (handle_register(srv, msg))
 			goto out;
 
 		sip_reply(srv->sip, msg, 503, "Server Error");
 	}
 	else {
+		const struct sip_hdr *hdr = sip_msg_hdr(msg, SIP_HDR_CONTACT);
+		if (hdr && 0 == pl_strcmp(&msg->met, "INVITE")) {
+			pl_strcpy(&hdr->val, srv->invite_contact,
+				  sizeof(srv->invite_contact));
+			srv->tp_invite = msg->tp;
+		}
+
 		if (forward_msg(srv, msg))
 			goto out;
 
@@ -619,6 +696,28 @@ int sip_server_alloc(struct sip_server **srvp,
 		*srvp = srv;
 
 	return err;
+}
+
+
+int sip_server_add_websock(struct sip_server *srv, const char *cert)
+{
+	struct sa laddr;
+	int err;
+
+	if (!srv)
+		return EINVAL;
+
+	err = sa_set_str(&laddr, "127.0.0.1", LOCAL_PORT);
+	if (err)
+		return err;
+
+	err = sip_transp_add_websock(srv->sip, SIP_TRANSP_WS, &laddr, true,
+				     NULL, NULL);
+	if (err || !cert)
+		return err;
+
+	return sip_transp_add_websock(srv->sip, SIP_TRANSP_WSS, &laddr, true,
+				      cert, NULL);
 }
 
 
