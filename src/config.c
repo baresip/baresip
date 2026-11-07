@@ -52,7 +52,8 @@ static struct config core_config = {
 		.enc_fmt = AUFMT_S16LE,
 		.dec_fmt = AUFMT_S16LE,
 		.buffer = {20, 160},
-		.telev_pt = 101
+		.telev_pt = 101,
+		.telev_multirate = false,
 	},
 
 	/** Video */
@@ -453,6 +454,8 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	}
 
 	(void)conf_get_u32(conf, "audio_telev_pt", &cfg->audio.telev_pt);
+	(void)conf_get_bool(conf, "audio_telev_multirate",
+			    &cfg->audio.telev_multirate);
 
 	/* Video */
 	(void)conf_get_csv(conf, "video_source",
@@ -618,6 +621,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "audec_format\t\t%s\n"
 			 "audio_buffer\t\t%H\t\t# ms\n"
 			 "audio_telev_pt\t\t%u\n"
+			 "audio_telev_multirate\t%s\n"
 			 "\n",
 			 cfg->audio.audio_path,
 			 cfg->audio.play_mod,  cfg->audio.play_dev,
@@ -631,7 +635,8 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 aufmt_name(cfg->audio.enc_fmt),
 			 aufmt_name(cfg->audio.dec_fmt),
 			 range_print, &cfg->audio.buffer,
-			 cfg->audio.telev_pt);
+			 cfg->audio.telev_pt,
+			 cfg->audio.telev_multirate ? "yes" : "no");
 	if (err)
 		return err;
 
@@ -879,6 +884,8 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "audio_buffer\t\t%H\t\t# ms\n"
 			  "audio_telev_pt\t\t%u\t\t"
 			  "# payload type for telephone-event\n"
+			  "audio_telev_multirate\tno\t\t"
+			  "# telephone-event per codec clockrate\n"
 			  "\n"
 			  ,
 			  default_audio_path(),
