@@ -39,6 +39,7 @@ struct call {
 	struct video *video;      /**< Video stream                         */
 	enum call_state state;    /**< Call state                           */
 	int32_t adelay;           /**< Auto answer delay in ms              */
+	uint32_t  require_mask;   /**< Mask of required SIP extensions    */
 	char *aluri;              /**< Alert-Info URI                       */
 	char *local_uri;          /**< Local SIP uri                        */
 	char *local_name;         /**< Local display name                   */
@@ -734,6 +735,54 @@ static void call_decode_sip_autoanswer(struct call *call,
 }
 
 
+static const char *sip_ext_name(enum sip_ext ext)
+{
+	switch (ext) {
+		case SIP_EXT_GRUU: return "gruu";
+		case SIP_EXT_PATH: return "path";
+		case SIP_EXT_OUTBOUND: return "outbound";
+		case SIP_EXT_100REL: return "100rel";
+		case SIP_EXT_ICE: return "ice";
+		case SIP_EXT_NOREFERSUB: return "norefersub";
+		case SIP_EXT_REPLACES: return "replaces";
+
+	default: return NULL;
+	}
+}
+
+
+static int call_print_require(struct re_printf *pf, const struct call *call)
+{
+	int err = 0;
+
+	if (!call)
+		return 0;
+
+	if (call->require_mask)
+		err = re_hprintf(pf, "Require: ");
+
+	bool comma = false;
+	for (int i = 0; i < (int) SIP_EXT_MAX; i++) {
+		if (u32mask_enabled(call->require_mask, i)) {
+			const char *name = sip_ext_name(i);
+			if (!name)
+				continue;
+
+			if (comma)
+				err |= re_hprintf(pf, ", ");
+
+			err |= re_hprintf(pf, "%s", name);
+			comma = true;
+		}
+	}
+
+	if (call->require_mask)
+		err |= re_hprintf(pf, "\r\n");
+
+	return err;
+}
+
+
 int call_streams_alloc(struct call *call)
 {
 	if (!call)
@@ -1031,6 +1080,15 @@ const struct list *call_get_custom_hdrs(const struct call *call)
 }
 
 
+void call_set_require_mask(struct call *call, uint32_t mask)
+{
+	if (!call)
+		return;
+
+	call->require_mask = mask;
+}
+
+
 /**
  * Connect an outgoing call to a given SIP uri
  *
@@ -1310,7 +1368,7 @@ int call_progress_dir(struct call *call, enum sdp_dir adir, enum sdp_dir vdir)
 			       account_rel100_mode(call->acc),
 			       desc, "Allow: %H\r\n%H",
 			       ua_print_allowed, call->ua,
-			       ua_print_require, call->ua);
+			       call_print_require, call);
 
 	call->progr_queued = (err == EAGAIN);
 	if (err)
@@ -2527,7 +2585,7 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 			     sipsess_close_handler,
 			     call, "Allow: %H\r\n%H",
 			     ua_print_allowed, call->ua,
-			     ua_print_require, call->ua);
+			     call_print_require, call);
 
 	if (err) {
 		warning("call: sipsess_accept: %m\n", err);
@@ -2738,7 +2796,7 @@ static int send_invite(struct call *call)
 			      "Allow: %H\r\n%H%H%H%H",
 			      ua_print_allowed, call->ua,
 			      ua_print_supported, call->ua,
-			      ua_print_require, call->ua,
+			      call_print_require, call,
 			      call_print_replaces, call,
 			      custom_hdrs_print, &call->custom_hdrs);
 	if (err) {

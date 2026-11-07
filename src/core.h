@@ -181,6 +181,7 @@ int  call_info(struct re_printf *pf, const struct call *call);
 int  call_reset_transp(struct call *call, const struct sa *laddr);
 void call_set_xrtpstat(struct call *call);
 void call_set_custom_hdrs(struct call *call, const struct list *hdrs);
+void call_set_require_mask(struct call *call, uint32_t mask);
 const struct sa *call_laddr(const struct call *call);
 int call_streams_alloc(struct call *call);
 int call_modify_nosdp(struct call *call);
@@ -366,7 +367,6 @@ struct ua;
 
 int ua_printf(struct re_printf *pf, const struct ua *ua);
 int ua_print_allowed(struct re_printf *pf, const struct ua *ua);
-int ua_print_require(struct re_printf *pf, const struct ua *ua);
 struct call *ua_find_call_onhold(const struct ua *ua);
 struct call *ua_find_active_call(struct ua *ua);
 void ua_handle_options(struct ua *ua, const struct sip_msg *msg);
