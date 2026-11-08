@@ -243,7 +243,7 @@ class ccheck:
             self.listfor_depth = 1
             return
 
-        if re.search('while.*le.*{', line):
+        if re.search('while.*le.*{', line) and 'list_head' not in line:
             self.listfor_depth = 1
             return
 
