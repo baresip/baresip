@@ -248,10 +248,6 @@ static int aufile_load(struct mbuf *mb, const char *filename,
 		*channels = prm.channels;
 	}
 
-	if (err)
-		warning("play: could not load %s (%m)\n",
-			filename ? filename : "null", err);
-
 	return err;
 }
 
@@ -311,7 +307,7 @@ int play_tone(struct play **playp, struct player *player,
 			play_mod ? play_mod : "-", play_dev ? play_dev : "-",
 			err);
 		goto out;
-       }
+	}
 
 	list_append(&player->playl, &play->le, play);
 	tmr_start(&play->tmr, PTIME,  tmr_polling, play);
@@ -572,8 +568,17 @@ int play_file(struct play **playp, struct player *player,
 	if (err)
 		goto out;
 
-	if (!conf_get(conf_cur(), "file_ausrc", &opt)) {
+	mb = mbuf_alloc(1024);
+	if (!mb) {
+		err = ENOMEM;
+		goto out;
+	}
 
+	if (!aufile_load(mb, path, &srate, &ch)) {
+	    err = play_tone(&play, player, mb, srate,
+	                    ch, repeat, play_mod, play_dev);
+	}
+	else if (!conf_get(conf_cur(), "file_ausrc", &opt)) {
 		err = pl_strdup(&srcn, &opt);
 		if (err)
 			goto out;
@@ -583,23 +588,12 @@ int play_file(struct play **playp, struct player *player,
 			err = play_file_ausrc(&play, ausrc,
 					      path, repeat,
 					      play_mod, play_dev);
-
-			goto out;
+		}
+		else {
+			warning("play: could not find ausrc '%r'\n", &opt);
+			err = ENOENT;
 		}
 	}
-
-	mb = mbuf_alloc(1024);
-	if (!mb) {
-		err = ENOMEM;
-		goto out;
-	}
-
-	err = aufile_load(mb, path, &srate, &ch);
-	if (err)
-		goto out;
-
-	err = play_tone(&play, player, mb, srate,
-	                ch, repeat, play_mod, play_dev);
 
  out:
 	mem_deref(mb);
