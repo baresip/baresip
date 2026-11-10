@@ -796,6 +796,57 @@ static int test_call_dtmf_param(uint32_t crate, bool dtmf_multirate)
 }
 
 
+/* Three clock rates above 8000 Hz: no payload type may be offered twice */
+static int test_call_dtmf_telev_pt(void)
+{
+	struct fixture fix, *f = &fix;
+	const struct list *lfmtl;
+	const struct sdp_format *telev;
+	int err = 0;
+
+	conf_config()->audio.telev_multirate = true;
+
+	err = module_load(".", "l16");
+	TEST_ERR(err);
+
+	fixture_init_prm(f, ";audio_codecs="
+			 "l16/48000/1,l16/32000/1,l16/16000/1");
+
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	lfmtl = sdp_media_format_lst(stream_sdpmedia(audio_strm(
+				     call_audio(ua_call(f->a.ua)))), true);
+
+	for (struct le *le = list_head(lfmtl); le; le = le->next) {
+
+		const struct sdp_format *fmt = le->data;
+
+		for (struct le *o = le->next; o; o = o->next) {
+
+			const struct sdp_format *other = o->data;
+
+			ASSERT_TRUE(fmt->pt != other->pt);
+		}
+	}
+
+	/* telephone-event/8000 keeps telev_pt */
+	telev = sdp_media_format(stream_sdpmedia(audio_strm(
+				 call_audio(ua_call(f->a.ua)))),
+				 true, NULL, -1, "telephone-event",
+				 8000, -1);
+	ASSERT_TRUE(telev != NULL);
+	ASSERT_EQ(101, telev->pt);
+
+ out:
+	fixture_close(f);
+	module_unload("l16");
+	conf_config()->audio.telev_multirate = false;
+
+	return err;
+}
+
+
 int test_call_dtmf(void)
 {
 	int err;
@@ -807,6 +858,9 @@ int test_call_dtmf(void)
 	TEST_ERR(err);
 
 	err = test_call_dtmf_param(48000, true);
+	TEST_ERR(err);
+
+	err = test_call_dtmf_telev_pt();
 	TEST_ERR(err);
 
  out:
