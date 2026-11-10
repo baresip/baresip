@@ -705,13 +705,29 @@ static int add_telev_codec(struct audio *a, const struct list *aucodecl)
 	for (struct le *le = list_head(aucodecl); le; le = le->next) {
 
 		const struct aucodec *ac = le->data;
+		char id[4];
+		int dpt;
 
 		if (ac->crate == TELEV_SRATE ||
 		    sdp_media_format(m, true, NULL, -1, telev_rtpfmt,
 				     (int32_t)ac->crate, -1))
 			continue;
 
-		err = sdp_format_add(NULL, m, false, NULL,
+		/* A free dynamic payload type: sdp_format_add() without
+		   an id could reuse telev_pt */
+		for (dpt = 96; dpt <= 127; dpt++) {
+			if (!sdp_media_lformat(m, dpt))
+				break;
+		}
+		if (dpt > 127) {
+			warning("audio: telephone-event/%u not offered"
+				" (no free payload type)\n", ac->crate);
+			break;
+		}
+
+		(void)re_snprintf(id, sizeof(id), "%d", dpt);
+
+		err = sdp_format_add(NULL, m, false, id,
 				     telev_rtpfmt, ac->crate, 1, NULL,
 				     NULL, NULL, false, "0-15");
 		if (err) {
