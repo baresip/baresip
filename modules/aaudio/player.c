@@ -8,7 +8,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <pthread.h>
 
 #include <re.h>
 #include <rem.h>
@@ -18,14 +17,12 @@
 
 
 struct auplay_st {
-	mtx_t *mtx;
 	AAudioStream *playerStream;
 	auplay_write_h *wh;
 	void *arg;
 	struct auplay_prm play_prm;
 	size_t sampsz;
 	int32_t device_id;
-	bool shutdown;
 };
 
 
@@ -38,16 +35,14 @@ static void auplay_destructor(void *arg)
 
 	info("aaudio: player: closing stream\n");
 
-	if (st->mtx) {
-		mtx_lock(st->mtx);
-		st->shutdown = true;
-		st->wh = NULL;
-		mtx_unlock(st->mtx);
+	re_thread_async_cancel((intptr_t)st);
+
+	if (st->playerStream) {
+		AAudioStream_close(st->playerStream);
+		st->playerStream = NULL;
 	}
 
-	aaudio_close_stream(st->mtx, &st->playerStream);
-
-	mem_deref(st->mtx);
+	st->wh = NULL;
 }
 
 
@@ -62,58 +57,41 @@ static void auplay_destructor(void *arg)
 	struct auplay_st *st = userData;
 	struct auframe af;
 
-	mtx_lock(st->mtx);
-	if (st->shutdown || !st->wh) {
-		mtx_unlock(st->mtx);
-		return AAUDIO_CALLBACK_RESULT_STOP;
-	}
-
 	auframe_init(&af, st->play_prm.fmt, audioData, numFrames,
 		     st->play_prm.srate, st->play_prm.ch);
 
 	st->wh(&af, st->arg);
-	mtx_unlock(st->mtx);
 
-	return AAUDIO_CALLBACK_RESULT_CONTINUE;
+	return 0;
 }
 
 
-static void* restart_player_stream(void* data) {
+static int restart_player_work(void *arg) {
+	struct auplay_st *st = arg;
 	aaudio_result_t result;
-	struct auplay_st *st = data;
 
-	mtx_lock(st->mtx);
-
-	if (st->shutdown) {
-		mtx_unlock(st->mtx);
-		mem_deref(st);
-		return NULL;
-	}
-
-	if (st->playerStream &&
-	    AAudioStream_getState(st->playerStream) !=
-	    AAUDIO_STREAM_STATE_DISCONNECTED) {
-		mtx_unlock(st->mtx);
-		mem_deref(st);
-		return NULL;
-	}
-	mtx_unlock(st->mtx);
-
-	aaudio_close_stream(st->mtx, &st->playerStream);
-
-	mtx_lock(st->mtx);
-	if (st->shutdown) {
-		mtx_unlock(st->mtx);
-		mem_deref(st);
-		return NULL;
+	if (st->playerStream) {
+		AAudioStream_close(st->playerStream);
+		st->playerStream = NULL;
 	}
 
 	result = open_player_stream(st);
 	if (result != AAUDIO_OK) {
 		warning("aaudio: player: failed to open stream\n");
-		mtx_unlock(st->mtx);
-		mem_deref(st);
-		return NULL;
+		return ENODEV;
+	}
+
+	return 0;
+}
+
+
+static void restart_player_done(int err, void *arg) {
+	struct auplay_st *st = arg;
+	aaudio_result_t result;
+
+	if (err) {
+		warning("aaudio: player: failed to reopen stream: %m\n", err);
+		return;
 	}
 
 	result = AAudioStream_requestStart(st->playerStream);
@@ -121,11 +99,6 @@ static void* restart_player_stream(void* data) {
 		warning("aaudio: player: failed to start stream\n");
 	else
 		info("aaudio: player: stream started\n");
-
-	mtx_unlock(st->mtx);
-
-	mem_deref(st);
-	return NULL;
 }
 
 
@@ -133,31 +106,19 @@ static void errorCallback(AAudioStream *stream, void *userData,
 			  aaudio_result_t error) {
 	struct auplay_st *st = userData;
 	(void)error;
-	pthread_t thread_id;
 	int res;
 
 	aaudio_stream_state_t streamState = AAudioStream_getState(stream);
 	if (streamState == AAUDIO_STREAM_STATE_DISCONNECTED) {
 		info("aaudio: player: stream disconnected\n");
-
-		mtx_lock(st->mtx);
-		if (st->shutdown) {
-			mtx_unlock(st->mtx);
-			return;
-		}
-		st = mem_ref(st);
-		mtx_unlock(st->mtx);
-
-		res = pthread_create(&thread_id, NULL, restart_player_stream,
-				     (void *)st);
+		res = re_thread_async_id((intptr_t)st, restart_player_work,
+					 restart_player_done, st);
 		if (res) {
-			warning("aaudio: player: error creating thread: %d\n",
+			warning("aaudio: player: error queueing async task: %m\n",
 				res);
-			mem_deref(st);
 			return;
 		}
-		pthread_detach(thread_id);
-		info("aaudio: player: created new thread (%u)\n", thread_id);
+		info("aaudio: player: queued async task\n");
 	}
 }
 
@@ -238,7 +199,6 @@ int aaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 {
 	struct auplay_st *st;
 	aaudio_result_t result;
-	int err;
 
 	if (!stp || !ap || !prm || !wh)
 		return EINVAL;
@@ -262,12 +222,6 @@ int aaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if (!st)
 		return ENOMEM;
 
-	err = mutex_alloc(&st->mtx);
-	if (err) {
-		mem_deref(st);
-		return err;
-	}
-
 	st->play_prm = *prm;
 
 	/*
@@ -284,28 +238,26 @@ int aaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 				"'%s', using default\n", dev);
 			st->device_id = -1;
 		}
-		else
+		else {
 			st->device_id = (int32_t)val;
+		}
 	}
-	else
+	else {
 		st->device_id = -1;
+	}
 
 	info("aaudio: player: using device id %d\n", st->device_id);
 
 	st->wh  = wh;
 	st->arg = arg;
 
-	mtx_lock(st->mtx);
 	result = open_player_stream(st);
-	if (result != AAUDIO_OK) {
-		mtx_unlock(st->mtx);
+	if (result != AAUDIO_OK)
 		goto out;
-	}
 
 	result = AAudioStream_requestStart(st->playerStream);
 	if (result != AAUDIO_OK) {
 		warning("aaudio: player: failed to start stream\n");
-		mtx_unlock(st->mtx);
 		goto out;
 	}
 
@@ -313,11 +265,11 @@ int aaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 		     AAudioStream_getSessionId(st->playerStream));
 
 	info ("aaudio: player: stream started\n");
-	mtx_unlock(st->mtx);
 
   out:
-	if (result != AAUDIO_OK)
+	if (result != AAUDIO_OK) {
 		mem_deref(st);
+	}
 	else
 		*stp = st;
 

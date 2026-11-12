@@ -9,18 +9,8 @@
 #include "aaudio.h"
 
 
-void aaudio_close_stream(mtx_t *mtx, AAudioStream **streamp) {
-	AAudioStream *stream = NULL;
-
-	if (mtx)
-		mtx_lock(mtx);
-	if (streamp && *streamp) {
-		stream = *streamp;
-		*streamp = NULL;
-	}
-	if (mtx)
-		mtx_unlock(mtx);
-
-	if (stream)
+void aaudio_close_stream(AAudioStream *stream) {
+	if (stream) {
 		AAudioStream_close(stream);
+	}
 }
