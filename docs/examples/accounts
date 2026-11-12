@@ -40,7 +40,7 @@
 #    ;sip_autoanswer={yes, no}
 #    ;sip_autoanswer_beep={off, on, local}
 #    ;sip_autoredirect={yes, no}  # default: no
-#    ;sipnat=outbound
+#    ;sipnat={outbound, rport}
 #    ;stunpass=STUN/TURN/ICE-password
 #    ;stunserver=stun:[user]@host[:port]
 #    ;stunuser=STUN/TURN/ICE-username
