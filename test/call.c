@@ -714,13 +714,24 @@ int test_call_max(void)
 }
 
 
-int test_call_dtmf(void)
+/* crate 8000 uses G.711, crate 48000 the mock codec */
+static int test_call_dtmf_param(uint32_t crate, bool dtmf_multirate)
 {
 	struct fixture fix, *f = &fix;
+	const struct aucodec *ac;
+	const struct sdp_format *telev;
+	bool mock = crate != 8000;
 	int err = 0;
 
+	conf_config()->audio.telev_multirate = dtmf_multirate;
+
+	/* before the fixture: accounts look up their codecs when created */
+	if (mock)
+		mock_aucodec_register();
+
 	/* Use a low packet time, so the test completes quickly */
-	fixture_init_prm(f, ";ptime=1");
+	fixture_init_prm(f, mock ? ";ptime=1;audio_codecs=aucmock/48000/2"
+			 : ";ptime=1");
 	f->dtmf_digits = "1234";
 
 	/* audio-source is needed for dtmf/telev to work */
@@ -737,6 +748,17 @@ int test_call_dtmf(void)
 	err = re_main_timeout(5000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
+
+	/* The digits arrive either way: check the negotiated clock rates */
+	ac = audio_codec(call_audio(ua_call(f->a.ua)), true);
+	ASSERT_TRUE(ac != NULL);
+	ASSERT_EQ(crate, ac->crate);
+
+	telev = sdp_media_format(stream_sdpmedia(audio_strm(
+				 call_audio(ua_call(f->a.ua)))),
+				 false, NULL, -1, "telephone-event",
+				 48000, -1);
+	ASSERT_TRUE((telev && telev->sup) == (dtmf_multirate && mock));
 
 	/* send some DTMF digits from A to B .. */
 	size_t n = str_len(f->dtmf_digits);
@@ -766,7 +788,82 @@ int test_call_dtmf(void)
  out:
 	fixture_close(f);
 	module_unload("ausine");
+	if (mock)
+		mock_aucodec_unregister();
+	conf_config()->audio.telev_multirate = false;
 
+	return err;
+}
+
+
+/* Three clock rates above 8000 Hz: no payload type may be offered twice */
+static int test_call_dtmf_telev_pt(void)
+{
+	struct fixture fix, *f = &fix;
+	const struct list *lfmtl;
+	const struct sdp_format *telev;
+	int err = 0;
+
+	conf_config()->audio.telev_multirate = true;
+
+	err = module_load(".", "l16");
+	TEST_ERR(err);
+
+	fixture_init_prm(f, ";audio_codecs="
+			 "l16/48000/1,l16/32000/1,l16/16000/1");
+
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	lfmtl = sdp_media_format_lst(stream_sdpmedia(audio_strm(
+				     call_audio(ua_call(f->a.ua)))), true);
+
+	for (struct le *le = list_head(lfmtl); le; le = le->next) {
+
+		const struct sdp_format *fmt = le->data;
+
+		for (struct le *o = le->next; o; o = o->next) {
+
+			const struct sdp_format *other = o->data;
+
+			ASSERT_TRUE(fmt->pt != other->pt);
+		}
+	}
+
+	/* telephone-event/8000 keeps telev_pt */
+	telev = sdp_media_format(stream_sdpmedia(audio_strm(
+				 call_audio(ua_call(f->a.ua)))),
+				 true, NULL, -1, "telephone-event",
+				 8000, -1);
+	ASSERT_TRUE(telev != NULL);
+	ASSERT_EQ(101, telev->pt);
+
+ out:
+	fixture_close(f);
+	module_unload("l16");
+	conf_config()->audio.telev_multirate = false;
+
+	return err;
+}
+
+
+int test_call_dtmf(void)
+{
+	int err;
+
+	err = test_call_dtmf_param(8000, false);
+	TEST_ERR(err);
+
+	err = test_call_dtmf_param(48000, false);
+	TEST_ERR(err);
+
+	err = test_call_dtmf_param(48000, true);
+	TEST_ERR(err);
+
+	err = test_call_dtmf_telev_pt();
+	TEST_ERR(err);
+
+ out:
 	return err;
 }
 
