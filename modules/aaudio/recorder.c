@@ -117,7 +117,8 @@ static void* restart_recorder_stream(void* data) {
 	}
 
 	if (st->recorderStream &&
-	    AAudioStream_getState(st->recorderStream) != AAUDIO_STREAM_STATE_DISCONNECTED) {
+	    AAudioStream_getState(st->recorderStream) !=
+	    AAUDIO_STREAM_STATE_DISCONNECTED) {
 		pthread_mutex_unlock(&st->lock);
 		mem_deref(st);
 		return NULL;
