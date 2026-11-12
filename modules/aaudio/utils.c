@@ -4,25 +4,23 @@
  * Copyright (C) 2024 Juha Heinanen
  */
 
-#include <pthread.h>
 #include <re.h>
 #include <baresip.h>
 #include "aaudio.h"
 
 
-void aaudio_close_stream(pthread_mutex_t *lock, AAudioStream **streamp) {
+void aaudio_close_stream(mtx_t *mtx, AAudioStream **streamp) {
 	AAudioStream *stream = NULL;
 
-	if (lock)
-		pthread_mutex_lock(lock);
+	if (mtx)
+		mtx_lock(mtx);
 	if (streamp && *streamp) {
 		stream = *streamp;
 		*streamp = NULL;
 	}
-	if (lock)
-		pthread_mutex_unlock(lock);
+	if (mtx)
+		mtx_unlock(mtx);
 
-	if (stream) {
+	if (stream)
 		AAudioStream_close(stream);
-	}
 }
