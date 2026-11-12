@@ -114,7 +114,7 @@ static void errorCallback(AAudioStream *stream, void *userData,
 		res = re_thread_async_id((intptr_t)st, restart_player_work,
 					 restart_player_done, st);
 		if (res) {
-			warning("aaudio: player: error queueing async task: %m\n",
+			warning("aaudio: player: error async task: %m\n",
 				res);
 			return;
 		}

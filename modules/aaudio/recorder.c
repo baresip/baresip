@@ -116,7 +116,7 @@ static void restart_recorder_done(int err, void *arg) {
 	aaudio_result_t result;
 
 	if (err) {
-		warning("aaudio: recorder: failed to reopen stream: %m\n", err);
+		warning("aaudio: recorder: reopen failed: %m\n", err);
 		return;
 	}
 
@@ -140,7 +140,7 @@ static void errorCallback(AAudioStream *stream, void *userData,
 		res = re_thread_async_id((intptr_t)st, restart_recorder_work,
 					 restart_recorder_done, st);
 		if (res) {
-			warning("aaudio: recorder: error queueing async task: %m\n",
+			warning("aaudio: recorder: error async task: %m\n",
 				res);
 			return;
 		}
