@@ -91,7 +91,8 @@ static void* restart_player_stream(void* data) {
 	}
 
 	if (st->playerStream &&
-	    AAudioStream_getState(st->playerStream) != AAUDIO_STREAM_STATE_DISCONNECTED) {
+	    AAudioStream_getState(st->playerStream) !=
+	    AAUDIO_STREAM_STATE_DISCONNECTED) {
 		mtx_unlock(st->mtx);
 		mem_deref(st);
 		return NULL;
