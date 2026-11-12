@@ -62,7 +62,7 @@ struct account {
 	uint32_t ptime;              /**< Configured packet time in [ms]     */
 	uint32_t regint;             /**< Registration interval in [seconds] */
 	uint32_t fbregint;           /**< Fallback R. interval in [seconds]  */
-	uint32_t rwait;              /**< R. Int. in [%] from proxy expiry   */
+	struct range rwait;          /**< Relativ expiry range in [%]        */
 	uint32_t pubint;             /**< Publication interval in [seconds]  */
 	uint32_t prio;               /**< Prio for serial registration       */
 	uint16_t tcpsrcport;         /**< TCP source port for SIP            */

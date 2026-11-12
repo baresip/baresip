@@ -259,8 +259,13 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 	if (err)
 		return err;
 
-	if (acc && acc->rwait)
-		err = sipreg_set_rwait(reg->sipreg, acc->rwait);
+	if (acc && acc->rwait.min) {
+		uint32_t range = acc->rwait.max - acc->rwait.min + 1;
+		uint32_t rwait = acc->rwait.min + (rand_u32() % range);
+		debug("reg: %s, registration interval %u seconds\n",
+		      account_aor(acc), regint * rwait / 100);
+		err = sipreg_set_rwait(reg->sipreg, rwait);
+	}
 
 	if (acc && account_fbregint(acc))
 		err = sipreg_set_fbregint(reg->sipreg, account_fbregint(acc));

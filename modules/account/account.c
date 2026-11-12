@@ -80,7 +80,7 @@ static int account_write_template(const char *file)
 			 "#    ;regint=3600\n"
 			 "#    ;regq=0.5\n"
 			 "#    ;rtcp_mux={yes, no}  # default: no\n"
-			 "#    ;rwait=90\n"
+			 "#    ;rwait=70-90\n"
 			 "#    ;sip_autoanswer={yes, no}\n"
 			 "#    ;sip_autoanswer_beep={off, on, local}\n"
 			 "#    ;sip_autoredirect={yes, no}  # default: no\n"
