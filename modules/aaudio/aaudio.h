@@ -5,8 +5,10 @@
  */
 
 #include <aaudio/AAudio.h>
+#include <re.h>
+#include <baresip.h>
 
-void aaudio_close_stream(AAudioStream *stream);
+void aaudio_close_stream(AAudioStream **streamp);
 
 int aaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 			struct auplay_prm *prm, const char *device,

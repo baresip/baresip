@@ -8,6 +8,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
+#include <pthread.h>
 
 #include <re.h>
 #include <rem.h>
@@ -17,6 +19,7 @@
 
 
 struct ausrc_st {
+	pthread_mutex_t lock;
 	AAudioStream *recorderStream;
 	ausrc_read_h *rh;
 	void *arg;
@@ -27,6 +30,7 @@ struct ausrc_st {
 	size_t  sampc;
 	uint64_t samps;
 	int32_t device_id;
+	bool shutdown;
 };
 
 
@@ -38,11 +42,16 @@ static void ausrc_destructor(void *arg)
 	struct ausrc_st *st = arg;
 
 	info("aaudio: recorder: closing stream\n");
-	aaudio_close_stream(st->recorderStream);
 
-	mem_deref(st->sampv);
+	pthread_mutex_lock(&st->lock);
+	st->shutdown = true;
 	st->rh = NULL;
 	st->errh = NULL;
+	aaudio_close_stream(&st->recorderStream);
+	pthread_mutex_unlock(&st->lock);
+
+	pthread_mutex_destroy(&st->lock);
+	mem_deref(st->sampv);
 }
 
 
@@ -62,14 +71,22 @@ static void ausrc_destructor(void *arg)
 
 	size_t sampc = 0;
 
+	pthread_mutex_lock(&st->lock);
+	if (st->shutdown || !st->rh) {
+		pthread_mutex_unlock(&st->lock);
+		return AAUDIO_CALLBACK_RESULT_STOP;
+	}
+
 	sampc = numFrames;
 	if (sampc > st->sampc) {
 		st->sampv = mem_realloc(st->sampv, st->sampsz * sampc);
 		st->sampc = sampc;
 	}
 
-	if (!st->sampv)
+	if (!st->sampv) {
+		pthread_mutex_unlock(&st->lock);
 		return ENOMEM;
+	}
 
 	auframe_init(&af, st->src_prm.fmt, st->sampv, sampc,
 		     st->src_prm.srate, st->src_prm.ch);
@@ -81,7 +98,9 @@ static void ausrc_destructor(void *arg)
 	st->samps += sampc;
 	st->rh(&af, st->arg);
 
-	return 0;
+	pthread_mutex_unlock(&st->lock);
+
+	return AAUDIO_CALLBACK_RESULT_CONTINUE;
 }
 
 
@@ -89,11 +108,28 @@ static void* restart_recorder_stream(void* data) {
 	aaudio_result_t result;
 	struct ausrc_st *st = data;
 
-	AAudioStream_close(st->recorderStream);
+	pthread_mutex_lock(&st->lock);
+
+	if (st->shutdown) {
+		pthread_mutex_unlock(&st->lock);
+		mem_deref(st);
+		return NULL;
+	}
+
+	if (st->recorderStream &&
+	    AAudioStream_getState(st->recorderStream) != AAUDIO_STREAM_STATE_DISCONNECTED) {
+		pthread_mutex_unlock(&st->lock);
+		mem_deref(st);
+		return NULL;
+	}
+
+	aaudio_close_stream(&st->recorderStream);
 
 	result = open_recorder_stream(st);
 	if (result != AAUDIO_OK) {
 		warning("aaudio: recorder: failed to open stream\n");
+		pthread_mutex_unlock(&st->lock);
+		mem_deref(st);
 		return NULL;
 	}
 
@@ -103,7 +139,10 @@ static void* restart_recorder_stream(void* data) {
 	else
 		info("aaudio: recorder: stream started\n");
 
-	pthread_exit(NULL);
+	pthread_mutex_unlock(&st->lock);
+
+	mem_deref(st);
+	return NULL;
 }
 
 
@@ -117,13 +156,24 @@ static void errorCallback(AAudioStream *stream, void *userData,
 	aaudio_stream_state_t streamState = AAudioStream_getState(stream);
 	if (streamState == AAUDIO_STREAM_STATE_DISCONNECTED) {
 		info("aaudio: recorder: stream disconnected\n");
+
+		pthread_mutex_lock(&st->lock);
+		if (st->shutdown) {
+			pthread_mutex_unlock(&st->lock);
+			return;
+		}
+		st = mem_ref(st);
+		pthread_mutex_unlock(&st->lock);
+
 		res = pthread_create(&thread_id, NULL,
 				     restart_recorder_stream, (void *)st);
 		if (res) {
 			warning("aaudio: recorder: error creating thread: "
 				"%d\n",	res);
+			mem_deref(st);
 			return;
 		}
+		pthread_detach(thread_id);
 		info("aaudio: recorder: created new thread (%u)\n",
 		     thread_id);
 	}
@@ -239,6 +289,11 @@ int aaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
+	if (pthread_mutex_init(&st->lock, NULL) != 0) {
+		mem_deref(st);
+		return ENOMEM;
+	}
+
 	st->src_prm = *prm;
 
 	/*
@@ -274,17 +329,21 @@ int aaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		goto out;
 	}
 
-	st->rh  = rh;
+	st->rh   = rh;
 	st->errh = errh;
-	st->arg = arg;
+	st->arg  = arg;
 
+	pthread_mutex_lock(&st->lock);
 	result = open_recorder_stream(st);
-	if (result != AAUDIO_OK)
+	if (result != AAUDIO_OK) {
+		pthread_mutex_unlock(&st->lock);
 		goto out;
+	}
 
 	result = AAudioStream_requestStart(st->recorderStream);
 	if (result != AAUDIO_OK) {
 		warning("aaudio: recorder: failed to start stream\n");
+		pthread_mutex_unlock(&st->lock);
 		goto out;
 	}
 
@@ -292,10 +351,10 @@ int aaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		     AAudioStream_getSessionId(st->recorderStream));
 
 	info("aaudio: recorder: stream started\n");
+	pthread_mutex_unlock(&st->lock);
 
   out:
 	if (result != AAUDIO_OK) {
-		aaudio_close_stream(st->recorderStream);
 		mem_deref(st);
 	}
 	else
