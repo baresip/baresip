@@ -36,7 +36,7 @@
 #    ;regint=3600
 #    ;regq=0.5
 #    ;rtcp_mux={yes, no}  # default: no
-#    ;rwait=90
+#    ;rwait=70-90
 #    ;sip_autoanswer={yes, no}
 #    ;sip_autoanswer_beep={off, on, local}
 #    ;sip_autoredirect={yes, no}  # default: no
