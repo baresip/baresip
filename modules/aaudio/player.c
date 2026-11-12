@@ -94,7 +94,8 @@ static void* restart_player_stream(void* data) {
 	}
 
 	if (st->playerStream &&
-	    AAudioStream_getState(st->playerStream) != AAUDIO_STREAM_STATE_DISCONNECTED) {
+	    AAudioStream_getState(st->playerStream) !=
+	    AAUDIO_STREAM_STATE_DISCONNECTED) {
 		pthread_mutex_unlock(&st->lock);
 		mem_deref(st);
 		return NULL;
