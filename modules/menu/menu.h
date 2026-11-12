@@ -30,6 +30,7 @@ struct menu{
 	enum statmode statmode;       /**< Status mode                    */
 	bool clean_number;            /**< Remove -/() from diald numbers */
 	char *invite_uri;             /**< Follow up invite URI           */
+	enum bevent_ev invite_reason; /**< Reason for follow up invite    */
 	char redial_aor[128];
 	int32_t adelay;               /**< Outgoing auto answer delay     */
 	char *ansval;                 /**< Call-Info/Alert-Info value     */
