@@ -7,8 +7,10 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #include <re.h>
+#include <re_atomic.h>
 #include <rem.h>
 #include <baresip.h>
 
@@ -22,6 +24,8 @@ struct auplay_st {
 	struct auplay_prm play_prm;
 	size_t sampsz;
 	int32_t device_id;
+	RE_ATOMIC bool shutdown;
+	RE_ATOMIC bool restarting;
 };
 
 
@@ -33,7 +37,15 @@ static void auplay_destructor(void *arg)
 	struct auplay_st *st = arg;
 
 	info("aaudio: player: closing stream\n");
-	aaudio_close_stream(st->playerStream);
+
+	re_atomic_rlx_set(&st->shutdown, true);
+
+	re_thread_async_cancel((intptr_t)st);
+
+	if (st->playerStream) {
+		AAudioStream_close(st->playerStream);
+		st->playerStream = NULL;
+	}
 
 	st->wh = NULL;
 }
@@ -59,16 +71,44 @@ static void auplay_destructor(void *arg)
 }
 
 
-static void* restart_player_stream(void* data) {
+static int restart_player_work(void *arg) {
+	struct auplay_st *st = arg;
 	aaudio_result_t result;
-	struct auplay_st *st = data;
 
-	AAudioStream_close(st->playerStream);
+	if (re_atomic_rlx(&st->shutdown)) {
+		re_atomic_rlx_set(&st->restarting, false);
+		return ECANCELED;
+	}
+
+	if (st->playerStream) {
+		AAudioStream_close(st->playerStream);
+		st->playerStream = NULL;
+	}
 
 	result = open_player_stream(st);
 	if (result != AAUDIO_OK) {
-		warning("aaudio: failed to open player stream\n");
-		return NULL;
+		re_atomic_rlx_set(&st->restarting, false);
+		warning("aaudio: player: failed to open stream\n");
+		return ENODEV;
+	}
+
+	return 0;
+}
+
+
+static void restart_player_done(int err, void *arg) {
+	struct auplay_st *st = arg;
+	aaudio_result_t result;
+
+	if (re_atomic_rlx(&st->shutdown)) {
+		re_atomic_rlx_set(&st->restarting, false);
+		return;
+	}
+
+	if (err) {
+		re_atomic_rlx_set(&st->restarting, false);
+		warning("aaudio: player: open failed: %m\n", err);
+		return;
 	}
 
 	result = AAudioStream_requestStart(st->playerStream);
@@ -77,7 +117,7 @@ static void* restart_player_stream(void* data) {
 	else
 		info("aaudio: player: stream started\n");
 
-	pthread_exit(NULL);
+	re_atomic_rlx_set(&st->restarting, false);
 }
 
 
@@ -85,20 +125,26 @@ static void errorCallback(AAudioStream *stream, void *userData,
 			  aaudio_result_t error) {
 	struct auplay_st *st = userData;
 	(void)error;
-	pthread_t thread_id;
 	int res;
 
 	aaudio_stream_state_t streamState = AAudioStream_getState(stream);
 	if (streamState == AAUDIO_STREAM_STATE_DISCONNECTED) {
 		info("aaudio: player: stream disconnected\n");
-		res = pthread_create(&thread_id, NULL, restart_player_stream,
-				     (void *)st);
-		if (res) {
-			warning("aaudio: player: error creating thread: %d\n",
-				res);
+
+		if (re_atomic_rlx(&st->shutdown))
 			return;
+
+		if (re_atomic_exchange(&st->restarting, true,
+				       re_memory_order_relaxed))
+			return;
+
+		res = re_thread_async_id((intptr_t)st, restart_player_work,
+					 restart_player_done, st);
+		if (res) {
+			re_atomic_rlx_set(&st->restarting, false);
+			warning("aaudio: player: error queueing task: %m\n",
+				res);
 		}
-		info("aaudio: player: created new thread (%u)\n", thread_id);
 	}
 }
 
@@ -218,13 +264,11 @@ int aaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 				"'%s', using default\n", dev);
 			st->device_id = -1;
 		}
-		else {
+		else
 			st->device_id = (int32_t)val;
-		}
 	}
-	else {
+	else
 		st->device_id = -1;
-	}
 
 	info("aaudio: player: using device id %d\n", st->device_id);
 
@@ -247,10 +291,8 @@ int aaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	info ("aaudio: player: stream started\n");
 
   out:
-	if (result != AAUDIO_OK) {
-		aaudio_close_stream(st->playerStream);
+	if (result != AAUDIO_OK)
 		mem_deref(st);
-	}
 	else
 		*stp = st;
 

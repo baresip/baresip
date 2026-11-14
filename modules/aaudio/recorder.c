@@ -8,8 +8,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #include <re.h>
+#include <re_atomic.h>
 #include <rem.h>
 #include <baresip.h>
 
@@ -27,6 +29,8 @@ struct ausrc_st {
 	size_t  sampc;
 	uint64_t samps;
 	int32_t device_id;
+	RE_ATOMIC bool shutdown;
+	RE_ATOMIC bool restarting;
 };
 
 
@@ -38,7 +42,15 @@ static void ausrc_destructor(void *arg)
 	struct ausrc_st *st = arg;
 
 	info("aaudio: recorder: closing stream\n");
-	aaudio_close_stream(st->recorderStream);
+
+	re_atomic_rlx_set(&st->shutdown, true);
+
+	re_thread_async_cancel((intptr_t)st);
+
+	if (st->recorderStream) {
+		AAudioStream_close(st->recorderStream);
+		st->recorderStream = NULL;
+	}
 
 	mem_deref(st->sampv);
 	st->rh = NULL;
@@ -85,16 +97,44 @@ static void ausrc_destructor(void *arg)
 }
 
 
-static void* restart_recorder_stream(void* data) {
+static int restart_recorder_work(void *arg) {
+	struct ausrc_st *st = arg;
 	aaudio_result_t result;
-	struct ausrc_st *st = data;
 
-	AAudioStream_close(st->recorderStream);
+	if (re_atomic_rlx(&st->shutdown)) {
+		re_atomic_rlx_set(&st->restarting, false);
+		return ECANCELED;
+	}
+
+	if (st->recorderStream) {
+		AAudioStream_close(st->recorderStream);
+		st->recorderStream = NULL;
+	}
 
 	result = open_recorder_stream(st);
 	if (result != AAUDIO_OK) {
+		re_atomic_rlx_set(&st->restarting, false);
 		warning("aaudio: recorder: failed to open stream\n");
-		return NULL;
+		return ENODEV;
+	}
+
+	return 0;
+}
+
+
+static void restart_recorder_done(int err, void *arg) {
+	struct ausrc_st *st = arg;
+	aaudio_result_t result;
+
+	if (re_atomic_rlx(&st->shutdown)) {
+		re_atomic_rlx_set(&st->restarting, false);
+		return;
+	}
+
+	if (err) {
+		re_atomic_rlx_set(&st->restarting, false);
+		warning("aaudio: recorder: open failed: %m\n", err);
+		return;
 	}
 
 	result = AAudioStream_requestStart(st->recorderStream);
@@ -103,7 +143,7 @@ static void* restart_recorder_stream(void* data) {
 	else
 		info("aaudio: recorder: stream started\n");
 
-	pthread_exit(NULL);
+	re_atomic_rlx_set(&st->restarting, false);
 }
 
 
@@ -111,21 +151,26 @@ static void errorCallback(AAudioStream *stream, void *userData,
 			  aaudio_result_t error) {
 	struct ausrc_st *st = userData;
 	(void)error;
-	pthread_t thread_id;
 	int res;
 
 	aaudio_stream_state_t streamState = AAudioStream_getState(stream);
 	if (streamState == AAUDIO_STREAM_STATE_DISCONNECTED) {
 		info("aaudio: recorder: stream disconnected\n");
-		res = pthread_create(&thread_id, NULL,
-				     restart_recorder_stream, (void *)st);
-		if (res) {
-			warning("aaudio: recorder: error creating thread: "
-				"%d\n",	res);
+
+		if (re_atomic_rlx(&st->shutdown))
 			return;
+
+		if (re_atomic_exchange(&st->restarting, true,
+				       re_memory_order_relaxed))
+			return;
+
+		res = re_thread_async_id((intptr_t)st, restart_recorder_work,
+					 restart_recorder_done, st);
+		if (res) {
+			re_atomic_rlx_set(&st->restarting, false);
+			warning("aaudio: recorder: error queueing task: %m\n",
+				res);
 		}
-		info("aaudio: recorder: created new thread (%u)\n",
-		     thread_id);
 	}
 }
 
@@ -255,13 +300,11 @@ int aaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 				"'%s', using default\n", dev);
 			st->device_id = -1;
 		}
-		else {
+		else
 			st->device_id = (int32_t)val;
-		}
 	}
-	else {
+	else
 		st->device_id = -1;
-	}
 
 	info("aaudio: recorder: using device id %d\n", st->device_id);
 
@@ -274,9 +317,9 @@ int aaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		goto out;
 	}
 
-	st->rh  = rh;
+	st->rh   = rh;
 	st->errh = errh;
-	st->arg = arg;
+	st->arg  = arg;
 
 	result = open_recorder_stream(st);
 	if (result != AAUDIO_OK)
@@ -294,10 +337,8 @@ int aaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	info("aaudio: recorder: stream started\n");
 
   out:
-	if (result != AAUDIO_OK) {
-		aaudio_close_stream(st->recorderStream);
+	if (result != AAUDIO_OK)
 		mem_deref(st);
-	}
 	else
 		*stp = st;
 
