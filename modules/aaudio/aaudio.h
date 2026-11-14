@@ -6,6 +6,7 @@
 
 #include <aaudio/AAudio.h>
 #include <re.h>
+#include <re_atomic.h>
 #include <baresip.h>
 
 void aaudio_close_stream(AAudioStream *stream);

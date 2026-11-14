@@ -10,6 +10,7 @@
 #include <stdbool.h>
 
 #include <re.h>
+#include <re_atomic.h>
 #include <rem.h>
 #include <baresip.h>
 
@@ -17,15 +18,14 @@
 
 
 struct auplay_st {
-	mtx_t *mtx;
 	AAudioStream *playerStream;
 	auplay_write_h *wh;
 	void *arg;
 	struct auplay_prm play_prm;
 	size_t sampsz;
 	int32_t device_id;
-	bool shutdown;
-	bool restarting;
+	RE_ATOMIC bool shutdown;
+	RE_ATOMIC bool restarting;
 };
 
 
@@ -38,16 +38,9 @@ static void auplay_destructor(void *arg)
 
 	info("aaudio: player: closing stream\n");
 
-	if (st->mtx) {
-		mtx_lock(st->mtx);
-		st->shutdown = true;
-		mtx_unlock(st->mtx);
-	}
+	re_atomic_rlx_set(&st->shutdown, true);
 
 	re_thread_async_cancel((intptr_t)st);
-
-	if (st->mtx)
-		mtx_lock(st->mtx);
 
 	if (st->playerStream) {
 		AAudioStream_close(st->playerStream);
@@ -55,11 +48,6 @@ static void auplay_destructor(void *arg)
 	}
 
 	st->wh = NULL;
-
-	if (st->mtx)
-		mtx_unlock(st->mtx);
-
-	mem_deref(st->mtx);
 }
 
 
@@ -87,11 +75,8 @@ static int restart_player_work(void *arg) {
 	struct auplay_st *st = arg;
 	aaudio_result_t result;
 
-	mtx_lock(st->mtx);
-
-	if (st->shutdown) {
-		st->restarting = false;
-		mtx_unlock(st->mtx);
+	if (re_atomic_rlx(&st->shutdown)) {
+		re_atomic_rlx_set(&st->restarting, false);
 		return ECANCELED;
 	}
 
@@ -102,13 +87,11 @@ static int restart_player_work(void *arg) {
 
 	result = open_player_stream(st);
 	if (result != AAUDIO_OK) {
-		st->restarting = false;
+		re_atomic_rlx_set(&st->restarting, false);
 		warning("aaudio: player: failed to open stream\n");
-		mtx_unlock(st->mtx);
 		return ENODEV;
 	}
 
-	mtx_unlock(st->mtx);
 	return 0;
 }
 
@@ -117,18 +100,14 @@ static void restart_player_done(int err, void *arg) {
 	struct auplay_st *st = arg;
 	aaudio_result_t result;
 
-	mtx_lock(st->mtx);
-
-	if (st->shutdown) {
-		st->restarting = false;
-		mtx_unlock(st->mtx);
+	if (re_atomic_rlx(&st->shutdown)) {
+		re_atomic_rlx_set(&st->restarting, false);
 		return;
 	}
 
 	if (err) {
-		st->restarting = false;
+		re_atomic_rlx_set(&st->restarting, false);
 		warning("aaudio: player: open failed: %m\n", err);
-		mtx_unlock(st->mtx);
 		return;
 	}
 
@@ -138,8 +117,7 @@ static void restart_player_done(int err, void *arg) {
 	else
 		info("aaudio: player: stream started\n");
 
-	st->restarting = false;
-	mtx_unlock(st->mtx);
+	re_atomic_rlx_set(&st->restarting, false);
 }
 
 
@@ -153,23 +131,17 @@ static void errorCallback(AAudioStream *stream, void *userData,
 	if (streamState == AAUDIO_STREAM_STATE_DISCONNECTED) {
 		info("aaudio: player: stream disconnected\n");
 
-		if (!st->mtx)
+		if (re_atomic_rlx(&st->shutdown))
 			return;
 
-		mtx_lock(st->mtx);
-		if (st->shutdown || st->restarting) {
-			mtx_unlock(st->mtx);
+		if (re_atomic_exchange(&st->restarting, true,
+				       re_memory_order_relaxed))
 			return;
-		}
-		st->restarting = true;
-		mtx_unlock(st->mtx);
 
 		res = re_thread_async_id((intptr_t)st, restart_player_work,
 					 restart_player_done, st);
 		if (res) {
-			mtx_lock(st->mtx);
-			st->restarting = false;
-			mtx_unlock(st->mtx);
+			re_atomic_rlx_set(&st->restarting, false);
 			warning("aaudio: player: error queueing task: %m\n",
 				res);
 		}
@@ -253,7 +225,6 @@ int aaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 {
 	struct auplay_st *st;
 	aaudio_result_t result;
-	int err;
 
 	if (!stp || !ap || !prm || !wh)
 		return EINVAL;
@@ -277,12 +248,6 @@ int aaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if (!st)
 		return ENOMEM;
 
-	err = mutex_alloc(&st->mtx);
-	if (err) {
-		mem_deref(st);
-		return err;
-	}
-
 	st->play_prm = *prm;
 
 	/*
@@ -299,13 +264,11 @@ int aaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 				"'%s', using default\n", dev);
 			st->device_id = -1;
 		}
-		else {
+		else
 			st->device_id = (int32_t)val;
-		}
 	}
-	else {
+	else
 		st->device_id = -1;
-	}
 
 	info("aaudio: player: using device id %d\n", st->device_id);
 
@@ -328,9 +291,8 @@ int aaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	info ("aaudio: player: stream started\n");
 
   out:
-	if (result != AAUDIO_OK) {
+	if (result != AAUDIO_OK)
 		mem_deref(st);
-	}
 	else
 		*stp = st;
 

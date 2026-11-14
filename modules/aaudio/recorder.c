@@ -11,6 +11,7 @@
 #include <stdbool.h>
 
 #include <re.h>
+#include <re_atomic.h>
 #include <rem.h>
 #include <baresip.h>
 
@@ -18,7 +19,6 @@
 
 
 struct ausrc_st {
-	mtx_t *mtx;
 	AAudioStream *recorderStream;
 	ausrc_read_h *rh;
 	void *arg;
@@ -29,8 +29,8 @@ struct ausrc_st {
 	size_t  sampc;
 	uint64_t samps;
 	int32_t device_id;
-	bool shutdown;
-	bool restarting;
+	RE_ATOMIC bool shutdown;
+	RE_ATOMIC bool restarting;
 };
 
 
@@ -43,16 +43,9 @@ static void ausrc_destructor(void *arg)
 
 	info("aaudio: recorder: closing stream\n");
 
-	if (st->mtx) {
-		mtx_lock(st->mtx);
-		st->shutdown = true;
-		mtx_unlock(st->mtx);
-	}
+	re_atomic_rlx_set(&st->shutdown, true);
 
 	re_thread_async_cancel((intptr_t)st);
-
-	if (st->mtx)
-		mtx_lock(st->mtx);
 
 	if (st->recorderStream) {
 		AAudioStream_close(st->recorderStream);
@@ -62,11 +55,6 @@ static void ausrc_destructor(void *arg)
 	mem_deref(st->sampv);
 	st->rh = NULL;
 	st->errh = NULL;
-
-	if (st->mtx)
-		mtx_unlock(st->mtx);
-
-	mem_deref(st->mtx);
 }
 
 
@@ -113,11 +101,8 @@ static int restart_recorder_work(void *arg) {
 	struct ausrc_st *st = arg;
 	aaudio_result_t result;
 
-	mtx_lock(st->mtx);
-
-	if (st->shutdown) {
-		st->restarting = false;
-		mtx_unlock(st->mtx);
+	if (re_atomic_rlx(&st->shutdown)) {
+		re_atomic_rlx_set(&st->restarting, false);
 		return ECANCELED;
 	}
 
@@ -128,13 +113,11 @@ static int restart_recorder_work(void *arg) {
 
 	result = open_recorder_stream(st);
 	if (result != AAUDIO_OK) {
-		st->restarting = false;
+		re_atomic_rlx_set(&st->restarting, false);
 		warning("aaudio: recorder: failed to open stream\n");
-		mtx_unlock(st->mtx);
 		return ENODEV;
 	}
 
-	mtx_unlock(st->mtx);
 	return 0;
 }
 
@@ -143,18 +126,14 @@ static void restart_recorder_done(int err, void *arg) {
 	struct ausrc_st *st = arg;
 	aaudio_result_t result;
 
-	mtx_lock(st->mtx);
-
-	if (st->shutdown) {
-		st->restarting = false;
-		mtx_unlock(st->mtx);
+	if (re_atomic_rlx(&st->shutdown)) {
+		re_atomic_rlx_set(&st->restarting, false);
 		return;
 	}
 
 	if (err) {
-		st->restarting = false;
+		re_atomic_rlx_set(&st->restarting, false);
 		warning("aaudio: recorder: open failed: %m\n", err);
-		mtx_unlock(st->mtx);
 		return;
 	}
 
@@ -164,8 +143,7 @@ static void restart_recorder_done(int err, void *arg) {
 	else
 		info("aaudio: recorder: stream started\n");
 
-	st->restarting = false;
-	mtx_unlock(st->mtx);
+	re_atomic_rlx_set(&st->restarting, false);
 }
 
 
@@ -179,23 +157,17 @@ static void errorCallback(AAudioStream *stream, void *userData,
 	if (streamState == AAUDIO_STREAM_STATE_DISCONNECTED) {
 		info("aaudio: recorder: stream disconnected\n");
 
-		if (!st->mtx)
+		if (re_atomic_rlx(&st->shutdown))
 			return;
 
-		mtx_lock(st->mtx);
-		if (st->shutdown || st->restarting) {
-			mtx_unlock(st->mtx);
+		if (re_atomic_exchange(&st->restarting, true,
+				       re_memory_order_relaxed))
 			return;
-		}
-		st->restarting = true;
-		mtx_unlock(st->mtx);
 
 		res = re_thread_async_id((intptr_t)st, restart_recorder_work,
 					 restart_recorder_done, st);
 		if (res) {
-			mtx_lock(st->mtx);
-			st->restarting = false;
-			mtx_unlock(st->mtx);
+			re_atomic_rlx_set(&st->restarting, false);
 			warning("aaudio: recorder: error queueing task: %m\n",
 				res);
 		}
@@ -289,7 +261,6 @@ int aaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 {
 	struct ausrc_st *st;
 	aaudio_result_t result;
-	int err;
 
 	if (!stp || !as || !prm || !rh)
 		return EINVAL;
@@ -313,12 +284,6 @@ int aaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	err = mutex_alloc(&st->mtx);
-	if (err) {
-		mem_deref(st);
-		return err;
-	}
-
 	st->src_prm = *prm;
 
 	/*
@@ -335,13 +300,11 @@ int aaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 				"'%s', using default\n", dev);
 			st->device_id = -1;
 		}
-		else {
+		else
 			st->device_id = (int32_t)val;
-		}
 	}
-	else {
+	else
 		st->device_id = -1;
-	}
 
 	info("aaudio: recorder: using device id %d\n", st->device_id);
 
@@ -374,9 +337,8 @@ int aaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	info("aaudio: recorder: stream started\n");
 
   out:
-	if (result != AAUDIO_OK) {
+	if (result != AAUDIO_OK)
 		mem_deref(st);
-	}
 	else
 		*stp = st;
 

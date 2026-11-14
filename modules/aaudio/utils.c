@@ -10,7 +10,6 @@
 
 
 void aaudio_close_stream(AAudioStream *stream) {
-	if (stream) {
+	if (stream)
 		AAudioStream_close(stream);
-	}
 }
