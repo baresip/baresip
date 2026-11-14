@@ -196,7 +196,7 @@ static void errorCallback(AAudioStream *stream, void *userData,
 			mtx_lock(st->mtx);
 			st->restarting = false;
 			mtx_unlock(st->mtx);
-			warning("aaudio: recorder: error queueing async task: %m\n",
+			warning("aaudio: recorder: error queueing task: %m\n",
 				res);
 		}
 	}
