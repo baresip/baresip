@@ -1985,7 +1985,7 @@ out:
 }
 
 
-static int test_call_rtcp_base(bool rtcp_mux)
+static int test_call_rtcp_base(const char *prm)
 {
 	struct fixture fix, *f = &fix;
 	struct cancel_rule *cr;
@@ -1994,13 +1994,7 @@ static int test_call_rtcp_base(bool rtcp_mux)
 	err = module_load(".", "ausine");
 	TEST_ERR(err);
 
-	/* Use a low packet time, so the test completes quickly */
-	if (rtcp_mux) {
-		fixture_init_prm(f, ";ptime=1;rtcp_mux=yes");
-	}
-	else {
-		fixture_init_prm(f, ";ptime=1");
-	}
+	fixture_init_prm(f, prm);
 
 	conf_config()->avt.rtp_stats = true;
 	cancel_rule_new(BEVENT_CALL_ESTABLISHED, f->b.ua, 1, 0, 1);
@@ -2056,8 +2050,16 @@ int test_call_rtcp(void)
 {
 	int err = 0;
 
-	err |= test_call_rtcp_base(false);
-	err |= test_call_rtcp_base(true);
+	/* Use a low packet time, so the test completes quickly */
+	err |= test_call_rtcp_base(";ptime=1");
+	err |= test_call_rtcp_base(";ptime=1;rtcp_mux=yes");
+
+	/* SDES-SRTP and a media NAT that waits for its connection */
+	mock_mnat_register(baresip_mnatl());
+	err |= module_load(".", "srtp");
+	err |= test_call_rtcp_base(";ptime=1;medianat=XNAT;mediaenc=srtp");
+	module_unload("srtp");
+	mock_mnat_unregister();
 
 	return err;
 }
