@@ -714,7 +714,7 @@ int test_call_max(void)
 }
 
 
-/* crate 8000 uses G.711, crate 48000 the mock codec */
+/* G.711 for 8000 Hz, else the mock codec */
 static int test_call_dtmf_param(uint32_t crate, bool dtmf_multirate)
 {
 	struct fixture fix, *f = &fix;
@@ -725,7 +725,7 @@ static int test_call_dtmf_param(uint32_t crate, bool dtmf_multirate)
 
 	conf_config()->audio.telev_multirate = dtmf_multirate;
 
-	/* before the fixture: accounts look up their codecs when created */
+	/* Register before the accounts are created */
 	if (mock)
 		mock_aucodec_register();
 
@@ -749,7 +749,7 @@ static int test_call_dtmf_param(uint32_t crate, bool dtmf_multirate)
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
-	/* The digits arrive either way: check the negotiated clock rates */
+	/* Check the negotiated clock rates */
 	ac = audio_codec(call_audio(ua_call(f->a.ua)), true);
 	ASSERT_TRUE(ac != NULL);
 	ASSERT_EQ(crate, ac->crate);
@@ -796,12 +796,14 @@ static int test_call_dtmf_param(uint32_t crate, bool dtmf_multirate)
 }
 
 
-/* Three clock rates above 8000 Hz: no payload type may be offered twice */
+/* Telephone-events in codec order, each on its own payload type */
 static int test_call_dtmf_telev_pt(void)
 {
 	struct fixture fix, *f = &fix;
 	const struct list *lfmtl;
 	const struct sdp_format *telev;
+	const uint32_t ratev[] = {48000, 8000, 32000, 16000};
+	unsigned n = 0;
 	int err = 0;
 
 	conf_config()->audio.telev_multirate = true;
@@ -810,7 +812,7 @@ static int test_call_dtmf_telev_pt(void)
 	TEST_ERR(err);
 
 	fixture_init_prm(f, ";audio_codecs="
-			 "l16/48000/1,l16/32000/1,l16/16000/1");
+			 "l16/48000/1,pcmu,l16/32000/1,l16/16000/1");
 
 	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
 	TEST_ERR(err);
@@ -828,7 +830,15 @@ static int test_call_dtmf_telev_pt(void)
 
 			ASSERT_TRUE(fmt->pt != other->pt);
 		}
+
+		if (str_casecmp(fmt->name, "telephone-event"))
+			continue;
+
+		ASSERT_TRUE(n < RE_ARRAY_SIZE(ratev));
+		ASSERT_EQ(ratev[n], fmt->srate);
+		++n;
 	}
+	ASSERT_EQ((unsigned)RE_ARRAY_SIZE(ratev), n);
 
 	/* telephone-event/8000 keeps telev_pt */
 	telev = sdp_media_format(stream_sdpmedia(audio_strm(

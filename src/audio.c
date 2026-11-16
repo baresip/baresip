@@ -487,7 +487,7 @@ static const struct sdp_format *telev_rformat(const struct audio *a,
 
 	if (tx->ac) {
 		fmt = sdp_media_format_apply(m, false, NULL, -1, telev_rtpfmt,
-					     (int32_t)tx->ac->crate, -1,
+					     tx->ac->crate, -1,
 					     telev_sup_handler, NULL);
 		if (fmt)
 			return fmt;
@@ -679,65 +679,64 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 }
 
 
+/* Adds telephone-event/srate, on telev_pt for 8000 Hz if free */
+static int add_telev_format(struct sdp_media *m, uint32_t srate, uint32_t pt)
+{
+	char id[11] = "";
+	int dpt;
+
+	if (srate == TELEV_SRATE && !sdp_media_lformat(m, (int)pt)) {
+		(void)re_snprintf(id, sizeof(id), "%u", pt);
+	}
+	else {
+		for (dpt = 96; dpt <= 127; dpt++) {
+			if (dpt != (int)pt && !sdp_media_lformat(m, dpt))
+				break;
+		}
+		if (dpt > 127)
+			return ERANGE;
+
+		(void)re_snprintf(id, sizeof(id), "%d", dpt);
+	}
+
+	return sdp_format_add(NULL, m, false, id, telev_rtpfmt, srate, 1,
+			      NULL, NULL, NULL, false, "0-15");
+}
+
+
 static int add_telev_codec(struct audio *a, const struct list *aucodecl)
 {
 	struct sdp_media *m = stream_sdpmedia(audio_strm(a));
-	struct sdp_format *sf;
 	uint32_t pt = a->cfg.telev_pt;
-	char pts[11];
-	bool add = !sdp_media_lformat(m, pt);
 	int err;
 
-	(void)re_snprintf(pts, sizeof(pts), "%u", pt);
-
-	/* Use payload-type 101 if available, for CiscoGW interop */
-	err = sdp_format_add(&sf, m, false,
-			     add ? pts : NULL,
-			     telev_rtpfmt, TELEV_SRATE, 1, NULL,
-			     NULL, NULL, false, "0-15");
-	if (err)
-		return err;
-
 	/* One telephone-event per codec clock rate (RFC 4733) */
-	if (!a->cfg.telev_multirate)
-		return 0;
+	if (a->cfg.telev_multirate) {
 
-	for (struct le *le = list_head(aucodecl); le; le = le->next) {
+		for (struct le *le = list_head(aucodecl); le; le = le->next) {
 
-		const struct aucodec *ac = le->data;
-		char id[4];
-		int dpt;
+			const struct aucodec *ac = le->data;
 
-		if (ac->crate == TELEV_SRATE ||
-		    sdp_media_format(m, true, NULL, -1, telev_rtpfmt,
-				     (int32_t)ac->crate, -1))
-			continue;
+			if (sdp_media_format(m, true, NULL, -1, telev_rtpfmt,
+					     ac->crate, -1))
+				continue;
 
-		/* A free dynamic payload type: sdp_format_add() without
-		   an id could reuse telev_pt */
-		for (dpt = 96; dpt <= 127; dpt++) {
-			if (!sdp_media_lformat(m, dpt))
+			err = add_telev_format(m, ac->crate, pt);
+			if (err) {
+				warning("audio: telephone-event/%u"
+					" not offered (%m)\n",
+					ac->crate, err);
 				break;
-		}
-		if (dpt > 127) {
-			warning("audio: telephone-event/%u not offered"
-				" (no free payload type)\n", ac->crate);
-			break;
-		}
-
-		(void)re_snprintf(id, sizeof(id), "%d", dpt);
-
-		err = sdp_format_add(NULL, m, false, id,
-				     telev_rtpfmt, ac->crate, 1, NULL,
-				     NULL, NULL, false, "0-15");
-		if (err) {
-			warning("audio: telephone-event/%u not offered (%m)\n",
-				ac->crate, err);
-			break;
+			}
 		}
 	}
 
-	return 0;
+	/* telephone-event/8000 is always offered */
+	if (sdp_media_format(m, true, NULL, -1, telev_rtpfmt,
+			     TELEV_SRATE, -1))
+		return 0;
+
+	return add_telev_format(m, TELEV_SRATE, pt);
 }
 
 
