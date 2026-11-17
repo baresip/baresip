@@ -193,6 +193,10 @@ int test_account(void)
 	TEST_ERR(err);
 	err = account_set_video_codecs(acc, "h266");
 	TEST_ERR(err);
+	err = account_set_sipnat(acc, "rport");
+	TEST_ERR(err);
+	ASSERT_STREQ("rport", account_sipnat(acc));
+	ASSERT_EQ(EINVAL, account_set_sipnat(acc, "stun"));
 	err = account_set_sipnat(acc, "outbound");
 	TEST_ERR(err);
 

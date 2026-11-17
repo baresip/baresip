@@ -25,6 +25,7 @@ struct ua {
 	size_t    extensionc;        /**< Number of SIP extensions           */
 	char *cuser;                 /**< SIP Contact username               */
 	char *pub_gruu;              /**< SIP Public GRUU                    */
+	char *pub_contact;           /**< Contact URI learned (sipnat=rport) */
 	enum presence_status pstat;  /**< Presence Status                    */
 	struct list hdr_filter;      /**< Filter for incoming headers        */
 	char *ansval;                /**< SIP auto answer value              */
@@ -57,6 +58,7 @@ static void ua_destructor(void *arg)
 	list_flush(&ua->regl);
 	mem_deref(ua->cuser);
 	mem_deref(ua->pub_gruu);
+	mem_deref(ua->pub_contact);
 	mem_deref(ua->ansval);
 	mem_deref(ua->acc);
 
@@ -1767,6 +1769,7 @@ int ua_debug(struct re_printf *pf, const struct ua *ua)
 	err |= re_hprintf(pf, " nrefs:     %u\n", mem_nrefs(ua));
 	err |= re_hprintf(pf, " cuser:     %s\n", ua->cuser);
 	err |= re_hprintf(pf, " pub-gruu:  %s\n", ua->pub_gruu);
+	err |= re_hprintf(pf, " pub-contact: %s\n", ua->pub_contact);
 	err |= re_hprintf(pf, " %H", ua_print_supported, ua);
 
 	err |= account_debug(pf, ua->acc);
@@ -1925,8 +1928,10 @@ int ua_print_calls(struct re_printf *pf, const struct ua *ua)
 /**
  * Get the contact user/uri of a User-Agent (UA)
  *
- * If the Public GRUU is set, it will be returned.
- * Otherwise the local contact-user (cuser) will be returned.
+ * If the Public GRUU is set, it will be returned. Otherwise, if the
+ * registrar reported a public address (sipnat=rport), the Contact URI with
+ * that address is returned. Otherwise the local contact-user (cuser) will be
+ * returned.
  *
  * @param ua User-Agent
  *
@@ -1939,6 +1944,9 @@ const char *ua_cuser(const struct ua *ua)
 
 	if (str_isset(ua->pub_gruu))
 		return ua->pub_gruu;
+
+	if (str_isset(ua->pub_contact))
+		return ua->pub_contact;
 
 	return ua->cuser;
 }
@@ -1983,6 +1991,23 @@ void ua_pub_gruu_set(struct ua *ua, const struct pl *pval)
 
 	ua->pub_gruu = mem_deref(ua->pub_gruu);
 	(void)pl_strdup(&ua->pub_gruu, pval);
+}
+
+
+/**
+ * Set the Contact URI learned from the registrar (sipnat=rport)
+ *
+ * @param ua   User-Agent
+ * @param uri  Contact URI, or NULL to use the local contact again
+ */
+void ua_pub_contact_set(struct ua *ua, const char *uri)
+{
+	if (!ua)
+		return;
+
+	ua->pub_contact = mem_deref(ua->pub_contact);
+	if (uri)
+		(void)str_dup(&ua->pub_contact, uri);
 }
 
 
