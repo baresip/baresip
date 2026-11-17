@@ -503,6 +503,9 @@ static void stream_mnatconn_handler(struct stream *strm, void *arg)
 			call_event_handler(call, CALL_EVENT_CLOSED,
 					   "mediaenc failed %m", err);
 		}
+		else if (stream_is_ready(strm)) {
+			stream_start_rtcp(strm);
+		}
 	}
 	else if (stream_is_ready(strm)) {
 
