@@ -386,6 +386,8 @@ static inline bool in_range(const struct range *rng, uint32_t val)
 	return rng ? (val >= rng->min && val <= rng->max) : false;
 }
 
+int range_print(struct re_printf *pf, const struct range *rng);
+
 /** RTP receive mode */
 enum rtp_receive_mode {
 	RECEIVE_MODE_MAIN = 0,  /**< RTP RX is processed in main thread      */

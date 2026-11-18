@@ -29,6 +29,9 @@ enum {
 struct stream_param;
 
 
+void pl_range(const struct pl *pl, struct range *rng);
+
+
 /*
  * Account
  */

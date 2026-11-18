@@ -79,20 +79,12 @@ static int param_u32(uint32_t *v, const struct pl *params, const char *name)
 static int param_range(struct range *rng, const struct pl *params,
 		       const char *name, struct range *limits)
 {
-	struct pl pl, min, max;
-	int err;
+	struct pl pl;
 
 	if (msg_param_decode(params, name, &pl))
 		return 0;
 
-	err = re_regex(pl.p, pl.l, "[0-9]+-[0-9]+", &min, &max);
-	if (err) {
-		rng->min = rng->max = pl_u32(&pl);
-		return 0;
-	}
-
-	rng->min = pl_u32(&min);
-	rng->max = pl_u32(&max);
+	pl_range(&pl, rng);
 
 	if (rng->min > rng->max)
 		rng->max = rng->min;
@@ -2235,8 +2227,8 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 	err |= re_hprintf(pf, " regq:             %s\n", acc->regq);
 	err |= re_hprintf(pf, " rtcp_mux:         %s\n",
 			  acc->rtcp_mux ? "yes" : "no");
-	err |= re_hprintf(pf, " rwait:            %u-%u\n",
-			  acc->rwait.min, acc->rwait.max);
+	err |= re_hprintf(pf, " rwait:            %H\n",
+			  range_print, &acc->rwait);
 	err |= re_hprintf(pf, " sipnat:           %s\n", acc->sipnat);
 	err |= re_hprintf(pf, " stunuser:         %s\n", acc->stun_user);
 	err |= re_hprintf(pf, " stunserver:       %H\n",
