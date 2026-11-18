@@ -99,15 +99,6 @@ static struct config core_config = {
 };
 
 
-static int range_print(struct re_printf *pf, const struct range *rng)
-{
-	if (!rng)
-		return 0;
-
-	return re_hprintf(pf, "%u-%u", rng->min, rng->max);
-}
-
-
 static int dns_handler(const struct pl *pl, void *arg, bool fallback)
 {
 	struct config_net *cfg = arg;

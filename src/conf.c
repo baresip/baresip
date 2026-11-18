@@ -187,34 +187,40 @@ int conf_path_get(char *path, size_t sz)
 }
 
 
+int range_print(struct re_printf *pf, const struct range *rng)
+{
+	if (!rng)
+		return 0;
+
+	return re_hprintf(pf, "%u-%u", rng->min, rng->max);
+}
+
+
+void pl_range(const struct pl *pl, struct range *rng)
+{
+	struct pl min, max;
+
+	if (re_regex(pl->p, pl->l, "[0-9]+-[0-9]+", &min, &max)) {
+		rng->min = rng->max = pl_u32(pl);
+		return;
+	}
+
+	rng->min = pl_u32(&min);
+	rng->max = pl_u32(&max);
+}
+
+
 int conf_get_range(const struct conf *conf, const char *name,
 		   struct range *rng)
 {
-	struct pl r, min, max;
-	uint32_t v;
+	struct pl r;
 	int err;
 
 	err = conf_get(conf, name, &r);
 	if (err)
 		return err;
 
-	err = re_regex(r.p, r.l, "[0-9]+-[0-9]+", &min, &max);
-	if (err) {
-		/* fallback to non-range numeric value */
-		err = conf_get_u32(conf, name, &v);
-		if (err) {
-			warning("conf: %s: could not parse range: (%r)\n",
-				name, &r);
-			return err;
-		}
-
-		rng->min = rng->max = v;
-
-		return err;
-	}
-
-	rng->min = pl_u32(&min);
-	rng->max = pl_u32(&max);
+	pl_range(&r, rng);
 
 	if (rng->min > rng->max) {
 		warning("conf: %s: invalid range (%u - %u)\n",
