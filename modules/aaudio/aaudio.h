@@ -9,7 +9,6 @@
 #include <re_atomic.h>
 #include <baresip.h>
 
-void aaudio_close_stream(AAudioStream *stream);
 
 int aaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 			struct auplay_prm *prm, const char *device,
