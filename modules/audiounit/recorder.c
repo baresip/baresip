@@ -13,7 +13,6 @@
 
 
 struct ausrc_st {
-	struct audiosess_st *sess;
 	AudioUnit au_in;
 	AudioUnit au_conv;
 	mtx_t mutex;
@@ -43,7 +42,6 @@ static void ausrc_destructor(void *arg)
 	AudioUnitUninitialize(st->au_conv);
 	AudioComponentInstanceDispose(st->au_conv);
 
-	mem_deref(st->sess);
 	mem_deref(st->buf);
 
 	mtx_destroy(&st->mutex);
@@ -167,17 +165,6 @@ static OSStatus convert_callback(void *inRefCon,
 }
 
 
-static void interrupt_handler(bool interrupted, void *arg)
-{
-	struct ausrc_st *st = arg;
-
-	if (interrupted)
-		AudioOutputUnitStop(st->au_in);
-	else
-		AudioOutputUnitStart(st->au_in);
-}
-
-
 int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 			     struct ausrc_prm *prm, const char *device,
 			     ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
@@ -234,10 +221,6 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		err = ENOMEM;
 		goto out;
 	}
-
-	err = audiosess_alloc(&st->sess, interrupt_handler, st);
-	if (err)
-		goto out;
 
 	ret = AudioComponentInstanceNew(audiounit_comp_io, &st->au_in);
 	if (ret)
