@@ -498,18 +498,24 @@ static void invite_handler(void *arg)
 		return;
 
 	int err;
-	err = ua_connect(uag_find_requri(uri), NULL, NULL, uri, VIDMODE_ON);
+	struct ua *ua = uag_find_requri(uri);
+	if (menu.invite_reason == BEVENT_REFER)
+		ua_enable_require(ua, SIP_EXT_REPLACES);
+	err = ua_connect(ua, NULL, NULL, uri, VIDMODE_ON);
 	if (err)
 		warning("menu: call to %s failed (%m)\n", menu.invite_uri,
 			err);
 
+	if (menu.invite_reason == BEVENT_REFER)
+		ua_disable_require(ua, SIP_EXT_REPLACES);
 	menu.invite_uri = mem_deref(menu.invite_uri);
 }
 
 
-static void menu_invite(const char *prm)
+static void menu_invite(const char *prm, enum bevent_ev ev)
 {
 	menu.invite_uri = mem_deref(menu.invite_uri);
+	menu.invite_reason = ev;
 	int err = str_dup(&menu.invite_uri, prm);
 	if (err) {
 		warning("menu: call to %s failed (%m)\n", prm, err);
@@ -982,7 +988,7 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 		++uri;
 		if (account_sip_autoredirect(ua_account(ua))) {
 			info("menu: redirecting call to %s\n", uri);
-			menu_invite(uri);
+			menu_invite(uri, ev);
 		}
 		else {
 			info("menu: redirect call to %s\n", uri);
@@ -997,7 +1003,7 @@ static void event_handler(enum bevent_ev ev, struct bevent *event, void *arg)
 		(void)cparam_decode(prm, "method", &val);
 		if (!pl_strcmp(&val, "invite")) {
 			info("menu: incoming REFER to %s\n", prm);
-			menu_invite(prm);
+			menu_invite(prm, ev);
 		}
 
 		break;
