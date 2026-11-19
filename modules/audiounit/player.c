@@ -12,7 +12,6 @@
 
 
 struct auplay_st {
-	struct audiosess_st *sess;
 	struct auplay_prm prm;
 	AudioUnit au;
 	mtx_t mutex;
@@ -33,8 +32,6 @@ static void auplay_destructor(void *arg)
 	AudioOutputUnitStop(st->au);
 	AudioUnitUninitialize(st->au);
 	AudioComponentInstanceDispose(st->au);
-
-	mem_deref(st->sess);
 
 	mtx_destroy(&st->mutex);
 }
@@ -86,17 +83,6 @@ static OSStatus output_callback(void *inRefCon,
 }
 
 
-static void interrupt_handler(bool interrupted, void *arg)
-{
-	struct auplay_st *st = arg;
-
-	if (interrupted)
-		AudioOutputUnitStop(st->au);
-	else
-		AudioOutputUnitStart(st->au);
-}
-
-
 int audiounit_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 			   struct auplay_prm *prm, const char *device,
 			   auplay_write_h *wh, void *arg)
@@ -136,10 +122,6 @@ int audiounit_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 		err = ENOMEM;
 		goto out;
 	}
-
-	err = audiosess_alloc(&st->sess, interrupt_handler, st);
-	if (err)
-		goto out;
 
 	ret = AudioComponentInstanceNew(audiounit_comp_io, &st->au);
 	if (ret)

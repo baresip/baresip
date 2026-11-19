@@ -12,16 +12,7 @@ extern AudioComponent audiounit_comp_io;
 extern AudioComponent audiounit_comp_conv;
 
 
-struct audiosess;
-struct audiosess_st;
 struct conv_buf;
-
-
-typedef void (audiosess_int_h)(bool start, void *arg);
-
-int  audiosess_alloc(struct audiosess_st **stp,
-		     audiosess_int_h *inth, void *arg);
-void audiosess_interrupt(bool interrupted);
 
 
 int audiounit_conv_buf_alloc(struct conv_buf **bufp, size_t framesz);
