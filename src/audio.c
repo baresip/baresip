@@ -471,6 +471,32 @@ static void poll_aubuf_tx(struct audio *a)
 }
 
 
+static bool telev_sup_handler(struct sdp_format *fmt, void *arg)
+{
+	(void)arg;
+	return fmt->sup;
+}
+
+
+/* Prefer the telephone-event with the encoder clock rate (RFC 4733) */
+static const struct sdp_format *telev_rformat(const struct audio *a,
+					      const struct autx *tx)
+{
+	const struct sdp_media *m = stream_sdpmedia(audio_strm(a));
+	const struct sdp_format *fmt;
+
+	if (tx->ac) {
+		fmt = sdp_media_format_apply(m, false, NULL, -1, telev_rtpfmt,
+					     tx->ac->crate, -1,
+					     telev_sup_handler, NULL);
+		if (fmt)
+			return fmt;
+	}
+
+	return sdp_media_rformat(m, telev_rtpfmt);
+}
+
+
 static void check_telev(struct audio *a, struct autx *tx)
 {
 	const struct sdp_format *fmt;
@@ -489,7 +515,7 @@ static void check_telev(struct audio *a, struct autx *tx)
 	if (marker)
 		tx->ts_tel = (uint32_t)tx->ts_ext;
 
-	fmt = sdp_media_rformat(stream_sdpmedia(audio_strm(a)), telev_rtpfmt);
+	fmt = telev_rformat(a, tx);
 	if (!fmt)
 		return;
 
@@ -653,26 +679,64 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 }
 
 
-static int add_telev_codec(struct audio *a)
+/* Adds telephone-event/srate, on telev_pt for 8000 Hz if free */
+static int add_telev_format(struct sdp_media *m, uint32_t srate, uint32_t pt)
+{
+	char id[11] = "";
+	int dpt;
+
+	if (srate == TELEV_SRATE && !sdp_media_lformat(m, (int)pt)) {
+		(void)re_snprintf(id, sizeof(id), "%u", pt);
+	}
+	else {
+		for (dpt = 96; dpt <= 127; dpt++) {
+			if (dpt != (int)pt && !sdp_media_lformat(m, dpt))
+				break;
+		}
+		if (dpt > 127)
+			return ERANGE;
+
+		(void)re_snprintf(id, sizeof(id), "%d", dpt);
+	}
+
+	return sdp_format_add(NULL, m, false, id, telev_rtpfmt, srate, 1,
+			      NULL, NULL, NULL, false, "0-15");
+}
+
+
+static int add_telev_codec(struct audio *a, const struct list *aucodecl)
 {
 	struct sdp_media *m = stream_sdpmedia(audio_strm(a));
-	struct sdp_format *sf;
 	uint32_t pt = a->cfg.telev_pt;
-	char pts[11];
-	bool add = !sdp_media_lformat(m, pt);
 	int err;
 
-	(void)re_snprintf(pts, sizeof(pts), "%u", pt);
+	/* One telephone-event per codec clock rate (RFC 4733) */
+	if (a->cfg.telev_multirate) {
 
-	/* Use payload-type 101 if available, for CiscoGW interop */
-	err = sdp_format_add(&sf, m, false,
-			     add ? pts : NULL,
-			     telev_rtpfmt, TELEV_SRATE, 1, NULL,
-			     NULL, NULL, false, "0-15");
-	if (err)
-		return err;
+		for (struct le *le = list_head(aucodecl); le; le = le->next) {
 
-	return 0;
+			const struct aucodec *ac = le->data;
+
+			if (sdp_media_format(m, true, NULL, -1, telev_rtpfmt,
+					     ac->crate, -1))
+				continue;
+
+			err = add_telev_format(m, ac->crate, pt);
+			if (err) {
+				warning("audio: telephone-event/%u"
+					" not offered (%m)\n",
+					ac->crate, err);
+				break;
+			}
+		}
+	}
+
+	/* telephone-event/8000 is always offered */
+	if (sdp_media_format(m, true, NULL, -1, telev_rtpfmt,
+			     TELEV_SRATE, -1))
+		return 0;
+
+	return add_telev_format(m, TELEV_SRATE, pt);
 }
 
 
@@ -793,7 +857,7 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 	if (err)
 		goto out;
 
-	err = add_telev_codec(a);
+	err = add_telev_codec(a, aucodecl);
 	if (err)
 		goto out;
 
