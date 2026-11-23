@@ -84,7 +84,6 @@ struct autx {
 	struct auenc_state *enc;      /**< Audio encoder state (optional)  */
 	struct aubuf *aubuf;          /**< Packetize outgoing stream       */
 	size_t aubuf_maxsz;           /**< Maximum aubuf size in [bytes]   */
-	RE_ATOMIC bool aubuf_started; /**< Aubuf was started flag          */
 	struct list filtl;            /**< Audio filters in encoding order */
 	struct mbuf *mb;              /**< Buffer for outgoing RTP packets */
 	struct mbuf *mb_telev;        /**< Buffer for Telephony Events     */
@@ -200,7 +199,6 @@ static void stop_tx(struct autx *tx, struct audio *a)
 	/* audio source must be stopped first */
 	tx->ausrc = mem_deref(tx->ausrc);
 	tx->aubuf = mem_deref(tx->aubuf);
-	re_atomic_rlx_set(&tx->aubuf_started, false);
 
 	list_flush(&tx->filtl);
 }
@@ -571,7 +569,6 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 
 	mtx_lock(tx->mtx);
 	enum aufmt fmt = tx->src_fmt;
-	size_t psize = tx->psize;
 	mtx_unlock(tx->mtx);
 
 	if (fmt != af->fmt) {
@@ -596,11 +593,6 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 	}
 
 	(void)aubuf_write_auframe(tx->aubuf, af);
-
-	if (!re_atomic_rlx(&tx->aubuf_started) &&
-	    (aubuf_cur_size(tx->aubuf) >= psize)) {
-		re_atomic_rlx_set(&tx->aubuf_started, true);
-	}
 }
 
 
@@ -947,11 +939,6 @@ static int tx_thread(void *arg)
 		sys_msleep(4);
 		mtx_lock(tx->mtx);
 
-		if (!re_atomic_rlx(&tx->aubuf_started)) {
-			mtx_unlock(tx->mtx);
-			goto loop;
-		}
-
 		if (!re_atomic_rlx(&tx->thr.run))
 			break;
 
@@ -961,9 +948,6 @@ static int tx_thread(void *arg)
 		mtx_unlock(tx->mtx);
 
 		now = tmr_jiffies();
-		if (!ts)
-			ts = now;
-
 		if (ts > now)
 			goto loop;
 
@@ -972,6 +956,9 @@ static int tx_thread(void *arg)
 		if (aubuf_cur_size(tx->aubuf) >= psize) {
 
 			poll_aubuf_tx(a);
+		}
+		else if (!aubuf_started(tx->aubuf)) {
+			goto loop;
 		}
 		else {
 			mtx_lock(tx->mtx);
@@ -983,6 +970,8 @@ static int tx_thread(void *arg)
 			      " (total %llu)\n", aubuf_underrun);
 		}
 
+		if (!ts)
+			ts = now;
 		ts += ptime;
 
 		/* Exact timing: send Telephony-Events from here.
