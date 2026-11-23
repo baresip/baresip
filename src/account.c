@@ -86,6 +86,12 @@ static int param_range(struct range *rng, const struct pl *params,
 
 	pl_range(&pl, rng);
 
+	if (!rng->min && !rng->max) {
+		warning("account: invalid range %s=%u-%u\n",
+			name, rng->min, rng->max);
+		return EINVAL;
+	}
+
 	if (rng->min > rng->max)
 		rng->max = rng->min;
 

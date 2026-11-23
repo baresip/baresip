@@ -294,7 +294,7 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 	}
 
 	if (acc && account_fbregint(acc))
-		err = sipreg_set_fbregint(reg->sipreg, account_fbregint(acc));
+		err |= sipreg_set_fbregint(reg->sipreg, account_fbregint(acc));
 
 	if (acc && acc->tcpsrcport)
 		sipreg_set_srcport(reg->sipreg, acc->tcpsrcport);
