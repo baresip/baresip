@@ -1293,91 +1293,6 @@ int test_call_aulevel(void)
 }
 
 
-static void rx_metric_snapshot(const struct stream *strm,
-			       uint32_t *packets, uint32_t *bytes)
-{
-	do {
-		*packets = stream_metric_get_rx_n_packets(strm);
-		*bytes = stream_metric_get_rx_n_bytes(strm);
-	}
-	while (*packets != stream_metric_get_rx_n_packets(strm));
-}
-
-
-static int test_call_ptime_cap_base(uint32_t aptime, uint32_t wire_ptime)
-{
-	struct fixture fix = {0}, *f = &fix;
-	struct cancel_rule *cr;
-	struct stream *strm;
-	const char *attr;
-	uint32_t bytes, n;
-	size_t psize;
-	char prm[64];
-	int err;
-
-	re_snprintf(prm, sizeof(prm),
-		    ";ptime=%u;audio_codecs=aucmock/48000/2", aptime);
-	fixture_init_prm(f, prm);
-
-	psize = 4 * (48000 * wire_ptime / 1000);
-
-	cancel_rule_new(BEVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
-	cancel_rule_and(BEVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
-
-	f->behaviour = BEHAVIOUR_ANSWER;
-	f->estab_action = ACTION_NOTHING;
-
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
-	TEST_ERR(err);
-	err = re_main_timeout(5000);
-	TEST_ERR(err);
-	TEST_ERR(fix.err);
-
-	strm = audio_strm(call_audio(ua_call(f->a.ua)));
-
-	/* the answer mirrors the raw request, not the effective cap */
-	attr = sdp_media_rattr(stream_sdpmedia(strm), "ptime");
-	ASSERT_TRUE(attr != NULL);
-	ASSERT_EQ(aptime, (uint32_t)atoi(attr));
-
-	rx_metric_snapshot(strm, &n, &bytes);
-	ASSERT_TRUE(n > 0);
-	ASSERT_EQ(n * psize, bytes);
-
-	strm = audio_strm(call_audio(ua_call(f->b.ua)));
-	rx_metric_snapshot(strm, &n, &bytes);
-	ASSERT_TRUE(n > 0);
-	ASSERT_EQ(n * psize, bytes);
-
- out:
-	fixture_close(f);
-	return err;
-}
-
-
-int test_call_ptime_cap(void)
-{
-	int err;
-
-	mock_aucodec_register();
-
-	err = module_load(".", "ausine");
-	TEST_ERR(err);
-
-	err = test_call_ptime_cap_base(60, 10);
-	TEST_ERR(err);
-	err = test_call_ptime_cap_base(10, 10);
-	TEST_ERR(err);
-	err = test_call_ptime_cap_base(5, 5);
-	TEST_ERR(err);
-
- out:
-	module_unload("ausine");
-	mock_aucodec_unregister();
-	return err;
-}
-
-
 static int test_100rel_audio_base(void)
 {
 	struct fixture fix, *f = &fix;
@@ -4112,10 +4027,36 @@ int test_call_audio_set_source(void)
 }
 
 
+static struct {
+	unsigned opens;
+	uint32_t ptime;
+} ptime_source[2];
+
+
+static int ptime_source_alloc(struct ausrc_st **stp, const struct ausrc *as,
+			      struct ausrc_prm *prm, const char *device,
+			      ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
+{
+	size_t i;
+	(void)as;
+
+	if (!str_cmp(device, "a"))
+		i = 0;
+	else if (!str_cmp(device, "b"))
+		i = 1;
+	else
+		return ENODEV;
+
+	++ptime_source[i].opens;
+	ptime_source[i].ptime = prm->ptime;
+	return ausrc_alloc(stp, baresip_ausrcl(), "ausine", prm, "440",
+			   rh, errh, arg);
+}
+
+
 static void tx_metric_snapshot(const struct stream *strm,
 			       uint32_t *packets, uint32_t *bytes)
 {
-	/* both counters are updated by the transmit thread */
 	do {
 		*packets = stream_metric_get_tx_n_packets(strm);
 		*bytes = stream_metric_get_tx_n_bytes(strm);
@@ -4124,171 +4065,140 @@ static void tx_metric_snapshot(const struct stream *strm,
 }
 
 
-/* Verify the RTP payload size of the packets sent by both agents */
-static int check_tx_psize(struct fixture *f, uint32_t psize)
+static int wait_ptime_event(struct fixture *f)
 {
-	struct agent *agv[] = {&f->a, &f->b};
-	const struct stream *strmv[RE_ARRAY_SIZE(agv)];
-	uint32_t packetv[RE_ARRAY_SIZE(agv)], bytesv[RE_ARRAY_SIZE(agv)];
-	struct tx_wait w;
+	int err = re_main_timeout(5000);
+	return err ? err : f->err;
+}
+
+
+static int check_ptime_reinvite(struct fixture *f, const char *offer,
+				uint32_t ptime, unsigned opens)
+{
+	struct ua *peers[] = {f->a.ua, f->b.ua};
+	struct call *call = ua_call(f->b.ua);
+	struct sdp_media *sdp = stream_sdpmedia(audio_strm(call_audio(call)));
+	const uint32_t psize = 2 * au_calc_nsamp(32000, 2, ptime);
+	struct cancel_rule *cr;
+	struct tx_wait w = {0};
 	int err;
 
-	tmr_init(&w.tmr);
-
-	for (size_t i = 0; i < RE_ARRAY_SIZE(agv); i++) {
-		strmv[i] = audio_strm(call_audio(ua_call(agv[i]->ua)));
-		tx_metric_snapshot(strmv[i], &packetv[i], &bytesv[i]);
-	}
-
-	w.strm = strmv[0];
-	w.n_packets = packetv[0] + 5;
-	tmr_start(&w.tmr, 1, tx_wait_handler, &w);
-
-	err = re_main_timeout(5000);
+	err = sdp_media_set_lattr(sdp, true, "ptime", "%s", offer);
 	TEST_ERR(err);
-	TEST_ERR(f->err);
+	cancel_rule_new(BEVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 1);
+	cr->prm = "answer";
+	err = call_modify(call);
+	TEST_ERR(err);
+	err = wait_ptime_event(f);
+	cancel_rule_pop();
+	TEST_ERR(err);
+	err = agent_wait_for_ack(&f->a, 0, 0, 1);
+	TEST_ERR(err);
 
-	for (size_t i = 0; i < RE_ARRAY_SIZE(agv); i++) {
-		uint32_t packets, bytes;
-
-		tx_metric_snapshot(strmv[i], &packets, &bytes);
-		ASSERT_TRUE(packets > packetv[i]);
-		ASSERT_EQ((packets - packetv[i]) * psize, bytes - bytesv[i]);
+	ASSERT_STREQ(offer, sdp_media_rattr(sdp, "ptime"));
+	for (size_t i = 0; i < RE_ARRAY_SIZE(peers); i++) {
+		uint32_t packets, bytes, start_packets, start_bytes;
+		ASSERT_EQ(opens, ptime_source[i].opens);
+		ASSERT_EQ(ptime, ptime_source[i].ptime);
+		w.strm = audio_strm(call_audio(ua_call(peers[i])));
+		tx_metric_snapshot(w.strm, &start_packets, &start_bytes);
+		w.n_packets = start_packets + 5;
+		tmr_start(&w.tmr, 1, tx_wait_handler, &w);
+		err = wait_ptime_event(f);
+		TEST_ERR(err);
+		tx_metric_snapshot(w.strm, &packets, &bytes);
+		ASSERT_TRUE(packets >= w.n_packets);
+		ASSERT_EQ((packets - start_packets) * psize,
+			  bytes - start_bytes);
 	}
 
  out:
 	tmr_cancel(&w.tmr);
-
 	return err;
 }
 
 
-/* Send a re-INVITE from B and wait until both agents have applied the SDP */
-static int reinvite_from_b(struct fixture *f)
-{
-	struct cancel_rule *cr;
-	int err;
-
-	cancel_rule_new(BEVENT_CALL_REMOTE_SDP, f->a.ua, 0, 0, 1);
-	cr->prm = "offer";
-	cancel_rule_and(BEVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 1);
-	cr->prm = "answer";
-
-	err = call_modify(ua_call(f->b.ua));
-	TEST_ERR(err);
-
-	err = re_main_timeout(5000);
-	cancel_rule_pop();
-	TEST_ERR(err);
-	TEST_ERR(f->err);
-
-	err = agent_wait_for_ack(&f->a, 0, 0, 1);
-	TEST_ERR(err);
-
- out:
-	return err;
-}
-
-
-static struct {
-	unsigned opens_a, opens_b;
-	uint32_t expected_ptime;
-} ptime_source;
-
-
-static int ptime_source_alloc(struct ausrc_st **stp, const struct ausrc *as,
-			      struct ausrc_prm *prm, const char *device,
-			      ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
-{
-	(void)as;
-	if (prm->ptime != ptime_source.expected_ptime)
-		return EPROTO;
-
-	if (!str_cmp(device, "a"))
-		++ptime_source.opens_a;
-	else if (!str_cmp(device, "b"))
-		++ptime_source.opens_b;
-	else
-		return ENODEV;
-
-	return ausrc_alloc(stp, baresip_ausrcl(), "ausine", prm, "440",
-			   rh, errh, arg);
-}
-
-
-int test_call_ptime_reinvite(void)
+static int run_ptime_call(const char *offer, uint32_t ptime, bool reinvite)
 {
 	struct fixture fix = {0}, *f = &fix;
-	struct cancel_rule *cr;
-	struct sdp_media *sdp_b;
 	struct ausrc *as = NULL;
-	const uint32_t psize = 2 * au_calc_nsamp(32000, 2, 10);
+	struct cancel_rule *cr;
+	const uint32_t psize = 2 * au_calc_nsamp(32000, 2, ptime);
+	char prm[96];
 	int err;
 
 	err  = module_load(".", "l16");
 	err |= module_load(".", "ausine");
 	TEST_ERR(err);
-
-	ptime_source.opens_a = ptime_source.opens_b = 0;
-	ptime_source.expected_ptime = 10;
+	memset(ptime_source, 0, sizeof(ptime_source));
 	err = ausrc_register(&as, baresip_ausrcl(), "ptime-test",
 			     ptime_source_alloc);
 	TEST_ERR(err);
 
-	/* L16/32000/2 is sent with 10 ms, the accounts ask for 20 ms */
-	fixture_init_prm(f, ";ptime=20;audio_codecs=l16/32000/2"
-			 ";audio_source=ptime-test,a");
+	re_snprintf(prm, sizeof(prm), ";ptime=%s;audio_codecs=l16/32000/2"
+		    ";audio_source=ptime-test,a", offer);
+	fixture_init_prm(f, prm);
 	err = account_set_ausrc_dev(ua_account(f->b.ua), "b");
 	TEST_ERR(err);
-
+	f->estab_action = ACTION_NOTHING;
 	cancel_rule_new(BEVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
 	cancel_rule_and(BEVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
-
-	f->behaviour = BEHAVIOUR_ANSWER;
-	f->estab_action = ACTION_NOTHING;
-
 	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
 	TEST_ERR(err);
-
-	err = re_main_timeout(5000);
+	err = wait_ptime_event(f);
 	cancel_rule_pop();
 	TEST_ERR(err);
-	TEST_ERR(fix.err);
 
-	err = check_tx_psize(f, psize);
-	TEST_ERR(err);
-	ASSERT_EQ(1, ptime_source.opens_a);
-	ASSERT_EQ(1, ptime_source.opens_b);
+	struct ua *peers[] = {f->a.ua, f->b.ua};
+	for (size_t i = 0; i < RE_ARRAY_SIZE(peers); i++) {
+		struct call *call = ua_call(peers[i]);
+		struct stream *strm = audio_strm(call_audio(call));
+		uint32_t packets, bytes;
+		ASSERT_EQ(1, ptime_source[i].opens);
+		ASSERT_EQ(ptime, ptime_source[i].ptime);
+		do {
+			packets = stream_metric_get_rx_n_packets(strm);
+			bytes = stream_metric_get_rx_n_bytes(strm);
+		}
+		while (packets != stream_metric_get_rx_n_packets(strm));
+		ASSERT_TRUE(packets > 0);
+		ASSERT_EQ(packets * psize, bytes);
+		ASSERT_STREQ(offer, sdp_media_rattr(stream_sdpmedia(strm),
+						    "ptime"));
+	}
 
-	/* the a=ptime:20 of the peer must not change the packet size */
-	err = reinvite_from_b(f);
-	TEST_ERR(err);
-
-	err = check_tx_psize(f, psize);
-	TEST_ERR(err);
-	ASSERT_EQ(1, ptime_source.opens_a);
-	ASSERT_EQ(1, ptime_source.opens_b);
-
-	/* Renegotiate from 10 ms to 5 ms on the same codec. */
-	ptime_source.expected_ptime = 5;
-	sdp_b = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
-	err = sdp_media_set_lattr(sdp_b, true, "ptime", "5");
-	TEST_ERR(err);
-	err = reinvite_from_b(f);
-	TEST_ERR(err);
-	ASSERT_STREQ("5", sdp_media_rattr(sdp_b, "ptime"));
-	err = check_tx_psize(f, 2 * au_calc_nsamp(32000, 2, 5));
-	TEST_ERR(err);
-	ASSERT_EQ(2, ptime_source.opens_a);
-	ASSERT_EQ(2, ptime_source.opens_b);
+	if (reinvite) {
+		err = agent_wait_for_ack(&f->b, 1, 0, 1);
+		TEST_ERR(err);
+		err = check_ptime_reinvite(f, offer, ptime, 1);
+		TEST_ERR(err);
+		err = check_ptime_reinvite(f, "5", 5, 2);
+	}
 
  out:
 	fixture_close(f);
 	mem_deref(as);
 	module_unload("ausine");
 	module_unload("l16");
-
 	return err;
+}
+
+
+int test_call_ptime_cap(void)
+{
+	int err = run_ptime_call("60", 10, false);
+	TEST_ERR(err);
+	err = run_ptime_call("10", 10, false);
+	TEST_ERR(err);
+	err = run_ptime_call("5", 5, false);
+ out:
+	return err;
+}
+
+
+int test_call_ptime_reinvite(void)
+{
+	return run_ptime_call("20", 10, true);
 }
 
 
