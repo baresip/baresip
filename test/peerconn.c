@@ -201,6 +201,9 @@ static void peerconnection_estab_handler(struct media_track *media, void *arg)
 		err = mediatrack_start_audio(media, baresip_ausrcl(),
 					     baresip_aufiltl());
 		TEST_ERR(err);
+
+		ASSERT_TRUE(audio_started(au));
+		ASSERT_TRUE(NULL != audio_config(au));
 		break;
 
 	case MEDIA_KIND_VIDEO:
