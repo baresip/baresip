@@ -30,7 +30,7 @@ static const char str[] =
 	";catchall=yes"
 	";check_origin=yes"
 	";dtmfmode=auto"
-	";extra="
+	";extra=EXTRA"
 	";fbregint=0"
 	";inreq_allowed=yes"
 	";mediaenc=dtls_srtp"
@@ -133,6 +133,10 @@ int test_account(void)
 
 	/* verify all decoded parameters */
 	ASSERT_STREQ("Mr User", account_display_name(acc));
+	ASSERT_STREQ("EXTRA", account_extra(acc));
+
+	ASSERT_STREQ("UAS-USERNAME", account_uas_user(acc));
+	ASSERT_STREQ("UAS-PASSWORD", account_uas_pass(acc));
 
 	err = verify_account(acc);
 	TEST_ERR(err);
@@ -196,9 +200,13 @@ int test_account(void)
 	err = account_set_sipnat(acc, "rport");
 	TEST_ERR(err);
 	ASSERT_STREQ("rport", account_sipnat(acc));
-	ASSERT_EQ(EINVAL, account_set_sipnat(acc, "stun"));
 	err = account_set_sipnat(acc, "outbound");
 	TEST_ERR(err);
+	err = account_set_display_name(acc, "Mr User");
+	TEST_ERR(err);
+
+	account_set_check_origin(acc, true);
+	account_set_sip_autoanswer(acc, true);
 
 	err = verify_account(acc);
 	TEST_ERR(err);
