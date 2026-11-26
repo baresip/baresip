@@ -79,6 +79,7 @@ struct autx {
 	const struct ausrc *as;       /**< Audio Source module             */
 	struct ausrc_st *ausrc;       /**< Audio Source state              */
 	struct ausrc_prm ausrc_prm;   /**< Audio Source parameters         */
+	uint32_t source_ptime;        /**< Packet time requested on open   */
 	const struct aucodec *ac;     /**< Current audio encoder           */
 	struct auenc_state *enc;      /**< Audio encoder state (optional)  */
 	struct aubuf *aubuf;          /**< Packetize outgoing stream       */
@@ -1145,6 +1146,7 @@ static int autx_set_psize(struct autx *tx, const struct ausrc_prm *prm)
 		return E2BIG;
 	}
 
+	tx->source_ptime = tx->ptime;
 	tx->ausrc_prm = *prm;
 	tx->src_fmt   = prm->fmt;
 
@@ -1205,6 +1207,8 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 					  tx->aubuf_maxsz);
 			if (err)
 				return err;
+			if (tx->source_ptime && tx->source_ptime != prm.ptime)
+				re_atomic_rlx_set(&tx->aubuf_started, false);
 		}
 
 		err = ausrc_alloc(&tx->ausrc, ausrcl,
@@ -1478,9 +1482,13 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 
 	telev_set_srate(a->telev, ac->crate);
 
-	/* use a codec-specific ptime */
+	/* Limit the requested ptime to the codec maximum. */
 	if (ac->ptime)
-		tx->ptime = ac->ptime;
+		tx->ptime = min(tx->ptime, ac->ptime);
+	if (tx->aubuf && tx->source_ptime != tx->ptime) {
+		stop_tx(tx, a);
+		aurecv_flush(a->aur);
+	}
 
 	return err;
 }
@@ -1678,21 +1686,30 @@ void audio_sdp_attr_decode(struct audio *a)
 
 		if (ptime_tx && ptime_tx != a->tx.ptime
 		    && ptime_tx <= MAX_PTIME) {
+			const struct sdp_format *fmt = sdp_media_rformat(
+				stream_sdpmedia(a->strm), NULL);
+			uint32_t ptime = ptime_tx;
 
 			info("audio: peer changed ptime_tx %ums -> %ums\n",
 			     a->tx.ptime, ptime_tx);
 
-			tx->ptime = ptime_tx;
+			if (tx->ac && tx->ac->ptime &&
+			    fmt && fmt->data == tx->ac)
+				ptime = min(ptime, tx->ac->ptime);
 
-			if (tx->ac) {
+			mtx_lock(tx->mtx);
+			if (tx->ac && ptime != tx->ptime) {
 				size_t sz;
 
 				sz = aufmt_sample_size(tx->src_fmt);
 
 				tx->psize = sz * au_calc_nsamp(tx->ac->srate,
 							    tx->ac->ch,
-							    ptime_tx);
+							    ptime);
 			}
+
+			tx->ptime = ptime;
+			mtx_unlock(tx->mtx);
 
 			sdp_media_set_lattr(stream_sdpmedia(a->strm), true,
 					    "ptime", "%u", ptime_tx);

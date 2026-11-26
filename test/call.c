@@ -2563,6 +2563,75 @@ int test_call_ipv6ll(void)
 }
 
 
+static struct {
+	unsigned opens, ptime;
+} ptime_source[2];
+
+
+static int ptime_source_alloc(struct ausrc_st **stp, const struct ausrc *as,
+			      struct ausrc_prm *prm, const char *device,
+			      ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
+{
+	const size_t i = !str_cmp(device, "b");
+	(void)as;
+	++ptime_source[i].opens;
+	ptime_source[i].ptime = prm->ptime;
+	return ausrc_alloc(stp, baresip_ausrcl(), "ausine", prm, "440",
+			   rh, errh, arg);
+}
+
+
+static int check_ptime(struct fixture *f, const char *offer,
+		       uint32_t ptime, unsigned opens)
+{
+	struct ua *peers[] = {f->a.ua, f->b.ua};
+	const uint32_t psize = 2 * au_calc_nsamp(32000, 2, ptime);
+	int err = 0;
+
+	for (size_t i = 0; i < RE_ARRAY_SIZE(peers); i++) {
+		struct call *call = ua_call(peers[i]);
+		struct stream *s = audio_strm(call_audio(call));
+		struct sdp_media *m = stream_sdpmedia(s);
+		uint32_t first_packets = 0, first_bytes = 0, sent = 0;
+		uint64_t until = tmr_jiffies() + 5000;
+
+		ASSERT_TRUE(call_has_audio(call));
+		ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
+		ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(m));
+		ASSERT_EQ(opens, ptime_source[i].opens);
+		ASSERT_EQ(ptime, ptime_source[i].ptime);
+		ASSERT_STREQ(offer, sdp_media_rattr(m, "ptime"));
+		while (sent < 5 && tmr_jiffies() < until) {
+			uint32_t packets = stream_metric_get_tx_n_packets(s);
+			uint32_t bytes = stream_metric_get_tx_n_bytes(s);
+			if (packets != stream_metric_get_tx_n_packets(s))
+				continue;
+			if (!first_packets) {
+				first_packets = packets;
+				first_bytes = bytes;
+			}
+			sent = packets - first_packets;
+			ASSERT_EQ(sent * psize, bytes - first_bytes);
+			sys_msleep(ptime);
+		}
+		ASSERT_TRUE(sent >= 5);
+	}
+
+ out:
+	return err;
+}
+
+
+static int wait_for_exchange(struct fixture *f, int err)
+{
+	if (!err)
+		err = re_main_timeout(10000);
+	if (err || f->err)
+		return err ? err : f->err;
+	return agent_wait_for_ack(&f->b, -1, -1, 1);
+}
+
+
 /*
  * Test: Call hold and resume with various media directions.
  *
@@ -2574,14 +2643,19 @@ int test_call_ipv6ll(void)
  * - B sets media to inactive, then resumes (changes to sendrecv),
  *   verifies A receives RESUME event.
  */
-static int test_call_hold_resume_base(bool tcp)
+static int start_hold_call(struct fixture *f, const char *offer,
+			   uint32_t ptime, bool tcp)
 {
-	struct fixture fix, *f = &fix;
+	char prm[96];
 	struct cancel_rule *cr;
-	int err = 0;
+	int err;
 
-
-	fixture_init(f);
+	memset(ptime_source, 0, sizeof(ptime_source));
+	re_snprintf(prm, sizeof(prm), ";ptime=%s;audio_codecs=l16/32000/2"
+		    ";audio_source=ptime-test,a", offer);
+	fixture_init_prm(f, prm);
+	err = account_set_ausrc_dev(ua_account(f->b.ua), "b");
+	TEST_ERR(err);
 	cancel_rule_new(BEVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
 	cr->n_audio_estab = 1;
 	cancel_rule_and(BEVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
@@ -2598,25 +2672,22 @@ static int test_call_hold_resume_base(bool tcp)
 	/* Make a call from A to B */
 	err = ua_connect(f->a.ua, 0, NULL, tcp ? f->buri_tcp : f->buri,
 			 VIDMODE_ON);
+	err = wait_for_exchange(f, err);
 	TEST_ERR(err);
+	cancel_rule_pop();
+	err = check_ptime(f, offer, ptime, 1);
+ out:
+	return err;
+}
 
-	/* wait for RTP audio */
-	err = re_main_timeout(10000);
-	TEST_ERR(err);
-	TEST_ERR(fix.err);
 
-	/* verify that audio was enabled and bi-directional */
-	ASSERT_TRUE(call_has_audio(ua_call(f->a.ua)));
-	ASSERT_TRUE(call_has_audio(ua_call(f->b.ua)));
-
+static int test_call_hold_resume_base(bool tcp)
+{
+	struct fixture fix, *f = &fix;
 	struct sdp_media *m;
-	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
-	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
-	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(m));
-
-	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
-	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
-	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(m));
+	struct cancel_rule *cr;
+	int err = start_hold_call(f, tcp ? "10" : "5", tcp ? 10 : 5, tcp);
+	TEST_ERR(err);
 
 	cancel_rule_new(BEVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 1);
 	cr->prm = "offer";
@@ -2962,60 +3033,37 @@ static int test_call_hold_resume_nosdp(void)
 static int test_call_hold_resume_inactive(void)
 {
 	struct fixture fix, *f = &fix;
+	struct sdp_media *m;
 	struct cancel_rule *cr;
 	int err = 0;
 
-	fixture_init(f);
-	cancel_rule_new(BEVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
-	cr->n_audio_estab = 1;
-	cancel_rule_and(BEVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
-	cr->n_audio_estab = 1;
-
-	err = module_load(".", "ausine");
-	TEST_ERR(err);
-	err = module_load(".", "aufile");
+	err = start_hold_call(f, "20", 10, false);
 	TEST_ERR(err);
 
-	f->behaviour = BEHAVIOUR_ANSWER;
-	f->estab_action = ACTION_NOTHING;
-
-	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_ON);
-	TEST_ERR(err);
-
-	/* wait for RTP audio */
-	err = re_main_timeout(10000);
-	TEST_ERR(err);
-	TEST_ERR(fix.err);
-
-	/* verify that audio was enabled and bi-directional */
-	ASSERT_TRUE(call_has_audio(ua_call(f->a.ua)));
-	ASSERT_TRUE(call_has_audio(ua_call(f->b.ua)));
-
-	struct sdp_media *m;
-	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
-	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
-	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(m));
-
-	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
-	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
-	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(m));
-
-	/* A puts B on hold with inactive direction */
+	/* Wait for B to receive each offer and A to receive its answer. */
 	cancel_rule_new(BEVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 1);
 	cr->prm = "offer";
 	cancel_rule_and(BEVENT_CALL_REMOTE_SDP, f->a.ua, 0, 0, 1);
 	cr->prm = "answer";
 
+	/* The repeated 20 ms offer still uses the codec's 10 ms cap. */
+	err = wait_for_exchange(f, call_modify(ua_call(f->a.ua)));
+	TEST_ERR(err);
+	err = check_ptime(f, "20", 10, 1);
+	TEST_ERR(err);
+
+	/* Both sources must reopen at 5 ms before going on hold. */
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
+	err = sdp_media_set_lattr(m, true, "ptime", "5");
+	TEST_ERR(err);
+	err = wait_for_exchange(f, call_modify(ua_call(f->a.ua)));
+	TEST_ERR(err);
+	err = check_ptime(f, "5", 5, 2);
+	TEST_ERR(err);
+
 	/* Set media direction to inactive and send re-INVITE */
 	call_set_media_direction(ua_call(f->a.ua), SDP_INACTIVE, SDP_INACTIVE);
-	err = call_modify(ua_call(f->a.ua));
-	TEST_ERR(err);
-	err = re_main_timeout(10000);
-	TEST_ERR(err);
-	TEST_ERR(fix.err);
-
-	err = agent_wait_for_ack(&f->b, -1, -1, 1);
+	err = wait_for_exchange(f, call_modify(ua_call(f->a.ua)));
 	TEST_ERR(err);
 
 	/* Verify: B should receive ON_HOLD event, A should not */
@@ -3034,13 +3082,7 @@ static int test_call_hold_resume_inactive(void)
 
 	/* A resumes the call with sendrecv */
 	call_set_media_direction(ua_call(f->a.ua), SDP_SENDRECV, SDP_SENDRECV);
-	err = call_modify(ua_call(f->a.ua));
-	TEST_ERR(err);
-	tmr_start(&f->b.tmr_ack, 1, check_ack, &f->b);
-	err = re_main_timeout(10000);
-	TEST_ERR(err);
-
-	err = agent_wait_for_ack(&f->b, -1, -1, 1);
+	err = wait_for_exchange(f, call_modify(ua_call(f->a.ua)));
 	TEST_ERR(err);
 
 	/* Verify: B should receive RESUME event, A should not */
@@ -3071,7 +3113,12 @@ static int test_call_hold_resume_inactive(void)
 
 int test_call_hold_resume(void)
 {
-	int err;
+	struct ausrc *as = NULL;
+	int err = module_load(".", "l16");
+	TEST_ERR(err);
+	err = ausrc_register(&as, baresip_ausrcl(), "ptime-test",
+			     ptime_source_alloc);
+	TEST_ERR(err);
 
 	err = test_call_hold_resume_base(false);
 	TEST_ERR(err);
@@ -3079,14 +3126,13 @@ int test_call_hold_resume(void)
 	err = test_call_hold_resume_base(true);
 	TEST_ERR(err);
 
-	err = test_call_hold_resume_nosdp();
-	TEST_ERR(err);
-
 	err = test_call_hold_resume_inactive();
 	TEST_ERR(err);
 
 out:
-	return err;
+	mem_deref(as);
+	module_unload("l16");
+	return err ? err : test_call_hold_resume_nosdp();
 }
 
 
