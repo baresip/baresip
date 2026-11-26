@@ -1707,6 +1707,7 @@ void audio_sdp_attr_decode(struct audio *a)
 							    tx->ac->ch,
 							    ptime);
 			}
+
 			tx->ptime = ptime;
 			mtx_unlock(tx->mtx);
 
