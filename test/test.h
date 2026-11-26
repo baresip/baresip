@@ -261,8 +261,6 @@ int test_call_uag_find_msg(void);
 int test_call_sipnat_rport(void);
 int test_call_samplerate_switch(void);
 int test_call_audio_set_source(void);
-int test_call_ptime_reinvite(void);
-int test_call_ptime_cap(void);
 #ifdef USE_TLS
 int test_call_sni(void);
 int test_call_cert_select(void);
